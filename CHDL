@@ -1,0 +1,67 @@
+C++ Hardware Description Language
+=================================
+
+CHDL (call it "the" CHDL at your peril) is a domain-specific language based on
+C++. Specifically, it attmpts to fill the role of a "structural" hardware
+description language for implementing designs.
+
+A simple design, a full adder, implemented in CHDL, might look like the
+following:
+
+  #include <chdl/gates.h>
+  #include <chdl/gateops.h>
+
+  node FullAdder(node cout, node cin, node a, node b) {
+    node h = Xor(a, b), s = Xor(h, cin);
+    cout = (a && b) || (h && cin);
+    return s;
+  }
+
+Adders are already provided in the CHDL library, so a device of this nature
+would not be completely necessary.
+
+Structure of this Document
+--------------------------
+
+  - Concepts
+    - Register Transfer Level
+    - Node
+      - The node class
+      - nodeType enumeration
+      - Creating New Node Types
+        - The nodeimpl hierarchy
+    - Register
+    - Vector
+  - API
+    - Nodes
+      - Literals
+      - Fundamental Gates
+      - Registers
+      - Special Nodes
+    - Gates
+    - Operator Overloads
+    - Vectors
+    - Vector Operator Overloads
+    - Higher-order Arrays
+    - Memories
+    - Simulator
+    - HDL Writer
+  - Simulation Tools
+  - NAND File Format
+  - HDL Writer
+
+Concepts
+--------
+
+API
+---
+
+Nodes
+-----
+
+NAND File Format
+----------------
+
+A very basic netlist format has been developed for storing CHDL designs for use
+by other utilities. This file is called a "nand" file because all logic is
+represented (currently) as a network of nand gates and inverters.

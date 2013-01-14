@@ -1,0 +1,42 @@
+CHDL Near-term Roadmap
+======================
+
+_ Reproduce features of rtl.cpp and assorted header files as a real library:
+  . Nodes
+  . Basic gates
+  . Registers
+  . Literals
+  . Taps
+  . Simulation and .vcd generation
+  . Bit vectors
+    . Basic support
+    . Adder
+    . Literals
+    . Equality detection
+    . Vectors of gates
+    . Operators for vectors of gates, equality, etc.
+  . RAM
+  . 2^M-input muxes
+    . Typesafe multidimensional arrays
+  _ The pipeline example
+  _ Printing of netlists
+  _ Dead node elimination
+  _ Constant folding
+  _ Literal reduction
+  _ Redundant node elimination
+  _ Keyhole optimizations
+
+_ Pass manager
+_ nodeimpls keeping track of nodes and fixing up references
+_ NodeType enumeration
+_ Muli-ported RAM
+_ Utility programs
+  - nand2c
+_ Create a separate header for utility functions, integer math, etc.
+
+. Make this work:
+  bvec<32> a; bvec<4> b;
+  a[range<8, 11>()] = b;
+
+Possible future features:
+  _ Netlist reading
