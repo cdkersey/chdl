@@ -12,8 +12,8 @@ namespace chdl {
     bvec<A + B> Cat(bvec<A> a, bvec<B> b)
   {
     bvec<A + B> r;
-    for (unsigned i = 0; i < A; ++i) r[i] = a[i];
-    for (unsigned i = 0; i < B; ++i) r[A+i] = b[i];
+    for (unsigned i = 0; i < B; ++i) r[i] = b[i];
+    for (unsigned i = 0; i < A; ++i) r[B+i] = a[i];
     return r;
   }
 
@@ -24,11 +24,16 @@ namespace chdl {
     return r;
   }
 
+  // Add a write signal to an existing array of registers
+  template <unsigned N> void Wreg(rvec<N> q, bvec<N> d, node w) {
+    for (unsigned i = 0; i < N; ++i)
+      q[i].connect(Or(And(w, d[i]), And(Inv(w), q[i])));
+  }
+
   // Create an array of registers with a "write" signal
   template <unsigned N> rvec<N> Wreg(node w, bvec<N> d) {
     rvec<N> r(Reg<N>());
-    for (unsigned i = 0; i < N; ++i)
-      r[i].connect(Or(And(w, d[i]), And(Inv(w), r[i])));
+    Wreg(r, d, w);
     return r;
   }
 

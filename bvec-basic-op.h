@@ -16,10 +16,11 @@ namespace chdl {
   template <unsigned N>
     bvec<N> operator^(bvec<N> a, bvec<N> b) { return Xor(a, b); }
 
-  // Equality detection, re-implemented from bvec-basic.h to demonstrate the
-  // simplicity of using bit vectors.
+  // Equality detection (re-implemented from bvec-basic.h)
   template <unsigned N>
     node operator==(bvec<N> a, bvec<N> b) { return AndN(~(a ^ b)); }
+  template <unsigned N>
+    node operator!=(bvec<N> a, bvec<N> b) { return !(a == b); }
 };
 
 #endif

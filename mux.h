@@ -38,7 +38,7 @@ namespace chdl {
     bvec<2*(1<<M)> nodes;
     nodes[1] = e;
     for (unsigned i = 1; i < (1<<M); ++i) {
-      bvec<2> r = Decoder(M - log2(i) - 1, nodes[i]);
+      bvec<2> r = Decoder(sel[M - log2(i) - 1], nodes[i]);
       nodes[2*i] = r[0];
       nodes[2*i+1] = r[1];
     }

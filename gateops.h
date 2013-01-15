@@ -8,6 +8,7 @@ namespace chdl {
   node operator&&(node a, node b) { return And(a, b);      }
   node operator||(node a, node b) { return Or (a, b);      }
   node operator==(node a, node b) { return Inv(Xor(a, b)); }
+  node operator!=(node a, node b) { return Xor(a, b);      }
   node operator! (node i)         { return Inv(i);         }
 };
 
