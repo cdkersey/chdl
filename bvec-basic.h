@@ -17,6 +17,21 @@ namespace chdl {
     return r;
   }
 
+  // Concatenate a bit vector and a node
+  template <unsigned A> bvec<A + 1> Cat(bvec<A> a, node b) {
+    bvec<A + 1> r;
+    r[0] = b;
+    for (unsigned i = 0; i < A; ++i) r[i + 1] = a[i];
+    return r;
+  }
+
+  template <unsigned B> bvec<B + 1> Cat(node a, bvec<B> b) {
+    bvec<B + 1> r;
+    for (unsigned i = 0; i < B; ++i) r[i] = b[i];
+    r[B] = a;
+    return r;
+  }
+
   // Create an array of registers.
   template <unsigned N> rvec<N> Reg() {
     rvec<N> r;
