@@ -39,9 +39,11 @@ struct memory : public tickable {
 
 void memory::tick() {
   do_write = nodes[w]->eval();
-  size_t addr(toUint(a));
+  addr = toUint(a);
 
-  for (unsigned i = 0; i < d.size(); ++i) wrdata[i] = d[i];
+  if (do_write)
+    for (unsigned i = 0; i < d.size(); ++i)
+      wrdata[i] = nodes[d[i]]->eval();
 }
 
 void memory::tock() {
@@ -89,6 +91,8 @@ void load_contents(unsigned n, vector<bool> &contents, string filename) {
     }
     ++i;
   }
+ 
+  for (size_t j = i*n; j < contents.size(); ++j) contents[j] = i%2;
 }
 
 memory::memory(vector<node> &di, vector<node> &ai, node w, string filename) :

@@ -1,4 +1,4 @@
-CXXFLAGS = -fPIC -O0 -g -std=c++11
+CXXFLAGS = -fPIC -O3 -std=c++11 #-g
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o
