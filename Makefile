@@ -11,7 +11,7 @@ gatesimpl.o: gatesimpl.cpp gatesimpl.h nodeimpl.h node.h
 lit.o: lit.cpp lit.h litimpl.h nodeimpl.h node.h
 memory.o: memory.cpp memory.h node.h bvec.h bvec-basic.h lit.h
 nodeimpl.o: nodeimpl.cpp nodeimpl.h node.h litimpl.h
-opt.o: opt.cpp opt.h nodeimpl.h gatesimpl.h litimpl.h
+opt.o: opt.cpp opt.h nodeimpl.h gatesimpl.h litimpl.h lit.h node.h
 regimpl.o: regimpl.cpp reg.h regimpl.h nodeimpl.h tickable.h node.h
 sim.o: sim.cpp sim.h tickable.h tap.h
 tap.o: tap.cpp tap.h nodeimpl.h node.h bvec.h

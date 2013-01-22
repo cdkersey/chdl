@@ -33,14 +33,27 @@ node &node::operator=(const node &r) {
   if (from != NO_NODE) {
     // Move all of the nodes to the new node.
     for (auto it = node_dir[from].begin(); it != node_dir[from].end(); ++it) {
-      node_dir[to].insert(*it);
-      node_dir[from].erase(it);
-      (*it)->idx = to;
+      if (from != to) {
+        node_dir[to].insert(*it);
+        node_dir[from].erase(it);
+        (*it)->idx = to;
+      }
     }
   }
 
   node_dir[to].insert(this);
   idx = to;
+}
+
+void show_node_dir() {
+  cout << "Node directory:" << endl;
+  for (auto it = node_dir.begin(); it != node_dir.end(); ++it) {
+    cout << it->first << endl;
+    for (auto jt = it->second.begin(); jt != it->second.end(); ++jt) {
+      cout << "  " << *jt << ' ';
+    }
+    cout << endl;
+  }
 }
 
 void chdl::permute_nodes(map<nodeid_t, nodeid_t> x) {

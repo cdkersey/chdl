@@ -6,6 +6,8 @@
 #include "gatesimpl.h"
 #include "litimpl.h"
 #include "netlist.h"
+#include "lit.h"
+#include "node.h"
 
 #include <vector>
 #include <set>
@@ -75,6 +77,18 @@ void chdl::opt_fold_constants() {
 }
 
 void chdl::opt_combine_literals() {
+  size_t n = nodes.size();
+  node lit0(Lit(0)), lit1(Lit(1));
+
+  for (size_t i = 0; i < n; ++i) {
+    litimpl *l(dynamic_cast<litimpl*>(nodes[i]));
+    if (l) {
+      node lnode(l->id);
+      lnode = (l->eval())?lit1:lit0;
+    }
+  }
+
+  opt_dead_node_elimination();
 }
 
 void chdl::optimize() {

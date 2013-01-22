@@ -18,11 +18,11 @@ _ Reproduce features of rtl.cpp and assorted header files as a real library:
   . RAM
   . 2^M-input muxes
     . Typesafe multidimensional arrays
-  _ The pipeline example
-  _ Printing of netlists
-  _ Dead node elimination
-  _ Constant folding
-  _ Literal reduction
+  . The pipeline example
+  . Printing of netlists
+  . Dead node elimination
+  . Constant folding
+  . Literal reduction
   _ Redundant node elimination
   _ Keyhole optimizations
 

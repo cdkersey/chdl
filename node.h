@@ -25,7 +25,6 @@ namespace chdl {
     operator nodeid_t() const { return idx; }
 
     node &operator=(const node &r);
-      //node &operator=(const node &r) { idx = r.idx; }
     
   protected:
     nodeid_t idx;
