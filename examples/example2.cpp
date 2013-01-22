@@ -1,7 +1,9 @@
 #include <iostream>
+#include <fstream>
 
 #include <gateops.h>
 #include <bvec-basic-op.h>
+#include <netlist.h>
 
 #include <adder.h>
 
@@ -41,4 +43,8 @@ int main(int argc, char **argv) {
 
   // The simulation (generate .vcd file)
   run(cout, 256);
+
+  ofstream netlist_file("example2.nand");
+  print_netlist(netlist_file);
+  netlist_file.close();
 }

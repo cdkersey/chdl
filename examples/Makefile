@@ -12,4 +12,4 @@ all: $(EXAMPLES) $(EXAMPLE_OUTPUT)
 	LD_LIBRARY_PATH=../ ./$< > $@
 
 clean:
-	rm -f $(EXAMPLES) $(EXAMPLE_OUTPUT) *~ *\#
+	rm -f $(EXAMPLES) $(EXAMPLE_OUTPUT) *.nand *~ *\#

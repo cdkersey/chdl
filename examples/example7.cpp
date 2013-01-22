@@ -1,7 +1,7 @@
 // This example is a test/demonstrator of the register file.
-
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 #include <gateops.h>
 #include <bvec-basic-op.h>
@@ -12,6 +12,7 @@
 #include <opt.h>
 #include <tap.h>
 #include <sim.h>
+#include <netlist.h>
 
 using namespace std;
 using namespace chdl;
@@ -68,4 +69,8 @@ int main(int argc, char **argv) {
   // The simulation (generate .vcd file)
   optimize();
   run(cout, 1000);
+
+  ofstream netlist_file("example7.nand");
+  print_netlist(netlist_file);
+  netlist_file.close();
 }

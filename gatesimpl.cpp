@@ -8,7 +8,7 @@ bool invimpl::eval() {
 }
 
 void invimpl::print(ostream &out) {
-  out << "  inv " << src[0] << id << endl;
+  out << "  inv " << src[0] << ' ' << id << endl;
 }
 
 bool nandimpl::eval() {

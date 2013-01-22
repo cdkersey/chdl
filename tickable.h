@@ -12,6 +12,7 @@ namespace chdl {
   class tickable {
   public:
     tickable() { tickables.push_back(this); }
+    ~tickable();
 
     virtual void tick() = 0;
     virtual void tock() = 0;

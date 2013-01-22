@@ -1,8 +1,10 @@
 #include <iostream>
+#include <fstream>
 
 #include <gates.h>
 #include <gateops.h>
 #include <lit.h>
+#include <netlist.h>
 #include <reg.h>
 
 #include <tap.h>
@@ -31,4 +33,8 @@ int main(int argc, char **argv) {
   // The simulation (generate .vcd file)
   optimize();
   run(cout, 8);
+
+  ofstream netlist_file("example0.nand");
+  print_netlist(netlist_file);
+  netlist_file.close();
 }

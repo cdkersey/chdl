@@ -1,6 +1,7 @@
 // This example implements a simple pipelined harvard architecture CPU with a
 // SPIM-like ISA.
 #include <iostream>
+#include <fstream>
 #include <sstream>
 
 #include <gateops.h>
@@ -12,6 +13,7 @@
 #include <opt.h>
 #include <tap.h>
 #include <sim.h>
+#include <netlist.h>
 
 using namespace std;
 using namespace chdl;
@@ -308,4 +310,8 @@ int main(int argc, char **argv) {
   // The simulation (generate .vcd file)
   optimize();
   run(cout, 1000);
+
+  ofstream netlist_file("example6.nand");
+  print_netlist(netlist_file);
+  netlist_file.close();
 }

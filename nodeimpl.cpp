@@ -16,7 +16,7 @@ map<nodeid_t, set<node*>> node_dir;
 bool litimpl::eval() { return val; }
 
 void litimpl::print(ostream &out) {
-  out << " lit" << val << ' ' << id << endl;
+  out << "  lit" << val << ' ' << id << endl;
 }
 
 node::node():              idx(NO_NODE) { node_dir[idx].insert(this); }
@@ -56,6 +56,9 @@ void chdl::permute_nodes(map<nodeid_t, nodeid_t> x) {
       // index i to point to the new index.
       n = node(x[i]);
       new_nodes[x[i]] = nodes[i];
+
+      // Set the ID.
+      new_nodes[x[i]]->id = x[i];
     } else {
       // It's not in the mapping; the nodeimpl can be freed, and the
       // corresponding node objects made to point at NO_NODE.
