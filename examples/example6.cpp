@@ -31,8 +31,8 @@ void Regfile(bvec<32> &r0val, bvec<32> &r1val, bvec<5> r0idx, bvec<5> r1idx,
     tap<32, rvec>(oss.str(), regs[i]);
   }
 
-  r0val = Mux(r1idx, regs);
-  r1val = Mux(r0idx, regs);
+  r0val = Mux(r0idx, regs);
+  r1val = Mux(r1idx, regs);
 }
 
 bvec<32> Sext(bvec<16> in) {
@@ -78,7 +78,7 @@ template <unsigned M>
 template <unsigned N> bvec<N> ToUpper(bvec<N> in) {
   bvec<N> out;
   out[range<  0, N/2-1>()] = Lit<N/2>(0);
-  out[range<N/2,     N>()] = in[range<0, N/2-1>()];
+  out[range<N/2,   N-1>()] = in[range<0, N/2-1>()];
   return out;
 }
 
@@ -101,6 +101,9 @@ template <unsigned N> bvec<N> ToUpper(bvec<N> in) {
 // requires more lines of code than the implementation.
 template <unsigned M> bvec<1<<M> Alu(bvec<4> opsel, bvec<1<<M> a, bvec<1<<M> b)
 {
+  tap<32, bvec>("aluin_a", a);
+  tap<32, bvec>("aluin_b", b);
+
   bvec<1<<M> subbit;
   for (unsigned i = 0; i < (1<<M); ++i) subbit[i] = opsel[1];
 
@@ -211,7 +214,7 @@ int main(int argc, char **argv) {
   bvec<2> fwdsel_0, fwdsel_1;
 
   fwdsel_0[0] = wb_m && didx_m == sidx0_x;
-  fwdsel_0[1] = wb_m && didx_w == sidx0_x && didx_m != sidx0_x;
+  fwdsel_0[1] = wb_w && didx_w == sidx0_x && didx_m != sidx0_x;
 
   fwdsel_1[0] = wb_m && didx_m == sidx1_x;
   fwdsel_1[1] = wb_w && didx_w == sidx1_x && didx_m != sidx1_x;
