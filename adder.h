@@ -26,7 +26,7 @@ namespace chdl {
         } else {
           i[k+1][j] = p[k][j] && g[k][j - (1l<<k)];
           g[k+1][j] = i[k+1][j] || g[k][j];
-          p[k+1][j] = p[k][j] && p[k][j-(1l<<k)];
+          p[k+1][j] = p[k][j] && p[k][j - (1l<<k)];
         }
       }
     }

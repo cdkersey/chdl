@@ -10,7 +10,7 @@ namespace chdl {
   template <unsigned N> bvec<N> Mux(node sel, bvec<N> i0, bvec<N> i1) {
     bvec<N> o;
     for (unsigned i = 0; i < N; ++i)
-      o[i] = Or(And(Inv(sel), i0[i]), And(sel, i1[i]));
+      o[i] = Nand(Nand(Inv(sel), i0[i]), Nand(sel, i1[i]));
     return o;
   }
 
