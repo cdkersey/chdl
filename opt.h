@@ -7,8 +7,9 @@
 
 namespace chdl {
   void opt_dead_node_elimination();
-  void opt_fold_constants();
+  void opt_contract();
   void opt_combine_literals();
+  void opt_dedup();
 
   void optimize();
 };

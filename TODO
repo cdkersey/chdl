@@ -23,17 +23,19 @@ _ Reproduce features of rtl.cpp and assorted header files as a real library:
   . Dead node elimination
   . Constant folding
   . Literal reduction
-  _ Redundant node elimination
+  . Redundant node elimination
     - Inverters with same source node
     - Nands with same set of sources (order irrelevant)
-  _ Keyhole optimizations
+  . Keyhole optimizations
     - Nand(x, Lit(0)) => Lit(1)
     - Nand(x, Lit(1)) => Inv(x)
     - Nand(x, x) => Inv(x)
     - Inv(Inv(x)) => x
 
 _ Pass manager
-_ nodeimpls keeping track of nodes and fixing up references
+. nodeimpls keeping track of nodes and fixing up references
+  - Not done internally in nodeimpl, but assigning nodes has the expected
+    effect.
 _ NodeType enumeration
 _ Muli-ported RAM
 _ Utility programs

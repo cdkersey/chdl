@@ -2,6 +2,7 @@
 // solely for the purpose of invoking the optimization layer.
 #include "opt.h"
 #include "tap.h"
+#include "gates.h"
 #include "nodeimpl.h"
 #include "gatesimpl.h"
 #include "litimpl.h"
@@ -44,7 +45,7 @@ void chdl::opt_dead_node_elimination() {
   permute_nodes(pm);
 }
 
-void chdl::opt_fold_constants() {
+void chdl::opt_contract() {
   unsigned changes;
   do {
     changes = 0;
@@ -57,7 +58,15 @@ void chdl::opt_fold_constants() {
         nodes[i] = new litimpl(!l0->eval());
         nodes.pop_back();
         nodes[i]->id = i;
-        delete(inv);
+        delete inv;
+        continue;
+      }
+
+      invimpl *inv2;
+      if (inv && (inv2 = dynamic_cast<invimpl*>(nodes[inv->src[0]]))) {
+        node n(inv->id), m(inv2->src[0]);
+        n = m;
+        continue; 
       }
 
       nandimpl *nand = dynamic_cast<nandimpl*>(nodes[i]);
@@ -68,12 +77,42 @@ void chdl::opt_fold_constants() {
         nodes[i] = new litimpl(!(l0->eval() && l1->eval()));
         nodes.pop_back();
         nodes[i]->id = i;
-        delete(nand);
+        delete nand;
+        continue;
+      }
+
+      if (nand && (
+          (l0 = dynamic_cast<litimpl*>(nodes[nand->src[0]])) && !(l0->eval()) ||
+          (l1 = dynamic_cast<litimpl*>(nodes[nand->src[1]])) && !(l1->eval())))
+      {
+        ++changes;
+        nodes[i] = new litimpl(1);
+        nodes.pop_back();
+        nodes[i]->id = i;
+        delete nand;
+        continue;
+      }
+
+      if (nand && ((l0 = dynamic_cast<litimpl*>(nodes[nand->src[0]])) || 
+                   (l1 = dynamic_cast<litimpl*>(nodes[nand->src[1]]))))
+      {
+        ++changes;
+        node n(i), m(nand->src[l0?1:0]);
+        n = Inv(m);
+        continue; 
+      }
+
+      if (nand && nand->src[0] == nand->src[1]) {
+        node n(i), m(nand->src[0]);
+        n = Inv(m);
+        ++changes;
+        continue;
       }
     }
-  } while (changes);
 
-  opt_dead_node_elimination();  
+    opt_dead_node_elimination();
+
+  } while (changes);
 }
 
 void chdl::opt_combine_literals() {
@@ -91,12 +130,54 @@ void chdl::opt_combine_literals() {
   opt_dead_node_elimination();
 }
 
+void chdl::opt_dedup() {
+  unsigned changes;
+  do {
+    map<set<nodeid_t>, nodeid_t> nands;
+    map<nodeid_t, nodeid_t> invs;
+    changes = 0;
+    for (nodeid_t i = 0; i < nodes.size(); ++i) {
+      invimpl *inv = dynamic_cast<invimpl*>(nodes[i]);
+      nandimpl *nand = dynamic_cast<nandimpl*>(nodes[i]);
+      if (inv) {
+        nodeid_t input(inv->src[0]);
+
+        auto it(invs.find(input));
+        if (it == invs.end()) {
+          invs[input] = i;
+        } else {
+          node n(i), m(invs[input]);
+          n = m;
+          ++changes;
+        }
+      } else if (nand) {
+        set<nodeid_t> inputs;
+        inputs.insert(nand->src[0]);
+        inputs.insert(nand->src[1]);
+      
+        auto it(nands.find(inputs));
+        if (it == nands.end()) {
+          nands[inputs] = i;
+        } else {
+          node n(i), m(nands[inputs]);
+          n = m;
+          ++changes;
+        }
+      }
+    }
+
+    opt_dead_node_elimination();
+  } while(changes);
+}
+
 void chdl::optimize() {
   cerr << "Before optimization: " << nodes.size() << endl;
   opt_dead_node_elimination();
   cerr << "After dead node elimination: " << nodes.size() << endl;
-  opt_fold_constants();
-  cerr << "After constant folding: " << nodes.size() << endl;
+  opt_contract();
+  cerr << "After contraction: " << nodes.size() << endl;
   opt_combine_literals();
   cerr << "After combining literals: " << nodes.size() << endl;
+  opt_dedup();
+  cerr << "After redundant expression elimination: " << nodes.size() << endl;
 }
