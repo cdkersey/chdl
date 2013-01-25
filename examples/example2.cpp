@@ -6,9 +6,11 @@
 #include <netlist.h>
 
 #include <adder.h>
+#include <mult.h>
 
 #include <tap.h>
 #include <sim.h>
+#include <opt.h>
 
 using namespace std;
 using namespace chdl;
@@ -16,6 +18,7 @@ using namespace chdl;
 int main(int argc, char **argv) {
   // The design
   rvec<4> a(Reg<4>()), b(Reg<4>()), c(Reg<4>()), d(Reg<4>());
+  bvec<8> v;
   bvec<4> w, x, y, z;
   bvec<16> o;
 
@@ -29,6 +32,7 @@ int main(int argc, char **argv) {
   o[range< 8,11>()] = c;
   o[range<12,15>()] = d;
 
+  v = Mult(Cat(Lit<4>(0), a), Cat(Lit<4>(0), b));
   w = a & b & c & d;
   x = a ^ b;
   y = a | b | c | d;
@@ -37,11 +41,12 @@ int main(int argc, char **argv) {
   node a_b_eq(a == b);
 
   TAP(a); TAP(b); TAP(c); TAP(d);
-  TAP(w); TAP(x); TAP(y); TAP(z);
+  TAP(v); TAP(w); TAP(x); TAP(y); TAP(z);
   TAP(o);
   TAP(a_b_eq);
 
   // The simulation (generate .vcd file)
+  optimize();
   run(cout, 256);
 
   ofstream netlist_file("example2.nand");
