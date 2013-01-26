@@ -1,4 +1,4 @@
-CXXFLAGS = -I../ -O3 -g -std=c++11
+CXXFLAGS = -I../ -g -std=c++11
 LDLIBS = -L../ -lchdl
 
 EXAMPLE_OUTPUT = example0.vcd example1.vcd example2.vcd example3.vcd \

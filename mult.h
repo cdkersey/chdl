@@ -3,6 +3,7 @@
 #define __MULT_H
 
 #include <vector>
+#include <sstream>
 
 #include "bvec.h"
 #include "bvec-basic.h"
@@ -19,34 +20,80 @@ namespace chdl {
   }
 
   void HalfAdder(node &sum, node &carry, node a, node b) {
+    using namespace std;
     sum = Xor(a, b);
     carry = a && b;
   }
 
   void FullAdder(node &sum, node &carry, node a, node b, node c) {
+    using namespace std;
     node p1 = Xor(a, b);
     sum = Xor(c, p1);
     carry = a && b || p1 && c; 
   }
 
-  template <unsigned N> bvec<N> WallaceMult(bvec<N> a, bvec<N> b) {
-    // TODO: Implement me!
-  }
-
   template <unsigned N> bvec<N> Mult(bvec<N> a, bvec<N> b) {
     using namespace std;
-    // First find the root terms
-    vector<bvec<N>> terms(N*2);
+    vector<vector<node>> terms(N);
+    
+    // Find initial value of terms.
     for (unsigned j = 0; j < N; ++j)
       for (unsigned i = 0; i < N; ++i)
-        terms[j+N][i] = ShiftLeft(a, j)[i] && b[j];
+        terms[j].push_back(ShiftLeft(a, i)[j] && b[i]);
 
-    // Then add together the terms
-    for (unsigned i = N-1; i >= 1; --i)
-      terms[i] = terms[i*2] + terms[i*2 + 1];
+    // Implement the Wallace tree.
+    bool final;
+    for (;;) {
+      final = true;
+      vector<vector<node>> next(N);
+      for (unsigned j = 0; j < terms.size(); ++j)
+        if (terms[j].size() > 2) final = false;
+      if (final) break;
 
-    // Return the sum of all of the terms.
-    return terms[1];
+      for (unsigned j = 0; j < terms.size(); ++j) {
+        for (unsigned i = 0; i < terms[j].size();) {
+          if (terms[j].size() - i >= 3) {
+            node s, c;
+            FullAdder(s, c, terms[j][i], terms[j][i+1], terms[j][i+2]);
+            next[j].push_back(s);
+            if (j + 1 < N) next[j+1].push_back(c);
+            i += 3;
+          } else if (terms[j].size() - i >= 2) {
+            node s, c;
+            HalfAdder(s, c, terms[j][i], terms[j][i+1]);
+            next[j].push_back(s);
+            i += 2;
+            if (j + 1 < N) next[j+1].push_back(c);
+          } else if (terms[j].size() - i == 1) {
+            next[j].push_back(terms[j][i]);
+            ++i;
+          }
+        }
+      }
+
+      terms.clear();
+      terms = next;
+    }
+
+    // Implement the final adder.
+    bvec<N> term1, term2, prod;
+    for (unsigned i = 0; i < N; ++i) {
+      if (terms[i].size() == 0) {
+        term1[i] = term2[i] = Lit(0);
+      } else if (terms[i].size() == 1) {
+        term1[i] = terms[i][0];
+        term2[i] = Lit(0);
+      } else { // (terms[i].size() == 2)
+        term1[i] = terms[i][0];
+        term2[i] = terms[i][1];
+      }
+    }
+    prod = term1 + term2;
+
+    return prod;
   }
+
+  template <unsigned N>
+    bvec<N> operator*(bvec<N> a, bvec<N> b) { return Mult<N>(a, b); }
 };
 #endif
