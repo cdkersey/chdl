@@ -1,5 +1,11 @@
 Critical
 
-  In example 6, register 8 ceases to function properly within the first 10
-  cycles, despite the design (at least of the register file) appearing to be
-  correct.
+  --
+
+Must Fix
+
+  --
+
+Nuisance
+
+  --
