@@ -1,3 +1,4 @@
+PREFIX ?= /usr/local
 CXXFLAGS = -fPIC -g -std=c++11 #-g
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
@@ -5,6 +6,14 @@ OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
 
 libchdl.so : $(OBJS)
 	g++ -shared $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+install: libchdl.so
+	cp libchdl.so $(PREFIX)/lib
+	if [ ! -e $(PREFIX)/include/chdl ]; then mkdir $(PREFIX)/include/chdl; fi
+	cp *.h $(PREFIX)/include/chdl
+
+uninstall:
+	rm -rf $(PREFIX)/lib/libchdl.so $(PREFIX)/include/chdl
 
 gates.o: gates.cpp node.h gates.h nodeimpl.h gatesimpl.h
 gatesimpl.o: gatesimpl.cpp gatesimpl.h nodeimpl.h node.h

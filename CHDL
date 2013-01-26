@@ -65,3 +65,6 @@ NAND File Format
 A very basic netlist format has been developed for storing CHDL designs for use
 by other utilities. This file is called a "nand" file because all logic is
 represented (currently) as a network of nand gates and inverters.
+
+HDL Writer
+----------
