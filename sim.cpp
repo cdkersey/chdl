@@ -17,15 +17,15 @@ cycle_t chdl::advance() {
 }
 
 void chdl::print_time(ostream &out) {
-  cout << '#' << now << endl;  
+  out << '#' << now << endl;  
 }
 
 void chdl::run(ostream &vcdout, cycle_t time) {
   print_vcd_header(vcdout);
   print_time(vcdout);
   for (unsigned i = now; i < time; ++i) {
-    print_taps(cout);
+    print_taps(vcdout);
     advance();
-    print_time(cout);
+    print_time(vcdout);
   }
 }

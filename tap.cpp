@@ -33,10 +33,10 @@ void chdl::print_vcd_header(ostream &out) {
   out << "$timescale 1 ns $end" << endl;
 
   for (taps_it i = taps.begin(); i != taps.end(); ++i)
-    cout << "$var reg " << i->second.size() << ' ' << i->first << ' '
+    out << "$var reg " << i->second.size() << ' ' << i->first << ' '
          << i->first << " $end" << endl;
 
-  cout << "$enddefinitions $end" << endl;
+  out << "$enddefinitions $end" << endl;
 }
 
 void chdl::get_tap_nodes(set<nodeid_t> &s) {
