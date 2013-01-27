@@ -4,7 +4,10 @@ Critical
 
 Must Fix
 
-  --
+  The primary mechanism by which errors in designs are reported is by the
+  program crashing. More defensive coding is needed, including design validation
+  techniques. Ideally, it should be considered a bug in CHDL if optimization,
+  simulation or netlist writing crashes after validation has been performed.
 
 Nuisance
 
