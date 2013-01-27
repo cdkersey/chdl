@@ -2,7 +2,7 @@ PREFIX ?= /usr/local
 CXXFLAGS = -fPIC -g -std=c++11 #-g
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
-       memory.o opt.o netlist.o
+       memory.o opt.o netlist.o input.o
 
 libchdl.so : $(OBJS)
 	g++ -shared $(LDFLAGS) -o $@ $^ $(LDLIBS)
@@ -24,7 +24,8 @@ opt.o: opt.cpp opt.h nodeimpl.h gatesimpl.h litimpl.h lit.h node.h gates.h
 regimpl.o: regimpl.cpp reg.h regimpl.h nodeimpl.h tickable.h node.h
 sim.o: sim.cpp sim.h tickable.h tap.h
 tap.o: tap.cpp tap.h nodeimpl.h node.h bvec.h
-netlist.o: netlist.cpp netlist.h node.h nodeimpl.h
+netlist.o: netlist.cpp netlist.h node.h nodeimpl.h tap.h input.h
+input.o: input.cpp input.h node.h nodeimpl.h bvec.h
 
 clean:
 	rm -f libchdl.so $(OBJS) *~ *\#
