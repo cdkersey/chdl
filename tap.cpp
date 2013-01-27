@@ -19,6 +19,15 @@ void chdl::tap(string name, node node) {
   taps[name].push_back(node);
 }
 
+void chdl::print_tap_nodes(ostream &out) {
+  for (auto it = taps.begin(); it != taps.end(); ++it) {
+    out << "  " << it->first;
+    for (size_t i = 0; i < it->second.size(); ++i)
+      out << ' ' << it->second[i];
+    out << endl;
+  }
+}
+
 void chdl::print_taps(ostream &out) {
   for (taps_it i = taps.begin(); i != taps.end(); ++i) {
     if (i->second.size() > 1) out << 'b';

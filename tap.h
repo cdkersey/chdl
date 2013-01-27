@@ -14,6 +14,7 @@ namespace chdl {
   template <unsigned N, template <unsigned> class T>
     void tap(std::string name, const T<N> &vec);
 
+  void print_tap_nodes(std::ostream &out);
   void print_taps(std::ostream &out);
   void print_vcd_header(std::ostream &out);
 
