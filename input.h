@@ -3,6 +3,7 @@
 #include <iostream>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "node.h"
 #include "bvec.h"
