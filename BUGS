@@ -9,6 +9,11 @@ Must Fix
   techniques. Ideally, it should be considered a bug in CHDL if optimization,
   simulation or netlist writing crashes after validation has been performed.
 
+  Segfault/abort on exit (in library destructor),
+    - g++-4.7 (Ubuntu/Linaro 4.7.2-11precise2) 4.7.2; Ubuntu 12.04
+    - complaint of double free
+    - probably related to stale node pointers in node_dir seen by valgrind
+
 Nuisance
 
   --
