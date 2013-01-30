@@ -36,9 +36,23 @@ namespace chdl {
     return s;
   }
 
-  // This is the worst; there has to be someway to counter this but keep bvec's
-  // generality. Perhaps the answer is autoconversion to yet another type.
   template <unsigned N>
-    bvec<N> operator+(bvec<N> a, bvec<N> b) { return Adder<N>(a, b); }
+    bvec<N> operator+(bvec<N> a, bvec<N> b)
+      { return Adder<N>(a, b); }
+  template <unsigned N>
+    bvec<N> operator-(bvec<N> a, bvec<N> b)
+      { return Adder<N>(a, Not(b), Lit(1)); }
+  template <unsigned N>
+    node operator<(bvec<N> a, bvec<N> b) // Unsigned by default
+      { return (Cat(Lit(0), a) - Cat(Lit(0), b))[N]; }
+  template <unsigned N>
+    node operator>(bvec<N> a, bvec<N> b)
+      { return b<a; }
+  template <unsigned N>
+    node operator>=(bvec<N> a, bvec<N> b)
+      { return !(a < b); }
+  template <unsigned N>
+    node operator<=(bvec<N> a, bvec<N> b)
+      { return !(a > b); }
 };
 #endif
