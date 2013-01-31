@@ -11,7 +11,10 @@ vector<nodeimpl*> chdl::nodes;
 
 // The node directory keeps track of every node. This is used by optimizations
 // to perform transforms requiring changing, e.g. node IDs.
-map<nodeid_t, set<node*>> node_dir;
+map<nodeid_t, set<node*>> &node_dir() {
+  static auto nd = new map<nodeid_t, set<node*>>();
+  return *nd;
+}
 
 bool litimpl::eval() { return val; }
 
@@ -19,35 +22,33 @@ void litimpl::print(ostream &out) {
   out << "  lit" << val << ' ' << id << endl;
 }
 
-node::node():              idx(NO_NODE) { node_dir[idx].insert(this); }
-node::node(nodeid_t i):    idx(i)       { node_dir[idx].insert(this); }
-node::node(const node &r): idx(r.idx)   { node_dir[idx].insert(this); }
+node::node():              idx(NO_NODE) { node_dir()[idx].insert(this); }
+node::node(nodeid_t i):    idx(i)       { node_dir()[idx].insert(this); }
+node::node(const node &r): idx(r.idx)   { node_dir()[idx].insert(this); }
 
-node::~node() { node_dir[idx].erase(this); }
+node::~node() { node_dir()[idx].erase(this); }
 
 node &node::operator=(const node &r) {
   nodeid_t from(idx), to(r.idx);
-  idx = to;
 
-  node_dir[from].erase(this);
-  if (from != NO_NODE) {
+  node_dir()[from].erase(this);
+  if (from != NO_NODE && from != to) {
     // Move all of the nodes to the new node.
-    for (auto it = node_dir[from].begin(); it != node_dir[from].end(); ++it) {
-      if (from != to) {
-        node_dir[to].insert(*it);
-        node_dir[from].erase(it);
-        (*it)->idx = to;
-      }
+    for (auto it = node_dir()[from].begin(); it != node_dir()[from].end(); ++it)
+    {
+      node_dir()[to].insert(*it);
+      node_dir()[from].erase(it);
+      (*it)->idx = to;
     }
   }
 
-  node_dir[to].insert(this);
+  node_dir()[to].insert(this);
   idx = to;
 }
 
 void show_node_dir() {
   cout << "Node directory:" << endl;
-  for (auto it = node_dir.begin(); it != node_dir.end(); ++it) {
+  for (auto it = node_dir().begin(); it != node_dir().end(); ++it) {
     cout << it->first << endl;
     for (auto jt = it->second.begin(); jt != it->second.end(); ++jt) {
       cout << "  " << *jt << ' ';
