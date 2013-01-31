@@ -55,7 +55,7 @@ namespace chdl {
   template <unsigned N, typename T> class vec {
     public:
       vec() {}
-      vec(const T &r) { *this = r; }
+      vec(const T &r) { for (unsigned i = 0; i < N; ++i) nodes[i] = r; }
       vec(const vecref<N, T> &r) { *this = r; }
 
       vec &operator=(const vec& r) {

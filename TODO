@@ -1,7 +1,7 @@
 CHDL Near-term Roadmap
 ======================
 
-_ Reproduce features of rtl.cpp and assorted header files as a real library:
+. Reproduce features of rtl.cpp and assorted header files as a real library:
   . Nodes
   . Basic gates
   . Registers
@@ -39,8 +39,9 @@ _ Pass manager
 _ NodeType enumeration
 _ Muli-ported RAM
 _ Utility programs
-  - nand2c
+  - nand2c, nand2v
 _ Create a separate header for utility functions, integer math, etc.
+  - like an int log2
 
 . Make this work:
   bvec<32> a; bvec<4> b;

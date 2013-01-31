@@ -20,7 +20,7 @@ namespace chdl {
     node(nodeid_t i);
     node(const node &r);
  
-    ~node();
+    virtual ~node();
 
     operator nodeid_t() const { return idx; }
 
