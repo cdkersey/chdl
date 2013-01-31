@@ -3,26 +3,42 @@
 
 #include <iostream>
 
+#include "gates.h"
 #include "bvec-basic.h"
 
 namespace chdl {
-  // Ordinary 2-input N-bit mux
+  // 2-input N-bit mux
   template <unsigned N> bvec<N> Mux(node sel, bvec<N> i0, bvec<N> i1) {
     bvec<N> o;
     for (unsigned i = 0; i < N; ++i)
-      o[i] = Nand(Nand(Inv(sel), i0[i]), Nand(sel, i1[i]));
+      o[i] = Mux(sel, i0[i], i1[i]);
     return o;
+  }
+
+  // 2^M to 1 mux
+  template <unsigned M>
+    node Mux(bvec<M> sel, bvec<1<<M> inputs)
+  {
+    bvec<2<<M> nodes;
+    nodes[range<(1<<M),2*(1<<M)-1>()] = inputs;
+    for (int i = (1<<M)-1; i >= 1; --i)
+      nodes[i] = Mux(sel[M - log2(i) - 1], nodes[i*2], nodes[i*2 + 1]);
+    return nodes[1];
   }
 
   // 2^M-input N-bit mux
   template <unsigned N, unsigned M>
     bvec<N> Mux(bvec<M> sel, vec<1<<M, bvec<N>> inputs)
   {
-    vec<(2<<M), bvec<N>> nodes;
-    nodes[range<(1<<M),2*(1<<M)-1>()] = inputs;
-    for (int i = (1<<M)-1; i >= 1; --i)
-      nodes[i] = Mux(sel[M - log2(i) - 1], nodes[i*2], nodes[i*2+1]);
-    return nodes[1];
+    bvec<N> o;
+
+    for (unsigned i = 0; i < N; ++i) {
+      bvec<1<<M> inputslice;
+      for (unsigned j = 0; j < 1<<M; ++j) inputslice[j] = inputs[j][i];
+      o[i] = Mux(sel, inputslice);
+    }
+
+    return o;
   }
 
   // 1-2 decoder/demux

@@ -231,8 +231,8 @@ int main(int argc, char **argv) {
   rfb_fd_mux_in[2] = wbval_w;
   rfb_fd_mux_in[3] = Lit<32>(0);
 
-  bvec<32> rfa_fd_x(Mux<32, 2>(fwdsel_0, rfa_fd_mux_in)),
-           rfb_fd_x(Mux<32, 2>(fwdsel_1, rfb_fd_mux_in));
+  bvec<32> rfa_fd_x(Mux(fwdsel_0, rfa_fd_mux_in)),
+           rfb_fd_x(Mux(fwdsel_1, rfb_fd_mux_in));
   TAP(fwdsel_0); TAP(fwdsel_1);
 
   // The ALU
