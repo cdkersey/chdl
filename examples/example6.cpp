@@ -8,6 +8,7 @@
 #include <bvec-basic-op.h>
 #include <adder.h>
 #include <mux.h>
+#include <llmem.h>
 #include <memory.h>
 
 #include <opt.h>
@@ -148,11 +149,10 @@ int main(int argc, char **argv) {
   reg wb_m(Reg()), taken_br_m(Reg()), wrmem_m(Reg()), rdmem_m(Reg());
   TAP(wb_m);
 
-  rvec<32> wbval_w(Reg<32>()); TAP(wbval_w);
   rvec<5> didx_w(Reg<5>()); TAP(didx_w);
   reg wb_w(Reg()); TAP(wb_w);
 
-  bvec<32> iramq_f(Rom<18,32>(pc_f[range<2, 19>()], "sieve.hex"));
+  bvec<32> iramq_f(LLRom<6,32>(pc_f[range<2, 7>()], "sieve.hex"));
   TAP(iramq_f);
 
   bvec<32> pcplus4_f(pc_f + Lit<32>(4));
@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
           didx_d(Mux(dsel, bvec<5>(iramq_d[range<11,15>()]),
                            bvec<5>(iramq_d[range<16,20>()])));
 
-  bvec<32> rfa_d, rfb_d, rfa0_d, rfb0_d;
+  bvec<32> rfa_d, rfb_d, rfa0_d, rfb0_d, wbval_w(Lit<32>(0xdeadbeef));
   Regfile(rfa0_d, rfb0_d, sidx0_d, sidx1_d, didx_w, wb_w, wbval_w);
 
   rfa_d = Mux(wb_w && didx_w == sidx0_d, rfa0_d, wbval_w);
@@ -249,9 +249,14 @@ int main(int argc, char **argv) {
 
   // // // Memory stage // // //
   // Data RAM
-  bvec<32> memq_m(Memory(rfb_m, bvec<18>(aluval_m[range<2,19>()]), wrmem_m)),
-           wbval_m(Mux(rdmem_m, aluval_m, memq_m));
-  TAP(wbval_m); TAP(memq_m); TAP(aluval_m); TAP(aluval_x);
+  rvec<32> aluval_w(Reg<32>());
+  aluval_w.connect(aluval_m);
+
+  reg rdmem_w(Reg()); rdmem_w.connect(rdmem_m);
+  
+  bvec<32> memq_w(Syncmem(rfb_m, bvec<18>(aluval_m[range<2,19>()]), wrmem_m));
+  wbval_w = Mux(rdmem_w, aluval_w, memq_w);
+  TAP(wbval_w); TAP(memq_w); TAP(aluval_m); TAP(aluval_x);
   TAP(rdmem_m); TAP(wrmem_m); TAP(rfb_m);
 
   // // // Final signals // // //
@@ -299,7 +304,6 @@ int main(int argc, char **argv) {
   // M->W pipeline regs
   wb_w.connect(wb_m);
   didx_w.connect(didx_m);
-  wbval_w.connect(wbval_m);
 
   TAP(iramq_d);
   TAP(sidx0_d); TAP(sidx1_d);
