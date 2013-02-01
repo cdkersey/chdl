@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <set>
 
 #include "memory.h"
 #include "tickable.h"
@@ -18,8 +19,14 @@ unsigned long toUint(vector<node> &v) {
   return r;
 }
 
+struct memory;
+
+// Set of all currently-existing memory objects.
+set<memory *> memories;
+
 struct memory : public tickable {
-  memory(vector<node> &d, vector<node> &a, node w, string filename);
+  memory(vector<node> &d, vector<node> &a, node w, string filename, bool sync);
+  ~memory() { memories.erase(this); }
 
   void tick();
   void tock();
@@ -35,6 +42,8 @@ struct memory : public tickable {
   size_t addr;
   vector<bool> contents;
   string filename;
+
+  bool sync;
 };
 
 void memory::tick() {
@@ -53,7 +62,7 @@ void memory::tock() {
 }
 
 void memory::print(ostream &out) {
-  out << "  ram <" << a.size() << ' ' << d.size();
+  out << "  " << (sync?"sync":"") << "ram <" << a.size() << ' ' << d.size();
   if (filename != "") out << " \"" << filename << '"';
   out << '>';
   for (unsigned i = 0; i < a.size(); ++i) out << ' ' << a[i];
@@ -70,11 +79,16 @@ struct qnodeimpl : public nodeimpl {
     src.push_back(mem->w);
   }
 
-  bool eval() { return mem->contents[toUint(mem->a)*mem->d.size() + idx]; }
+  bool eval() {
+    return mem->contents[
+      (mem->sync?mem->addr:toUint(mem->a))*mem->d.size() + idx
+    ];
+  }
+
   void print(ostream &out) { if (idx == 0) mem->print(out); }
 
   unsigned idx;
-  
+
   memory *mem;
 };
 
@@ -95,9 +109,11 @@ void load_contents(unsigned n, vector<bool> &contents, string filename) {
   for (size_t j = i*n; j < contents.size(); ++j) contents[j] = i%2;
 }
 
-memory::memory(vector<node> &di, vector<node> &ai, node w, string filename) :
+memory::memory(
+  vector<node> &di, vector<node> &ai, node w, string filename, bool sync
+) :
   contents(di.size()<<(ai.size())), wrdata(di.size()-1), filename(filename),
-  w(w), d(di.size()), a(ai.size())
+  w(w), d(di.size()), a(ai.size()), addr(0), sync(sync)
 {
   // Load contents from file
   if (filename != "") load_contents(d.size(), contents, filename);
@@ -110,16 +126,18 @@ memory::memory(vector<node> &di, vector<node> &ai, node w, string filename) :
     d[i] = di[i];
     q.push_back((new qnodeimpl(this, i))->id);
   }
+
+  memories.insert(this);
 }
 
 // The function used by memory.h, and the simplest of all. Just create a new
 // memory with the given inputs and return the outputs.
 namespace chdl {
   vector<node> memory_internal(
-    vector<node> &d, vector<node> &a, node w, string filename
+    vector<node> &d, vector<node> &a, node w, string filename, bool sync
   )
   {
-    memory *m = new memory(d, a, w, filename);
+    memory *m = new memory(d, a, w, filename, sync);
     return m->q;
   }
 };

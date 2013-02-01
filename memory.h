@@ -10,19 +10,22 @@
 
 namespace chdl {
   template <unsigned M, unsigned N>
-    bvec<N> Memory(bvec<N> d, bvec<M> a, node w, std::string filename = "")
+    bvec<N> Memory(
+      bvec<N> d, bvec<M> a, node w, std::string filename = "", bool sync=false
+    )
   {
     // Provides interface to low-level node structures; prototyped here to avoid
     // pollution of chdl namespace.
     std::vector<node> memory_internal(
-      std::vector<node> &d, std::vector<node> &a, node w, std::string filename
+      std::vector<node> &d, std::vector<node> &a, node w, std::string filename,
+      bool sync
     );
 
     std::vector<node> dvec, avec, qvec;
     for (unsigned i = 0; i < M; ++i) avec.push_back(a[i]);
     for (unsigned i = 0; i < N; ++i) dvec.push_back(d[i]);
   
-    qvec = memory_internal(dvec, avec, w, filename);
+    qvec = memory_internal(dvec, avec, w, filename, sync);
 
     bvec<N> q;
     for (unsigned i = 0; i < N; ++i) q[i] = qvec[i];
@@ -31,9 +34,21 @@ namespace chdl {
   }
 
   template <unsigned M, unsigned N>
+    bvec<N> Syncmem(bvec <N> d, bvec<M> a, node w, std::string filename = "")
+  {
+    return Memory(d, a, w, filename, true);
+  }
+
+  template <unsigned M, unsigned N>
     bvec<N> Rom(bvec<M> a, std::string filename)
   {
     return Memory(Lit<N>(0), a, Lit(0), filename);
+  }
+
+  template <unsigned M, unsigned N>
+    bvec<N> Syncrom(bvec<M> a, std::string filename)
+  {
+    return Syncmem(Lit<N>(0), a, Lit(0), filename);
   }
 };
 

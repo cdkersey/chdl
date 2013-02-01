@@ -31,21 +31,32 @@ CHDL Near-term Roadmap
     - Nand(x, Lit(1)) => Inv(x)
     - Nand(x, x) => Inv(x)
     - Inv(Inv(x)) => x
-
-_ Pass manager
 . nodeimpls keeping track of nodes and fixing up references
   - Not done internally in nodeimpl, but assigning nodes has the expected
     effect.
-_ NodeType enumeration
-_ Muli-ported RAM
-_ Utility programs
-  - nand2c, nand2v
-_ Create a separate header for utility functions, integer math, etc.
-  - like an int log2
-
+. Utility programs
+  - nand2c
+  - nand2v
 . Make this work:
   bvec<32> a; bvec<4> b;
   a[range<8, 11>()] = b;
 
+_ Technology mapping
+_ Add utility programs to the chdl tree
+  - What should I call them? chdl-nand2*? just nand2*?
+_ Muli-ported RAM
+_ Create a separate header for utility functions, integer math, etc.
+  - like an int log2
+
 Possible future features:
   _ Netlist reading
+    - Make 
+  _ Pass manager
+    - Is there any reason to optimize in an order other than the one used by
+      the optimize function?
+    - Could technology mapping be handled by this same pass manager?
+  _ NodeType enumeration
+    - Why? Sure enumerations can be extended but that would just lead to many
+      possible integers for each enum name.
+    - So we can easily pass info about node types to e.g. print them in
+      different ways. Might look prettier than RTTI.
