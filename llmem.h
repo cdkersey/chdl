@@ -40,16 +40,23 @@ namespace chdl {
 
   // For now, RAM has no initialization.
   template <unsigned M, unsigned N>
-    bvec<N> LLRam(bvec<N> d, bvec<M> a, node w)
+    bvec<N> LLRam(bvec<M> qa, bvec<N> d, bvec<M> da, node w)
   {
-    bvec<1<<M> wrsig(Decoder(a, w));
+    bvec<1<<M> wrsig(Decoder(da, w));
 
     vec<1<<M, bvec<N>> bits;
     for (unsigned i = 0; i < 1<<M; ++i)
       bits[i] = Wreg(wrsig[i], d);
     
-    return Mux(a, bits);
+    return Mux(qa, bits);
   }
+
+  template <unsigned M, unsigned N>
+    bvec<N> LLRam(bvec<M> a, bvec<N> d, node w)
+  {
+    return LLRam(a, d, a, w);
+  }
+
 };
 
 #endif

@@ -1,50 +1,15 @@
 CHDL Near-term Roadmap
 ======================
 
-. Reproduce features of rtl.cpp and assorted header files as a real library:
-  . Nodes
-  . Basic gates
-  . Registers
-  . Literals
-  . Taps
-  . Simulation and .vcd generation
-  . Bit vectors
-    . Basic support
-    . Adder
-    . Literals
-    . Equality detection
-    . Vectors of gates
-    . Operators for vectors of gates, equality, etc.
-  . RAM
-  . 2^M-input muxes
-    . Typesafe multidimensional arrays
-  . The pipeline example
-  . Printing of netlists
-  . Dead node elimination
-  . Constant folding
-  . Literal reduction
-  . Redundant node elimination
-    - Inverters with same source node
-    - Nands with same set of sources (order irrelevant)
-  . Keyhole optimizations
-    - Nand(x, Lit(0)) => Lit(1)
-    - Nand(x, Lit(1)) => Inv(x)
-    - Nand(x, x) => Inv(x)
-    - Inv(Inv(x)) => x
-. nodeimpls keeping track of nodes and fixing up references
-  - Not done internally in nodeimpl, but assigning nodes has the expected
-    effect.
-. Utility programs
-  - nand2c
-  - nand2v
-. Make this work:
-  bvec<32> a; bvec<4> b;
-  a[range<8, 11>()] = b;
-
+_ Multi-ported RAM
+  . Separate read and write ports
+    - Could represent multi-(read)-ported RAM by duplicating RAM and connecting
+      the write ports together.
 _ Technology mapping
 _ Add utility programs to the chdl tree
   - What should I call them? chdl-nand2*? just nand2*?
 _ Muli-ported RAM
+  . Separate
 _ Create a separate header for utility functions, integer math, etc.
   - like an int log2
 

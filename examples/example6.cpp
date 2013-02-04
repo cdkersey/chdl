@@ -247,14 +247,14 @@ int main(int argc, char **argv) {
   node taken_br_x(Xor(rfa_fd_x == rfb_fd_x, bne_x) && br_x);
   TAP(taken_br_x);
 
-  // // // Memory stage // // //
+  // // // Memorystage // // //
   // Data RAM
   rvec<32> aluval_w(Reg<32>());
   aluval_w.connect(aluval_m);
 
   reg rdmem_w(Reg()); rdmem_w.connect(rdmem_m);
   
-  bvec<32> memq_w(Syncmem(rfb_m, bvec<18>(aluval_m[range<2,19>()]), wrmem_m));
+  bvec<32> memq_w(Syncmem(bvec<18>(aluval_m[range<2,19>()]), rfb_m, wrmem_m));
   wbval_w = Mux(rdmem_w, aluval_w, memq_w);
   TAP(wbval_w); TAP(memq_w); TAP(aluval_m); TAP(aluval_x);
   TAP(rdmem_m); TAP(wrmem_m); TAP(rfb_m);

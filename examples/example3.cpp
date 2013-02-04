@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   rvec<5> a(Reg<5>());
   bvec<32> q, d(Lit<32>(0));
 
-  q = Memory(d, bvec<5>(a), Lit(0), "sample.hex");
+  q = Memory(a, d, Lit<5>(0), Lit(0), "sample.hex");
 
   a.connect(a + Lit<5>(1));
 
