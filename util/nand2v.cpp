@@ -106,7 +106,7 @@ bool read_nandfile(istream &infile) {
       type[v[0]] = LIT0_NODE;
     } else if (lname == "lit1") {
       getnums(v, infile);
-      lit1.push_back(v[1]);
+      lit1.push_back(v[0]);
       type[v[1]] = LIT1_NODE;
     } else if (lname == "inv") {
       getnums(v, infile);
@@ -211,7 +211,7 @@ void write_v(ostream &out) {
   }
   out << endl;
 
-  for (size_t i = 0; i < ram_qa.size(); i += 8) {
+  for (size_t i = 0; i < ram_qa.size(); ++i) {
     out << "  wire ram_w" << i << ';' << endl;
     out << "  wire [" << ram_qa[i].size()-1 << ":0] ram_qa" << i << ';' << endl;
     out << "  reg  [" <<  ram_q[i].size()-1 << ":0] ram_q"  << i << ';' << endl;
