@@ -41,7 +41,7 @@ struct memory : public tickable {
   vector<bool> wrdata;
 
   size_t raddr, waddr;
-  vector<bool> contents;
+  vector<bool> contents, rdval;
   string filename;
 
   bool sync;
@@ -58,6 +58,10 @@ void memory::tick() {
 }
 
 void memory::tock() {
+  if (sync)
+    for (unsigned i = 0; i < d.size(); ++i)
+      rdval[i] = contents[raddr*d.size() + i];
+
   if (do_write)
     for (unsigned i = 0; i < d.size(); ++i)
       contents[waddr*d.size() + i] = wrdata[i];
@@ -84,9 +88,10 @@ struct qnodeimpl : public nodeimpl {
   }
 
   bool eval() {
-    return mem->contents[
-      (mem->sync?mem->raddr:toUint(mem->qa))*mem->d.size() + idx
-    ];
+    if (mem->sync)
+      return mem->rdval[idx];
+    //else
+      return mem->contents[toUint(mem->qa)*mem->d.size() + idx];
   }
 
   void print(ostream &out) { if (idx == 0) mem->print(out); }
@@ -119,7 +124,7 @@ memory::memory(
 ) :
   contents(di.size()<<(qai.size())), wrdata(di.size()-1), filename(filename),
   w(w), qa(qai.size()), d(di.size()), da(qai.size()), raddr(0), waddr(0),
-  sync(sync)
+  sync(sync), rdval(di.size())
 {
   // Load contents from file
   if (filename != "") load_contents(d.size(), contents, filename);
