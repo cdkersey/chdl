@@ -6,7 +6,6 @@
 #include "reg.h"
 #include "lit.h"
 #include "node.h"
-#include "gateops.h"
 
 namespace chdl {
   // Utility function.

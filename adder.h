@@ -4,6 +4,7 @@
 
 #include <vector>
 
+#include "gateops.h"
 #include "bvec.h"
 
 namespace chdl {
