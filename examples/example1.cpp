@@ -16,7 +16,6 @@ using namespace std;
 using namespace chdl;
 
 int main(int argc, char **argv) {
-#if 0
   // The design
   rvec<4> r(Reg<4>());
   bvec<8> t;
@@ -26,14 +25,9 @@ int main(int argc, char **argv) {
   t[range<0,3>()] = bvec<4>(r[range<0,3>()]);
   t[range<4,7>()] = r[range<0,3>()];
 
-  cout << "t[0] = " << t[0] << endl;
+  cerr << "t[0] = " << t[0] << endl;
 
   TAP(r); TAP(t);
-#endif
-
-  rvec<4> r(Reg<4>());
-  r.connect(Lit<4>(5));
-  TAP(r);
 
   // The simulation (generate .vcd file)
   optimize();
