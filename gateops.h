@@ -5,11 +5,11 @@
 #include "gates.h"
 
 namespace chdl {
-  node operator&&(node a, node b) { return And(a, b);      }
-  node operator||(node a, node b) { return Or (a, b);      }
-  node operator==(node a, node b) { return Inv(Xor(a, b)); }
-  node operator!=(node a, node b) { return Xor(a, b);      }
-  node operator! (node i)         { return Inv(i);         }
+  static node operator&&(node a, node b) { return And(a, b);      }
+  static node operator||(node a, node b) { return Or (a, b);      }
+  static node operator==(node a, node b) { return Inv(Xor(a, b)); }
+  static node operator!=(node a, node b) { return Xor(a, b);      }
+  static node operator! (node i)         { return Inv(i);         }
 };
 
 #endif
