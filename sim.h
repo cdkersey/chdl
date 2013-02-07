@@ -6,6 +6,7 @@
 namespace chdl {
   typedef unsigned long long cycle_t;
 
+  cycle_t sim_time();
   void print_time(std::ostream&);
   cycle_t advance();
 

@@ -4,7 +4,12 @@ using namespace std;
 using namespace chdl;
 
 bool invimpl::eval() {
-  return !(nodes[src[0]]->eval());
+  if (t_cval != sim_time()) {
+    cval = !(nodes[src[0]]->eval());
+    t_cval = sim_time();
+  }
+
+  return cval;
 }
 
 void invimpl::print(ostream &out) {
@@ -12,7 +17,12 @@ void invimpl::print(ostream &out) {
 }
 
 bool nandimpl::eval() {
-  return !(nodes[src[0]]->eval() && nodes[src[1]]->eval());
+  if (t_cval != sim_time()) {
+    cval =  !(nodes[src[0]]->eval() && nodes[src[1]]->eval());
+    t_cval = sim_time();
+  }
+
+  return cval;
 }
 
 void nandimpl::print(ostream &out) {
