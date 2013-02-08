@@ -7,6 +7,7 @@
 #include <bvec-basic.h>
 
 #include <adder.h>
+#include <shifter.h>
 
 #include <opt.h>
 #include <tap.h>
@@ -20,6 +21,7 @@ int main(int argc, char **argv) {
   // to use rvecs (or connect)
   bvec<4> rplus1, r(Reg<4>(rplus1));
   bvec<8> t;
+  bvec<16> x(Lit<16>(1) << r);
   rplus1 = Adder(r, Lit<4>(1));
 
   t[range<0,3>()] = bvec<4>(r[range<0,3>()]);
@@ -27,7 +29,7 @@ int main(int argc, char **argv) {
 
   cerr << "t[0] = " << t[0] << endl;
 
-  TAP(r); TAP(t);
+  TAP(r); TAP(t); TAP(x);
 
   // The simulation (generate .vcd file)
   optimize();
