@@ -20,9 +20,10 @@ int main(int argc, char **argv) {
 
   // We are going to intentionally re-assign this node to show that it is
   // possible.
-  node lit1(Lit(0));
+  node lit1;
+  node lit2(lit1);
 
-  r0.connect(Xor(r0, lit1));
+  r0.connect(Xor(r0, lit2));
   r1.connect(!Xor(r0, r1));
 
   lit1 = Lit(1); // This is retroactively effective.
