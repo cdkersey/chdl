@@ -44,6 +44,9 @@ namespace chdl {
     bvec<N> operator-(bvec<N> a, bvec<N> b)
       { return Adder<N>(a, Not(b), Lit(1)); }
   template <unsigned N>
+    bvec<N> operator-(bvec<N> x)
+      { return Lit<N>(0) - x; }
+  template <unsigned N>
     node operator<(bvec<N> a, bvec<N> b) // Unsigned by default
       { return (Cat(Lit(0), a) - Cat(Lit(0), b))[N]; }
   template <unsigned N>
