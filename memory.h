@@ -71,7 +71,7 @@ namespace chdl {
   template <unsigned M, unsigned N>
     bvec<N> Syncrom(bvec<M> qa, std::string filename)
   {
-    return Syncmem(qa, Lit<M>(0), Lit<N>(0), Lit(0), filename);
+    return Syncmem(qa, Lit<N>(0), Lit<M>(0), Lit(0), filename);
   }
 };
 
