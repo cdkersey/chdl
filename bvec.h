@@ -21,49 +21,14 @@ namespace chdl {
 
   template <unsigned N, typename T> class vec;
 
-  // The vecref is what we use to assign values to portions of vecs.
-  template <unsigned N, typename T> class vecref {
-  public:
-    vecref(T *base): bp(base) {}
-
-    operator typename chdl::vec<N, T>();
-
-    // This is the whole point of vecrefs. They are either used to assign
-    // values to ranges within vecs or they are converted to vecs themselves.
-    template <class U>
-      vecref &operator=(const U &r)
-    {
-      for (unsigned i = 0; i < N; ++i) bp[i] = r[i];
-      return *this;
-    }
-
-    // Don't forget to override the default assignment operator!
-    vecref &operator=(const vecref &r) {
-      return vecref::operator=<vecref>(r);
-    }
-
-    T &operator[](size_t i) const { return bp[i]; }
-
-  private:
-    T *bp;
-  };
-
-  template <unsigned N> using bvecref = vecref<N, node>;
-
   template <unsigned N> class rvec;
 
   template <unsigned N, typename T> class vec {
     public:
       vec() {}
       vec(const T &r) { for (unsigned i = 0; i < N; ++i) nodes[i] = r; }
-      vec(const vecref<N, T> &r) { *this = r; }
 
       vec &operator=(const vec& r) {
-        for (unsigned i = 0; i < N; ++i) nodes[i] = r[i];
-        return *this;
-      }
-
-      vec &operator=(const vecref<N, T>& r) {
         for (unsigned i = 0; i < N; ++i) nodes[i] = r[i];
         return *this;
       }
@@ -72,22 +37,19 @@ namespace chdl {
       T &operator[](size_t i) { return nodes[i]; }
       const T &operator[](size_t i) const { return nodes[i]; }
       template <unsigned A, unsigned B>
-        vecref<B-A+1, T> operator[](range<A, B> r)
+        vec<B-A+1, T> operator[](range<A, B> r)
       {
-        return vecref<B-A+1, T>(nodes + A);
+        vec<B-A+1, T> out;
+
+        for (unsigned i = 0; i < B-A+1; ++i)
+          out[i] = (*this)[A+i];
+
+        return out;
       }
 
     protected:
       T nodes[N];
   };
-
-  template <unsigned N, typename T>
-    vecref<N, T>::operator typename chdl::vec<N,T>()
-  {
-    vec<N, T> r;
-    for (unsigned i = 0; i < N; ++i) r[i] = bp[i];
-    return r;
-  }
 
   template <unsigned N> using bvec = vec<N, node>;
 
@@ -122,9 +84,12 @@ namespace chdl {
       return static_cast<const reg&>(vec<N, node>::nodes[i]);
     }
     template <unsigned A, unsigned B>
-      vecref<B-A+1, node> operator[](range<A, B> r)
+      vec<B-A+1, node> operator[](range<A, B> r)
     {
-      return vecref<B-A+1, node>(vec<N, node>::nodes + A);
+      vec<B-A+1, node> out;
+      for (unsigned i = 0; i < B-A+1; ++i)
+        out[i] = (*this)[i+A];
+      return out;
     }
 
     // Connect to the D signal.

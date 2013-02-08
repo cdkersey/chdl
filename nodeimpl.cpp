@@ -3,6 +3,7 @@
 
 #include "nodeimpl.h"
 #include "litimpl.h"
+#include "lit.h"
 
 using namespace std;
 using namespace chdl;
@@ -22,7 +23,7 @@ void litimpl::print(ostream &out) {
   out << "  lit" << val << ' ' << id << endl;
 }
 
-node::node():              idx(NO_NODE) { node_dir()[idx].insert(this); }
+node::node():              idx(Lit(0))  { node_dir()[idx].insert(this); }
 node::node(nodeid_t i):    idx(i)       { node_dir()[idx].insert(this); }
 node::node(const node &r): idx(r.idx)   { node_dir()[idx].insert(this); }
 

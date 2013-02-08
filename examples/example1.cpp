@@ -16,11 +16,11 @@ using namespace std;
 using namespace chdl;
 
 int main(int argc, char **argv) {
-  // The design
-  rvec<4> r(Reg<4>());
+  // If you predefine your d and give it as an argument to Reg, you do not need
+  // to use rvecs (or connect)
+  bvec<4> rplus1, r(Reg<4>(rplus1));
   bvec<8> t;
-
-  r.connect(Adder(r, Lit<4>(1)));
+  rplus1 = Adder(r, Lit<4>(1));
 
   t[range<0,3>()] = bvec<4>(r[range<0,3>()]);
   t[range<4,7>()] = r[range<0,3>()];

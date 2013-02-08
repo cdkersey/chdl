@@ -39,10 +39,16 @@ namespace chdl {
     return r;
   }
 
+  template <unsigned N> bvec<N> Reg(bvec<N> d) {
+    rvec<N> r;
+    for (unsigned i = 0; i < N; ++i) r[i] = Reg(d[i]);
+    return r;
+  }
+
   // Add a write signal to an existing array of registers
   template <unsigned N> void Wreg(rvec<N> q, bvec<N> d, node w) {
     for (unsigned i = 0; i < N; ++i)
-      q[i].connect(Or(And(w, d[i]), And(Inv(w), q[i])));
+      q[i].connect(Mux(w, q[i], d[i]));
   }
 
   // Create an array of registers with a "write" signal
