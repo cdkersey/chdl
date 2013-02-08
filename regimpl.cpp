@@ -12,6 +12,7 @@ void reg::connect(node d) {
 }
 
 regimpl::regimpl(): q(0), next_q(0) {}
+regimpl::regimpl(node d): q(0), next_q(0), d(d) {}
 
 regimpl::~regimpl() {}
 
@@ -22,6 +23,7 @@ void regimpl::print(ostream &out) {
 }
 
 reg chdl::Reg() { return (new regimpl())->id; }
+reg chdl::Reg(node d) { return (new regimpl(d))->id; }
 
 void chdl::get_reg_nodes(set<nodeid_t> &s) {
   // We used to use a map<node, node> to keep track of all registers. This

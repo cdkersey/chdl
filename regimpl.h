@@ -9,6 +9,7 @@
 namespace chdl {
   struct regimpl : public tickable, public nodeimpl {
     regimpl();
+    regimpl(node d);
     ~regimpl();
 
     bool eval();
