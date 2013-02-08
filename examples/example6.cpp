@@ -29,7 +29,7 @@ void Regfile(bvec<32> &r0val, bvec<32> &r1val, bvec<5> r0idx, bvec<5> r1idx,
     regs[i] = Wreg(wrsig[i], wval);
     ostringstream oss;
     oss << "reg" << i;
-    tap<32, rvec>(oss.str(), regs[i]);
+    tap<32, bvec>(oss.str(), regs[i]);
   }
 
   r0val = Mux(r0idx, regs);
@@ -114,7 +114,7 @@ template <unsigned M> bvec<1<<M> Alu(bvec<4> opsel, bvec<1<<M> a, bvec<1<<M> b)
   logicResult[2] = a ^ b;;
   logicResult[3] = ~(a | b);
   
-  bvec<1<<M> logic = Mux(bvec<2>(opsel[range<0,1>()]), logicResult);
+  bvec<1<<M> logic = Mux(opsel[range<0,1>()], logicResult);
 
   vec<4, bvec<1<<M> > aluResult;
   bvec<M> shamt = a[range<0,M-1>()];
@@ -124,7 +124,7 @@ template <unsigned M> bvec<1<<M> Alu(bvec<4> opsel, bvec<1<<M> a, bvec<1<<M> b)
   aluResult[3] = logic;
 
   TAP(a); TAP(b); TAP(opsel);
-  bvec<32> rval(Mux(bvec<2>(opsel[range<2,3>()]), aluResult));
+  bvec<32> rval(Mux(opsel[range<2,3>()], aluResult));
   TAP(rval);
 
   return rval;
