@@ -41,6 +41,12 @@ namespace chdl {
   {
     return Shifter(in, shamt, Lit(0), Lit(0));
   }
+
+  template <unsigned M>
+    bvec<1<<M> operator>>(bvec<1<<M> in, bvec<M> shamt)
+  {
+    return Shifter(in, shamt, Lit(0), Lit(1));
+  }
 };
 
 #endif
