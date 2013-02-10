@@ -65,6 +65,26 @@ namespace chdl {
     return r;
   }
 
+  // Zero-extend (or truncate if output is smaller)
+  template <unsigned N, unsigned M>
+    bvec<N> Zext(bvec<M> x)
+  {
+    if (M > N)
+      return x[range<0, N-1>()];
+    else
+      return Cat(Lit<N-M>(0), x);
+  }
+
+  // Sign-extend (or truncate if output is smaller)
+  template <unsigned N, unsigned M>
+    bvec<N> Sext(bvec<M> x)
+  {
+    if (M > N)
+      return x[range<0, N-1>()];
+    else
+      return Cat(bvec<N-M>(x[M-1]), x);
+  }
+
   // Perform an operation element-wise over an N-bit array.
   template <unsigned N, node (*op)(node, node)>
     bvec<N> OpElementwise(bvec<N> a, bvec<N> b)

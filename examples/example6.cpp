@@ -36,13 +36,6 @@ void Regfile(bvec<32> &r0val, bvec<32> &r1val, bvec<5> r0idx, bvec<5> r1idx,
   r1val = Mux(r1idx, regs);
 }
 
-bvec<32> Sext(bvec<16> in) {
-  bvec<32> r;
-  r[range<0,15>()] = in;
-  for (unsigned i = 16; i < 32; ++i) r[i] = in[15];
-  return r;
-}
-
 // Fixed shift by B bits (positive for left, negative for right). A series of
 // these could be used to construct a barrel shifter.
 template <unsigned N>
@@ -157,7 +150,7 @@ int main(int argc, char **argv) {
 
   bvec<32> pcplus4_f(pc_f + Lit<32>(4));
 
-  bvec<32> sext_imm_d(Sext(iramq_d[range<0,15>()]));
+  bvec<32> sext_imm_d(Sext<32>(iramq_d[range<0,15>()]));
 
   bvec<6> opcode(iramq_d[range<26, 31>()]), func(iramq_d[range<0, 5>()]);
   bvec<8> itype_d;
