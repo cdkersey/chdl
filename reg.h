@@ -15,6 +15,8 @@ namespace chdl {
 
   reg Reg();
   reg Reg(node d);
+  
+  node Wreg(node w, node d);
 
   void get_reg_nodes(std::set<nodeid_t> &s);
 };
