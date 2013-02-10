@@ -1,5 +1,7 @@
 #include <map>
 
+#include "node.h"
+#include "gates.h"
 #include "reg.h"
 #include "regimpl.h"
 #include "nodeimpl.h"
@@ -24,6 +26,12 @@ void regimpl::print(ostream &out) {
 
 reg chdl::Reg() { return (new regimpl())->id; }
 reg chdl::Reg(node d) { return (new regimpl(d))->id; }
+
+node chdl::Wreg(node w, node d) {
+  node q;
+  q = Reg(Mux(w, q, d));
+  return q;
+}
 
 void chdl::get_reg_nodes(set<nodeid_t> &s) {
   // We used to use a map<node, node> to keep track of all registers. This
