@@ -109,7 +109,7 @@ void load_contents(unsigned n, vector<bool> &contents, string filename) {
     unsigned long long val;
     in >> hex >> val;
     for (unsigned j = 0; j < n; ++j) {
-      contents[i*n + j] = val & 1;
+      if (i*n + j < contents.size()) contents[i*n + j] = val & 1;
       val >>= 1;
     }
     ++i;
