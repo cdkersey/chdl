@@ -7,10 +7,6 @@
 #include "shifter.h"
 #include "adder.h"
 
-#define LOG2(x) ((unsigned)(!!(0xffff0000&(x))<<4) | (!!(0xff00ff00&(x))<<3) \
-                         | (!!(0xf0f0f0f0&(x))<<2) | (!!(0xcccccccc&(x))<<1) \
-                         |  !!(0xaaaaaaaa&(x)) )
-
 namespace chdl {
   template <unsigned N>
     bvec<N> divider(bvec<N> a, bvec<N> b, bvec<N> mod = Lit<N>(0))
