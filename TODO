@@ -3,7 +3,7 @@ CHDL Near-term Roadmap
 
 _ Technology mapping
 _ Create a separate header for utility functions, integer math, etc.
-  - like an int log2
+  - like an int log2 macro
 
 Possible future features:
   _ Netlist reading

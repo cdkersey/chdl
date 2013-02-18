@@ -1,6 +1,8 @@
 Critical
 
-  --
+  LOG2 macro only works for powers of 2. The way to fix this is to mask out the
+  least significant half before the next round, but it is difficult to do this
+  in a single macro without defining any variables.
 
 Must Fix
 
