@@ -1,5 +1,5 @@
 PREFIX ?= /usr/local
-CXXFLAGS = -fPIC -g -std=c++11 #-g
+CXXFLAGS += -fPIC -g -std=c++11 #-g
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o
