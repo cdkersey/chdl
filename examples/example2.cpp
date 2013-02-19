@@ -33,12 +33,13 @@ int main(int argc, char **argv) {
   o[range< 8,11>()] = c;
   o[range<12,15>()] = d;
 
-  v = Cat(Lit<4>(0), a) * Cat(Lit<4>(0), b);
+
+  v = Zext<8>(a) * Zext<8>(b);
   w = a & b & c & d;
   x = a ^ b;
   y = a | b | c | d;
   z = a + b;
-  ax = divider(v, Cat(Lit<4>(0), b))[range<0, 3>()];
+  ax = Zext<4>(divider(v, Zext<8>(b)));
 
   node a_b_eq(a == b);
 
