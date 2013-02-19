@@ -16,9 +16,9 @@ namespace chdl {
     rem[0] = a;
     for (unsigned i = 0; i < N; ++i) {
       unsigned bpos(N - i - 1);
-      bvec<2*N> big_b(Cat(Lit<N>(0), b) << Lit<LOG2(N)+1>(bpos));
+      bvec<2*N> big_b(Cat(Lit<N>(0), b) << Lit<CLOG2(N)+1>(bpos));
       q[bpos] = big_b <= Cat(Lit<N>(0), rem[i]);
-      bvec<N> dif = rem[i] - (b << Lit<LOG2(N)>(bpos));
+      bvec<N> dif = rem[i] - (b << Lit<CLOG2(N)>(bpos));
       rem[i+1] = Mux(q[bpos], rem[i], dif);
     }
 
