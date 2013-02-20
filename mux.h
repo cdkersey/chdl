@@ -42,7 +42,7 @@ namespace chdl {
   }
 
   // 1-2 decoder/demux
-  bvec<2> Decoder(node i, node e) {
+  static inline bvec<2> Decoder(node i, node e) {
     bvec<2> out;
     out[0] = And(Inv(i), e);
     out[1] = And(i, e);
