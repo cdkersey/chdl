@@ -9,6 +9,7 @@
 #include "netlist.h"
 #include "lit.h"
 #include "node.h"
+#include "memory.h"
 
 #include <vector>
 #include <set>
@@ -20,7 +21,9 @@ using namespace std;
 void chdl::opt_dead_node_elimination() {
   set<nodeid_t> live_nodes;
 
-  // Start with an initial set of live nodes: taps and register D and Q nodes
+  // Start with an initial set of live nodes: taps, register D nodes, and memory
+  // address and D bits.
+  get_mem_nodes(live_nodes);
   get_tap_nodes(live_nodes);
   get_reg_nodes(live_nodes);
   

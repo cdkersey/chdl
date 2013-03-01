@@ -8,6 +8,7 @@
 #include "memory.h"
 #include "tickable.h"
 #include "nodeimpl.h"
+#include "regimpl.h"
 
 using namespace chdl;
 using namespace std;
@@ -80,17 +81,12 @@ void memory::print(ostream &out) {
 }
 
 struct qnodeimpl : public nodeimpl {
-  qnodeimpl(memory *mem, unsigned idx): mem(mem), idx(idx) {
-    for (unsigned i = 0; i < mem->qa.size(); ++i) src.push_back(mem->qa[i]);
-    for (unsigned i = 0; i < mem->da.size(); ++i) src.push_back(mem->da[i]);
-    src.push_back(mem->d[idx]);
-    src.push_back(mem->w);
-  }
+  qnodeimpl(memory *mem, unsigned idx): mem(mem), idx(idx) {}
 
   bool eval() {
     if (mem->sync)
       return mem->rdval[idx];
-    //else
+    else
       return mem->contents[toUint(mem->qa)*mem->d.size() + idx];
   }
 
@@ -156,3 +152,13 @@ namespace chdl {
     return m->q;
   }
 };
+
+void chdl::get_mem_nodes(set<nodeid_t> &s) {
+  for (auto it = memories.begin(); it != memories.end(); ++it) {
+    memory &m(**it);
+    for (unsigned i = 0; i < m.qa.size(); ++i) s.insert(m.qa[i]);
+    for (unsigned i = 0; i < m.da.size(); ++i) s.insert(m.da[i]);
+    for (unsigned i = 0; i < m.d.size(); ++i)  s.insert(m.d[i]);
+    s.insert(m.w);
+  }
+}

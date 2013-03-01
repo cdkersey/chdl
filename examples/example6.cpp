@@ -10,6 +10,7 @@
 #include <mux.h>
 #include <llmem.h>
 #include <memory.h>
+#include <analysis.h>
 
 #include <opt.h>
 #include <tap.h>
@@ -207,10 +208,10 @@ int main(int argc, char **argv) {
   bvec<2> fwdsel_0, fwdsel_1;
 
   fwdsel_0[0] = wb_m && didx_m == sidx0_x;
-  fwdsel_0[1] = wb_w && didx_w == sidx0_x && didx_m != sidx0_x;
+  fwdsel_0[1] = wb_w && didx_w == sidx0_x && !fwdsel_0[0];
 
   fwdsel_1[0] = wb_m && didx_m == sidx1_x;
-  fwdsel_1[1] = wb_w && didx_w == sidx1_x && didx_m != sidx1_x;
+  fwdsel_1[1] = wb_w && didx_w == sidx1_x && !fwdsel_1[0];
 
   vec<4, bvec<32> > rfa_fd_mux_in, rfb_fd_mux_in;
 
@@ -227,6 +228,8 @@ int main(int argc, char **argv) {
   bvec<32> rfa_fd_x(Mux(fwdsel_0, rfa_fd_mux_in)),
            rfb_fd_x(Mux(fwdsel_1, rfb_fd_mux_in));
   TAP(fwdsel_0); TAP(fwdsel_1);
+  TAP(rfa_fd_x); TAP(rfb_fd_x);
+  TAP(sidx0_x); TAP(sidx1_x);
 
   // The ALU
   bvec<32> aluval_x = Alu<5>(
@@ -314,4 +317,6 @@ int main(int argc, char **argv) {
   ofstream netlist_file("example6.nand");
   print_netlist(netlist_file);
   netlist_file.close();
+
+  cerr << "Critical path: " << critpath() << endl;
 }

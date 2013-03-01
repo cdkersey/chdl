@@ -3,12 +3,15 @@
 
 #include <string>
 #include <vector>
+#include <set>
 
 #include "bvec-basic.h"
 #include "node.h"
 #include "lit.h"
 
 namespace chdl {
+  void get_mem_nodes(std::set<nodeid_t> &s);
+
   template <unsigned M, unsigned N>
     bvec<N> Memory(
       bvec<M> qa, bvec<N> d, bvec<M> da, node w,
