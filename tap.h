@@ -11,8 +11,7 @@
 
 namespace chdl {
   void tap(std::string name, node node);
-  template <unsigned N, template <unsigned> class T>
-    void tap(std::string name, const T<N> &vec);
+  template <unsigned N> void tap(std::string name, const bvec<N> &vec);
 
   void print_tap_nodes(std::ostream &out);
   void print_taps(std::ostream &out);
@@ -22,8 +21,8 @@ namespace chdl {
   void get_tap_nodes(std::set<nodeid_t> &s);
 };
 
-template <unsigned N, template <unsigned> class T>
-  void chdl::tap(std::string name, const T<N> &vec)
+template <unsigned N>
+  void chdl::tap(std::string name, const bvec<N> &vec)
 {
   for (unsigned i = 0; i < N; ++i) tap(name, vec[i]);
 }
