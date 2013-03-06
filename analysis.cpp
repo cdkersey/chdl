@@ -7,6 +7,7 @@
 #include "netlist.h"
 #include "lit.h"
 #include "node.h"
+#include "memory.h"
 
 #include "analysis.h"
 
@@ -21,6 +22,7 @@ unsigned chdl::critpath() {
   set<nodeid_t> frontier;
   get_tap_nodes(frontier);
   get_reg_nodes(frontier);
+  get_mem_nodes(frontier);
   
   unsigned l(0);
 

@@ -4,19 +4,20 @@
 #include <vector>
 #include <map>
 
-#include <chdl/gateops.h>
-#include <chdl/bvec-basic-op.h>
-#include <chdl/adder.h>
-#include <chdl/shifter.h>
-#include <chdl/mux.h>
-#include <chdl/enc.h>
-#include <chdl/llmem.h>
-#include <chdl/memory.h>
+#include <gateops.h>
+#include <bvec-basic-op.h>
+#include <adder.h>
+#include <shifter.h>
+#include <mux.h>
+#include <enc.h>
+#include <llmem.h>
+#include <memory.h>
 
-#include <chdl/opt.h>
-#include <chdl/tap.h>
-#include <chdl/sim.h>
-#include <chdl/netlist.h>
+#include <opt.h>
+#include <tap.h>
+#include <sim.h>
+#include <netlist.h>
+#include <analysis.h>
 
 using namespace std;
 using namespace chdl;
@@ -464,8 +465,11 @@ int main() {
 
   optimize();
 
+  cerr << "Critical path: " << critpath() << endl;
+
   // Do the simulation
-  run(cout, 1000);
+  ofstream wave_file("example6.vcd");
+  run(wave_file, 1000);
 
   // Print the netlist
   ofstream netlist_file("example6.nand");
