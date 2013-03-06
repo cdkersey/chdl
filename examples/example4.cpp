@@ -16,8 +16,8 @@ using namespace chdl;
 
 int main(int argc, char **argv) {
   // The design
-  rvec<3> a(Reg<3>());
-  a.connect(a + Lit<3>(1));
+  bvec<3> a;
+  a = Reg(a + Lit<3>(1));
   bvec<8> adec(Decoder(a, Lit(1)));
 
   vec<8, bvec<32>> muxin;

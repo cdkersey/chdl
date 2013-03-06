@@ -16,12 +16,12 @@ using namespace chdl;
 
 int main(int argc, char **argv) {
   // The design
-  rvec<5> a(Reg<5>());
+  bvec<5> a;
   bvec<32> q, d(Lit<32>(0));
 
   q = Memory(a, d, Lit<5>(0), Lit(0), "sample.hex");
 
-  a.connect(a + Lit<5>(1));
+  a = Reg(a + Lit<5>(1));
 
   TAP(a); TAP(d); TAP(q);
 

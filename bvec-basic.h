@@ -1,5 +1,4 @@
-// A bvec is a fixed-length vector of bits. rvecs are like bvecs with a connect
-// function.
+// A bvec is a fixed-length vector of bits.
 #ifndef __BVEC_BASIC_H
 #define __BVEC_BASIC_H
 
@@ -31,27 +30,27 @@ namespace chdl {
   }
 
   // Create an array of registers.
-  template <unsigned N> rvec<N> Reg() {
-    rvec<N> r;
+  template <unsigned N> bvec<N> Reg() {
+    bvec<N> r;
     for (unsigned i = 0; i < N; ++i) r[i] = Reg();
     return r;
   }
 
   template <unsigned N> bvec<N> Reg(bvec<N> d) {
-    rvec<N> r;
+    bvec<N> r;
     for (unsigned i = 0; i < N; ++i) r[i] = Reg(d[i]);
     return r;
   }
 
   // Add a write signal to an existing array of registers
-  template <unsigned N> void Wreg(rvec<N> q, bvec<N> d, node w) {
+  template <unsigned N> void Wreg(bvec<N> q, bvec<N> d, node w) {
     for (unsigned i = 0; i < N; ++i)
-      q[i].connect(Mux(w, q[i], d[i]));
+      q[i] = Reg(Mux(w, q[i], d[i]));
   }
 
   // Create an array of registers with a "write" signal
-  template <unsigned N> rvec<N> Wreg(node w, bvec<N> d) {
-    rvec<N> r(Reg<N>());
+  template <unsigned N> bvec<N> Wreg(node w, bvec<N> d) {
+    bvec<N> r;
     Wreg(r, d, w);
     return r;
   }

@@ -1,5 +1,3 @@
-// A bvec is a fixed-length vector of bits. rvecs are like bvecs with a connect
-// function.
 #ifndef __BVEC_BASIC_OP_H
 #define __BVEC_BASIC_OP_H
 

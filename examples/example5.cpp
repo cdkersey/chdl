@@ -16,9 +16,9 @@ using namespace std;
 using namespace chdl;
 
 template <unsigned N> node Lfsr() {
-  rvec<N> sr(Reg<N>());
+  bvec<N> sr;
   TAP(sr);
-  for (unsigned i = 1; i < N; ++i) sr[i].connect(sr[i-1]);
+  for (unsigned i = 1; i < N; ++i) sr[i] = Reg(sr[i-1]);
 
   // I have no idea if a fibbonaci LFSR has to do with the fibbonaci sequence,
   // but I'll pretend it does and use that to select my taps.
@@ -32,7 +32,7 @@ template <unsigned N> node Lfsr() {
   node next = XorN(taps);
   TAP(next);
 
-  sr[0].connect(!next);
+  sr[0] = Reg(!next);
 
   return next;
 }

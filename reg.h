@@ -6,15 +6,8 @@
 #include "node.h"
 
 namespace chdl {
-  struct reg : public node {
-    reg() {}
-    reg(nodeid_t id): node(id) {}
-
-    void connect(node d);
-  };
-
-  reg Reg();
-  reg Reg(node d);
+  node Reg();
+  node Reg(node d);
   
   node Wreg(node w, node d);
 

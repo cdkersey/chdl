@@ -9,10 +9,6 @@
 using namespace chdl;
 using namespace std;
 
-void reg::connect(node d) {
-  static_cast<regimpl*>(nodes[idx])->connect(d);
-}
-
 regimpl::regimpl(): q(0), next_q(0) {}
 regimpl::regimpl(node d): q(0), next_q(0), d(d) {}
 
@@ -24,8 +20,8 @@ void regimpl::print(ostream &out) {
   out << "  reg " << d << ' ' << id << endl;
 }
 
-reg chdl::Reg() { return (new regimpl())->id; }
-reg chdl::Reg(node d) { return (new regimpl(d))->id; }
+node chdl::Reg() { return (new regimpl())->id; }
+node chdl::Reg(node d) { return (new regimpl(d))->id; }
 
 node chdl::Wreg(node w, node d) {
   node q;
