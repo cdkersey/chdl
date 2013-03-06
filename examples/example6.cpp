@@ -1,71 +1,278 @@
-// This example implements a simple pipelined harvard architecture CPU with a
-// SPIM-like ISA.
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
+#include <map>
 
-#include <gateops.h>
-#include <bvec-basic-op.h>
-#include <adder.h>
-#include <mux.h>
-#include <llmem.h>
-#include <memory.h>
+#include <chdl/gateops.h>
+#include <chdl/bvec-basic-op.h>
+#include <chdl/adder.h>
+#include <chdl/shifter.h>
+#include <chdl/mux.h>
+#include <chdl/enc.h>
+#include <chdl/llmem.h>
+#include <chdl/memory.h>
 
-#include <opt.h>
-#include <tap.h>
-#include <sim.h>
-#include <netlist.h>
+#include <chdl/opt.h>
+#include <chdl/tap.h>
+#include <chdl/sim.h>
+#include <chdl/netlist.h>
 
 using namespace std;
 using namespace chdl;
 
-// 32x32 2-port register file
-void Regfile(bvec<32> &r0val, bvec<32> &r1val, bvec<5> r0idx, bvec<5> r1idx,
-             bvec<5> widx, node w, bvec<32> wval)
+// TODO:
+//   - Add a way to respect hazard destination valid bit (to avoid unnecessary
+//     forwarding/stalling)
+
+// Neat little hack that finds the log2 of a power of 2 at compile time,
+// suitable for use as a template parameter
+
+// Integer logarithm unit (find index of highest set bit); priority encoder
+
+// Create the OrN tree recursively.
+template <typename FUNC> vector<node> ReduceInternal(vector<node> &v, FUNC f) {
+  if (v.size() == 1) return v;
+
+  vector<node> v2;
+  for (unsigned i = 0; i < v.size(); i += 2) {
+    if (i+1 == v.size()) v2.push_back(v[i]);
+    else                 v2.push_back(f(v[i], v[i+1]));
+  }
+
+  return ReduceInternal<FUNC>(v2, f);
+}
+// Overload this function for variable-sized vector<node>s instead of bvecs.
+node OrN(vector<node> &v) {
+  if (v.size() == 0) return Lit(0);
+  return ReduceInternal<node (*)(node, node)>(v, Or)[0];
+}
+
+node AndN(vector<node> &v) {
+  if (v.size() == 0) return Lit(1);
+  return ReduceInternal<node (*)(node, node)>(v, And)[0];
+}
+
+node operator==(vector<node> a, vector<node> b) {
+  if (a.size() != b.size()) return Lit(0);
+
+  vector<node> eq;
+  for (unsigned i = 0; i < a.size(); ++i) eq.push_back(a[i] == b[i]);
+ 
+  return AndN(eq);
+}
+
+// One bit of a pipeline register
+struct pregbit {
+  pregbit(node d, node q): d(d), q(q) {}
+  node d, q;
+};
+
+// Entire pipeline register
+struct preg {
+  vector<node> stall, flush, bubble;
+  vector<pregbit> bits;
+  node anystall;
+};
+
+map<unsigned, preg> pregs;
+
+node PipelineReg(unsigned n, node d) {
+  node q;
+  pregs[n].bits.push_back(pregbit(d, q));
+  return q;
+}
+
+void PipelineStall(unsigned n, node stall) {
+  for (unsigned i = 0; i < n; ++i) pregs[i].stall.push_back(stall);
+  pregs[n].bubble.push_back(stall);
+}
+
+node GetStall(unsigned n) {
+  return pregs[n].anystall;
+}
+
+void PipelineFlush(unsigned n, node flush) {
+  for (unsigned i = 0; i <= n; ++i) pregs[i].flush.push_back(flush);
+}
+
+template <unsigned N> bvec<N> PipelineReg(unsigned n, bvec<N> d) {
+  bvec<N> q;
+  for (unsigned i = 0; i < N; ++i) q[i] = PipelineReg(n, d[i]);
+  return q;
+}
+
+struct hazdst_t {
+  unsigned stage;
+  node valid;
+  vector<node> bypassIn, output, name;
+};
+
+struct hazsrc_t {
+  unsigned stage;
+  vector<node> value, name;
+  node valid, ready;
+};
+
+struct hazsig_t {
+  unsigned stage;
+  vector<node> name;
+  node valid;
+};
+
+vector<hazdst_t> hazdsts;
+vector<hazsrc_t> hazsrcs;
+vector<hazsig_t> hazsigs;
+
+// Hazard signal. Used to signal a hazard for which forwarding is not possible.
+// Not used in the SPIMlike pipeline.
+template <unsigned M>
+  void HazSig(unsigned stage, node vld, bvec<M> name)
 {
-  bvec<32> wrsig = Decoder(widx, w);
-  vec<32, bvec<32>> regs;
-  for (unsigned i = 0; i < 32; ++i) {
-    regs[i] = Wreg(wrsig[i], wval);
+  hazsig_t h;
+  for (unsigned i = 0; i < M; ++i) h.name.push_back(name[i]);
+  h.stage = stage;
+  h.valid = vld;
+  hazsigs.push_back(h);
+}
+
+// Hazard source; may be valid.
+template <unsigned M, unsigned N>
+  void HazSrc(unsigned stage, node rdy, node vld, bvec<N> value, bvec<M> name)
+{
+  hazsrc_t h;
+  h.stage = stage;
+  for (unsigned i = 0; i < M; ++i) h.name.push_back(name[i]);
+  for (unsigned i = 0; i < N; ++i) h.value.push_back(value[i]);
+  h.valid = vld;
+  h.ready = rdy;
+
+  tap(string("hsrc_") + "dxmwz"[stage] + "_name", name);
+  tap(string("hsrc_") + "dxmwz"[stage] + "_value", value);
+  tap(string("hsrc_") + "dxmwz"[stage] + "_valid", vld);
+  tap(string("hsrc_") + "dxmwz"[stage] + "_ready", rdy);
+
+  hazsrcs.push_back(h);
+}
+
+// Hazard destination
+template <unsigned M, unsigned N>
+bvec<N> HazDst(unsigned stage, node vld, bvec<N> passThru, bvec<M> name)
+{
+  bvec<N> out;
+  hazdst_t h;
+  for (unsigned i = 0; i < N; ++i) {
+    h.bypassIn.push_back(passThru[i]);
+    h.output.push_back(out[i]);
+  }
+  for (unsigned i = 0; i < M; ++i) h.name.push_back(name[i]);
+  h.stage = stage;
+  h.valid = vld;
+
+  tap(string("hdst_") + char('0' + hazdsts.size()) + "_name", name);
+  tap(string("hdst_") + char('0' + hazdsts.size()) + "_passThru", passThru);
+  tap(string("hdst_") + char('0' + hazdsts.size()) + "_out", out);
+  tap(string("hdst_") + char('0' + hazdsts.size()) + "_valid", vld);
+
+  hazdsts.push_back(h);
+
+  return out;
+}
+
+void genPipelineRegs() {
+  // Order the hazard sources.
+  multimap<unsigned, unsigned> s;
+  vector<hazsrc_t> srcs;
+  for (unsigned i = 0; i < hazsrcs.size(); ++i)
+    s.insert(pair<unsigned, unsigned>(hazsrcs[i].stage, i));
+  for (auto it = s.begin(); it != s.end(); ++it)
+    srcs.push_back(hazsrcs[it->second]);
+  hazsrcs = srcs;
+
+  // Generate the hazard/forwarding unit.
+  for (unsigned i = 0; i < hazdsts.size(); ++i) {
+    bvec<32> fwdsigs(Lit<32>(1));
+
+    for (unsigned j = 0; j < hazsrcs.size(); ++j) {
+      node haz(hazdsts[i].name == hazsrcs[j].name
+               && hazdsts[i].valid && hazsrcs[j].valid),
+           fwd(haz && hazsrcs[j].ready),
+           stall(haz && !hazsrcs[j].ready);
+
+      fwdsigs[hazsrcs.size() - j] = fwd;
+
+      tap(string("haz_")+"dxmwz"[hazsrcs[j].stage]+ "to"+char('0'+i), haz);
+      tap(string("fwd_")+"dxmwz"[hazsrcs[j].stage]+"to"+char('0'+i), fwd);
+      tap(string("stall_")+"dxmwz"[hazsrcs[j].stage]+"to"+char('0'+i), stall);
+
+      PipelineStall(hazdsts[i].stage + 1, stall);
+    }
+
+    vec<32, bvec<64>> values;
+    for (unsigned j = 0; j < hazdsts[i].bypassIn.size(); ++j)
+      values[0][j] = hazdsts[i].bypassIn[j];
+    for (unsigned i = 0; i < hazsrcs.size(); ++i)
+      for (unsigned j = 0; j < hazsrcs[i].value.size(); ++j)
+        values[hazsrcs.size() - i][j] = hazsrcs[i].value[j];
+
+    bvec<5> fwdsel(Log2(fwdsigs));
+    bvec<64> val(Mux(fwdsel, values));
+    for (unsigned j = 0; j < hazdsts[i].output.size(); ++j)
+      hazdsts[i].output[j] = val[j];
+
+    tap(string("fwdsel")+char('0'+i), fwdsel[range<0,1>()]);
+  }
+
+  
+
+  // Create the pipeline registers
+  for (auto it = pregs.begin(); it != pregs.end(); ++it) {
+    preg &pr(it->second);
+    pr.anystall = OrN(pr.stall);
+    for (unsigned i = 0; i < pr.bits.size(); ++i)
+      pr.bits[i].q = Wreg(
+        !pr.anystall,
+        Mux(OrN(pr.flush) || OrN(pr.bubble), pr.bits[i].d, Lit(0))
+      );
+  }
+}
+
+// Types describing read and write ports
+template <unsigned M, unsigned N> struct rdport {
+  rdport() {}
+  rdport(bvec<M> a, bvec<N> q): a(a), q(q) {}
+  bvec<M> a;
+  bvec<N> q;
+};
+
+template <unsigned M, unsigned N> struct wrport {
+  wrport() {}
+  wrport(bvec<M> a, bvec<N> d, node we): a(a), d(d), we(we) {}
+  bvec<M> a;
+  bvec<N> d;
+  node we;
+};
+
+// 2^M-entry N-bit R-read-port, 1-write-port register file
+template <unsigned M, unsigned N, unsigned R>
+  void Regfile(vec<R, rdport<M, N>> r, wrport<M, N> w)
+{
+  const unsigned long SIZE(1<<M);
+
+  bvec<SIZE> wrsig;
+  wrsig = Decoder(w.a, w.we);
+
+  vec<SIZE, bvec<N>> regs;
+  for (unsigned i = 0; i < SIZE; ++i) {
+    regs[i] = Wreg(wrsig[i], w.d);
     ostringstream oss;
     oss << "reg" << i;
-    tap<32, bvec>(oss.str(), regs[i]);
+    tap(oss.str(), regs[i]);
   }
 
-  r0val = Mux(r0idx, regs);
-  r1val = Mux(r1idx, regs);
+  for (unsigned i = 0; i < R; ++i)
+    r[i].q = Mux(w.we && w.a == r[i].a, Mux(r[i].a, regs), w.d);
 }
-
-// Fixed shift by B bits (positive for left, negative for right). A series of
-// these could be used to construct a barrel shifter.
-template <unsigned N>
-  bvec<N> ShifterStage(int B, bvec<N> in, node enable, node arith)
-{
-  bvec<N> shifted;
-  for (int i = 0; i < N; ++i) {
-    if (i+B >= 0 && i+B < N) shifted[i] = in[i+B];
-    else if (B > 0)          shifted[i] = And(in[N-1], arith);
-    else                     shifted[i] = Lit(0);
-  }
-
-  return Mux(enable, in, shifted);
-}
-
-// 2^M bit bidirectional barrel shifter.
-template <unsigned M>
-  bvec<1<<M> Shifter(bvec<1<<M> in, bvec<M> shamt, node arith, node dir)
-{
-  vector<bvec<1<<M> > vl(M+1), vr(M+1);
-  vl[0] = vr[0] = in;
-
-  for (unsigned i = 0; i < M; ++i) {
-    vl[i+1] = ShifterStage<1<<M>(-(1<<i), vl[i], shamt[i], arith);
-    vr[i+1] = ShifterStage<1<<M>( (1<<i), vr[i], shamt[i], arith);
-  }
-
-  return Mux(dir, vl[M], vr[M]);
-}
-
 
 // For the implementation of the LUI instruction, move lower N/2 bits of input
 // to upper half of output.
@@ -76,28 +283,17 @@ template <unsigned N> bvec<N> ToUpper(bvec<N> in) {
   return out;
 }
 
-// The ALU can perform the following operations:
+// This ALU can perform the following operations:
 //
-//    Opcode | Operation
-//   --------+--------------------
-//   0x0-0x3 | ToUpper (For LUI)
-//   0x4-0x5 | Left Shift
-//     0x6   | Right shift
-//     0x7   | Right shift arithmetic
-//   0x8-0x9 | Add 
-//   0xa-0xb | Subtract
-//     0xc   | Bitwise AND
-//     0xd   | Bitwise OR
-//     0xe   | Bitwise XOR
-//     0xf   | Bitwise NOR
-//
-// It should come as no surprise that the table of operations
-// requires more lines of code than the implementation.
+//    Opcode | Operation              Opcode | Operation
+//   --------+--------------------   --------+--------------------
+//   0x0-0x3 | ToUpper (For LUI)     0x4-0x5 | Left Shift
+//     0x6   | Right shift             0x7   | Right shift arithmetic
+//   0x8-0x9 | Add                   0xa-0xb | Subtract
+//     0xc   | Bitwise AND             0xd   | Bitwise OR
+//     0xe   | Bitwise XOR             0xf   | Bitwise NOR
 template <unsigned M> bvec<1<<M> Alu(bvec<4> opsel, bvec<1<<M> a, bvec<1<<M> b)
 {
-  tap<32, bvec>("aluin_a", a);
-  tap<32, bvec>("aluin_b", b);
-
   bvec<1<<M> subbit;
   for (unsigned i = 0; i < (1<<M); ++i) subbit[i] = opsel[1];
 
@@ -116,41 +312,26 @@ template <unsigned M> bvec<1<<M> Alu(bvec<4> opsel, bvec<1<<M> a, bvec<1<<M> b)
   aluResult[2] = Adder(a, (b ^ subbit), opsel[1]);
   aluResult[3] = logic;
 
-  TAP(a); TAP(b); TAP(opsel);
-  bvec<32> rval(Mux(opsel[range<2,3>()], aluResult));
-  TAP(rval);
-
-  return rval;
+  return Mux(opsel[range<2,3>()], aluResult);
 }
 
-int main(int argc, char **argv) {
-  rvec<32> pc_f(Reg<32>());
+void pipeline() {
+  // // // Fetch stage // // //
+  bvec<32> pcplus4_f, brtarg_x;
+  node taken_br_x; 
+  bvec<32> pc_f(Wreg(!GetStall(0), Mux(taken_br_x, pcplus4_f, brtarg_x)));
   TAP(pc_f);
 
-  rvec<32> pcplus4_d(Reg<32>()), iramq_d(Reg<32>());
-
-  rvec<32> sext_imm_x(Reg<32>()), rfa_x(Reg<32>()),
-           rfb_x(Reg<32>()), brtarg_x(Reg<32>());
-  rvec<8> itype_x(Reg<8>());
-  rvec<5> sidx0_x(Reg<5>()), sidx1_x(Reg<5>()), didx_x(Reg<5>());
-  rvec<4> opsel_x(Reg<4>());
-  reg br_x(Reg()), wb_x(Reg()), bne_x(Reg()), wrmem_x(Reg());
-  TAP(wb_x);
-
-  rvec<32> rfb_m(Reg<32>()), aluval_m(Reg<32>());
-  rvec<5> didx_m(Reg<5>());
-  reg wb_m(Reg()), taken_br_m(Reg()), wrmem_m(Reg()), rdmem_m(Reg());
-  TAP(wb_m);
-
-  rvec<5> didx_w(Reg<5>()); TAP(didx_w);
-  reg wb_w(Reg()); TAP(wb_w);
-
   bvec<32> iramq_f(LLRom<6,32>(pc_f[range<2, 7>()], "sieve.hex"));
-  TAP(iramq_f);
 
-  bvec<32> pcplus4_f(pc_f + Lit<32>(4));
+  pcplus4_f = pc_f + Lit<32>(4);
 
-  bvec<32> sext_imm_d(Sext<32>(iramq_d[range<0,15>()]));
+  // // // F->D Pipeline Regs // // //
+  bvec<32> pcplus4_d(PipelineReg(0, pcplus4_f));
+  bvec<32> iramq_d  (PipelineReg(0, iramq_f));
+
+  // // // Decode stage // // //
+  bvec<32> sext_imm_d(Sext<32>(iramq_d[range<0, 15>()]));
 
   bvec<6> opcode(iramq_d[range<26, 31>()]), func(iramq_d[range<0, 5>()]);
   bvec<8> itype_d;
@@ -163,29 +344,34 @@ int main(int argc, char **argv) {
   itype_d[6] = Lit(0);
   itype_d[7] = Lit(0);
 
-  TAP(opcode);
-  TAP(itype_d);
-  TAP(itype_x);
+  node taken_br_m,
+       nbr(!(taken_br_x || taken_br_m)), 
+       wb_d(!(itype_d[0] || itype_d[5]) && nbr),
+       br_d((itype_d[5] && nbr));
 
   node rdsrc1_d(!(itype_d[1] || itype_d[2])), rdsrc0_d(!itype_d[4]);
 
   node dsel(itype_d[0] || itype_d[1] || itype_d[2]);
   bvec<5> sidx0_d(iramq_d[range<21,25>()]), sidx1_d(iramq_d[range<16,20>()]),
-          didx_d(Mux(dsel, bvec<5>(iramq_d[range<11,15>()]),
-                           bvec<5>(iramq_d[range<16,20>()])));
+          didx_d(Mux(dsel, iramq_d[range<11,15>()], iramq_d[range<16,20>()]));
 
-  bvec<32> rfa_d, rfb_d, rfa0_d, rfb0_d, wbval_w(Lit<32>(0xdeadbeef));
-  Regfile(rfa0_d, rfb0_d, sidx0_d, sidx1_d, didx_w, wb_w, wbval_w);
+  bvec<32> rfa_d, rfb_d;
 
-  rfa_d = Mux(wb_w && didx_w == sidx0_d, rfa0_d, wbval_w);
-  rfb_d = Mux(wb_w && didx_w == sidx1_d, rfb0_d, wbval_w);
+  // Predeclaring the write port for the writeback stage.
+  node wb_w; bvec<5> didx_w; bvec<32> wbval_w;
 
-  node bubble(itype_x[1] && (sidx0_d == didx_x && rdsrc0_d ||
-                             sidx1_d == didx_x && rdsrc1_d) && wb_x);
-  TAP(rdsrc0_d); TAP(rdsrc1_d);
+  // The register file and its ports.
+  vec<2, rdport<5, 32>> rf_rd;
+  rf_rd[0] = rdport<5, 32>(sidx0_d, rfa_d);
+  rf_rd[1] = rdport<5, 32>(sidx1_d, rfb_d);
+  wrport<5, 32> rf_wr0(didx_w, wbval_w, wb_w);
+  Regfile(rf_rd, rf_wr0);
 
-  node nbubble(!bubble), justadd_d(itype_d[0] || itype_d[1]),
-       wrmem_d(itype_d[0] && nbubble);
+  bvec<8> itype_x;
+  node wb_x;
+  bvec<5> didx_x;
+
+  node justadd_d(itype_d[0] || itype_d[1]), wrmem_d(itype_d[0]);
 
   bvec<4> opsel0_d, opsel1_d;
 
@@ -199,119 +385,89 @@ int main(int argc, char **argv) {
   bvec<4> opsel_d(Mux(justadd_d, opsel1_d, Lit<4>(8)));
 
   bvec<32> brtarg_d(
-    pcplus4_d + Cat(bvec<30>(sext_imm_d[range<0,29>()]), Lit<2>(0))
+    pcplus4_d + Cat(sext_imm_d[range<0,29>()], Lit<2>(0))
   );
-  TAP(brtarg_d); TAP(brtarg_x);
+
+  // // // D->X Pipeline Regs // // //
+  node wrmem_x(PipelineReg(1, wrmem_d)),
+       br_x   (PipelineReg(1, br_d)),
+       bne_x  (PipelineReg(1, iramq_d[26]));
+  itype_x  =   PipelineReg(1, itype_d);
+  wb_x     =   PipelineReg(1, wb_d);
+  didx_x   =   PipelineReg(1, didx_d);
+  brtarg_x =   PipelineReg(1, brtarg_d);
+  didx_x   =   PipelineReg(1, didx_d);
+  bvec<5> sidx0_x(PipelineReg(1, sidx0_d)),
+          sidx1_x(PipelineReg(1, sidx1_d));
+  bvec<32> sext_imm_x(PipelineReg(1, sext_imm_d)), 
+           rfa_x(PipelineReg(1, rfa_d)),
+           rfb_x(PipelineReg(1, rfb_d));
+  bvec<4> opsel_x(PipelineReg(1, opsel_d));
+  node    rdsrc0_x(PipelineReg(1, rdsrc0_d)),
+          rdsrc1_x(PipelineReg(1, rdsrc1_d));
 
   // // // Execute stage // // //
-  bvec<2> fwdsel_0, fwdsel_1;
+  node wb_m;
+  bvec<5> didx_m;
+  bvec<32> aluval_m;
 
-  fwdsel_0[0] = wb_m && didx_m == sidx0_x;
-  fwdsel_0[1] = wb_w && didx_w == sidx0_x && didx_m != sidx0_x;
+  bvec<32> rfa_fd_x(HazDst(1, rdsrc0_x, rfa_x, sidx0_x)),
+           rfb_fd_x(HazDst(1, rdsrc1_x, rfb_x, sidx1_x));
 
-  fwdsel_1[0] = wb_m && didx_m == sidx1_x;
-  fwdsel_1[1] = wb_w && didx_w == sidx1_x && didx_m != sidx1_x;
-
-  vec<4, bvec<32> > rfa_fd_mux_in, rfb_fd_mux_in;
-
-  rfa_fd_mux_in[0] = rfa_x;
-  rfa_fd_mux_in[1] = aluval_m;
-  rfa_fd_mux_in[2] = wbval_w;
-  rfa_fd_mux_in[3] = Lit<32>(0);
-
-  rfb_fd_mux_in[0] = rfb_x;
-  rfb_fd_mux_in[1] = aluval_m;
-  rfb_fd_mux_in[2] = wbval_w;
-  rfb_fd_mux_in[3] = Lit<32>(0);
-
-  bvec<32> rfa_fd_x(Mux(fwdsel_0, rfa_fd_mux_in)),
-           rfb_fd_x(Mux(fwdsel_1, rfb_fd_mux_in));
-  TAP(fwdsel_0); TAP(fwdsel_1);
+  TAP(sidx0_x);  TAP(sidx1_x);
+  TAP(rfa_x);    TAP(rfb_x);
+  TAP(rfa_fd_x); TAP(rfb_fd_x);
 
   // The ALU
   bvec<32> aluval_x = Alu<5>(
     opsel_x, // The first mux selects between reg val and shift amount.
     Mux(itype_x[4], rfa_fd_x,
-        Cat(Lit<27>(0), bvec<5>(sext_imm_x[range<6, 10>()]))),
+        Cat(Lit<27>(0), sext_imm_x[range<6, 10>()])),
     Mux(Nor(itype_x[3], itype_x[4]), rfb_fd_x, sext_imm_x)
   );
 
   // Taken branch?
-  node taken_br_x(Xor(rfa_fd_x == rfb_fd_x, bne_x) && br_x);
-  TAP(taken_br_x);
-
-  // // // Memorystage // // //
-  // Data RAM
-  rvec<32> aluval_w(Reg<32>());
-  aluval_w.connect(aluval_m);
-
-  reg rdmem_w(Reg()); rdmem_w.connect(rdmem_m);
-  
-  bvec<32> memq_w(Syncmem(bvec<18>(aluval_m[range<2,19>()]), rfb_m, wrmem_m));
-  wbval_w = Mux(rdmem_w, aluval_w, memq_w);
-  TAP(wbval_w); TAP(memq_w); TAP(aluval_m); TAP(aluval_x);
-  TAP(rdmem_m); TAP(wrmem_m); TAP(rfb_m);
-
-  // // // Final signals // // //
-  // These signals require all of the other pipeline signals to have already
-  // been defined.
-  node nbr_and_nbubble = nbubble && !(taken_br_x || taken_br_m),
-       wb_d = !(itype_d[0] || itype_d[5]) && nbr_and_nbubble,
-       br_d = (itype_d[5] && nbr_and_nbubble);
-  TAP(bubble);
-  TAP(wb_d);
-  TAP(br_d);
-
-  // // // Register wireups // // //
-  // Program counter d/w
-  Wreg(pc_f, Mux(taken_br_x, pcplus4_f, brtarg_x), nbubble);
-
-  // F->D pipeline regs
-  Wreg(pcplus4_d, pcplus4_f, nbubble);
-  Wreg(iramq_d, iramq_f, nbubble);
-
-  // D->X pipeline regs
-  wrmem_x.connect(wrmem_d);
-  itype_x.connect(itype_d);
-  br_x.connect(br_d);
-  wb_x.connect(wb_d);
-  sidx0_x.connect(sidx0_d);
-  sidx1_x.connect(sidx1_d);
-  didx_x.connect(didx_d);
-  sext_imm_x.connect(sext_imm_d);
-  rfa_x.connect(rfa_d);
-  rfb_x.connect(rfb_d);
-  opsel_x.connect(opsel_d);
-  bne_x.connect(iramq_d[26]);
-  brtarg_x.connect(brtarg_d);
+  taken_br_x = Xor(rfa_fd_x == rfb_fd_x, bne_x) && br_x;
 
   // X->M pipeline regs
-  wb_m.connect(wb_x);
-  didx_m.connect(didx_x);
-  aluval_m.connect(aluval_x);
-  taken_br_m.connect(taken_br_x);
-  wrmem_m.connect(wrmem_x);
-  rdmem_m.connect(itype_x[1]);
-  rfb_m.connect(rfb_fd_x);
+  wb_m          = PipelineReg(2, wb_x);
+  didx_m        = PipelineReg(2, didx_x);
+  aluval_m      = PipelineReg(2, aluval_x);
+  taken_br_m    = PipelineReg(2, taken_br_x);
+  node    wrmem_m(PipelineReg(2, wrmem_x)),
+          rdmem_m(PipelineReg(2, itype_x[1]));
+  bvec<32>  rfb_m(PipelineReg(2, rfb_fd_x));
+
+  // // // Memory stage // // //
+  // The ALU output from the previous stage is a source for forwarding if the
+  // instruction in this stage is not a memory instruction.
+  HazSrc(2, !rdmem_m, wb_m, aluval_m, didx_m);
+
+  // Data RAM
+  bvec<32> memq_w(Syncmem(aluval_m[range<2,19>()], rfb_m, wrmem_m));
 
   // M->W pipeline regs
-  wb_w.connect(wb_m);
-  didx_w.connect(didx_m);
+  bvec<32> aluval_w(PipelineReg(3, aluval_m));
+  node rdmem_w = PipelineReg(3, rdmem_m);
+  wb_w = PipelineReg(3, wb_m);
+  didx_w = PipelineReg(3, didx_m);
 
-  TAP(iramq_d);
-  TAP(sidx0_d); TAP(sidx1_d);
-  TAP(didx_d); TAP(didx_x); TAP(didx_m);
-  TAP(sext_imm_d);
-  TAP(sext_imm_x);
+  // // // Writeback stage // // //
+  wbval_w = Mux(rdmem_w, aluval_w, memq_w);
+  HazSrc(3, Lit(1), wb_w, wbval_w, didx_w);
 
-  TAP(rfa_d); TAP(rfb_d);
-  TAP(rfa_x); TAP(rfb_x);
+  genPipelineRegs();
+}
 
-  // The simulation (generate .vcd file)
+int main() {
+  pipeline();
+
   optimize();
+
+  // Do the simulation
   run(cout, 1000);
 
+  // Print the netlist
   ofstream netlist_file("example6.nand");
   print_netlist(netlist_file);
-  netlist_file.close();
 }
