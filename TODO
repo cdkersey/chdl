@@ -2,10 +2,22 @@ CHDL Near-term Roadmap
 ======================
 
 _ Technology mapping
+  - Use a truth table based approach.
+  - Each truth table is a binary vector and a set of at most 6 inputs
+  - The inputs are re-ordered to minimize the value of the truth table when
+    represented as a uint64_t. This canonical ordering is used to find identity
+    classes for binary functions.
 _ Create a separate header for utility functions, integer math, etc.
-  - like an int log2 macro
+  - like the int log2 macro
+
+_ Fix handling of memory in vis.cpp
+  - Currently the outputs are just unattached hexagons and the address nodes
+    are not indicated at all.
+
+_ Create some documentation.
 
 Possible future features:
+  _ Change nand-based IR to industry-standard AIG (and/inverter graph)
   _ Netlist reading
   _ Pass manager
     - Is there any reason to optimize in an order other than the one used by

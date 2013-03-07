@@ -11,6 +11,8 @@
 #include <opt.h>
 #include <sim.h>
 
+#include <vis.h>
+
 using namespace std;
 using namespace chdl;
 
@@ -33,9 +35,15 @@ int main(int argc, char **argv) {
 
   // The simulation (generate .vcd file)
   optimize();
-  run(cout, 8);
+
+  ofstream wave_file("example0.vcd");
+  run(wave_file, 8);
 
   ofstream netlist_file("example0.nand");
   print_netlist(netlist_file);
   netlist_file.close();
+
+  ofstream dot_file("example0.dot");
+  print_dot(dot_file);
+  dot_file.close();
 }

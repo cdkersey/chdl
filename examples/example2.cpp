@@ -12,6 +12,7 @@
 #include <tap.h>
 #include <sim.h>
 #include <opt.h>
+#include <vis.h>
 
 using namespace std;
 using namespace chdl;
@@ -51,9 +52,15 @@ int main(int argc, char **argv) {
 
   // The simulation (generate .vcd file)
   optimize();
-  run(cout, 10);
+
+  ofstream wave_file("example2.vcd");
+  run(wave_file, 10);
 
   ofstream netlist_file("example2.nand");
   print_netlist(netlist_file);
   netlist_file.close();
+
+  ofstream dot_file("example2.dot");
+  print_dot(dot_file);
+  dot_file.close();
 }
