@@ -14,6 +14,7 @@ namespace chdl {
   template <unsigned A> unsigned pathlen(bvec<A> av, node b);
 
   unsigned critpath();
+  bool cycdet();
 };
 
 template <unsigned A, unsigned B>

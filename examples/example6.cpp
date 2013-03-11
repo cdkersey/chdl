@@ -18,6 +18,7 @@
 #include <sim.h>
 #include <netlist.h>
 #include <analysis.h>
+#include <vis.h>
 
 using namespace std;
 using namespace chdl;
@@ -463,6 +464,11 @@ void pipeline() {
 int main() {
   pipeline();
 
+  if (cycdet()) {
+    cerr << "Cycle detected in logic DAG. Exiting." << endl;
+    return 1;
+  }
+
   optimize();
 
   cerr << "Critical path: " << critpath() << endl;
@@ -474,4 +480,8 @@ int main() {
   // Print the netlist
   ofstream netlist_file("example6.nand");
   print_netlist(netlist_file);
+
+  // Print a dot file.
+  ofstream dot_file("example6.dot");
+  print_dot(dot_file);
 }
