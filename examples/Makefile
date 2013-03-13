@@ -25,4 +25,5 @@ text.hex : text.txt
 	LD_LIBRARY_PATH=../ ./$<
 
 clean:
-	rm -f $(EXAMPLES) $(EXAMPLE_OUTPUT) *.nand *.vcd *.ps *.dot *~ *\#
+	rm -f $(EXAMPLES) $(EXAMPLE_OUTPUT) *.nand *.vcd *.ps *.dot text.hex \
+              *~ *\#
