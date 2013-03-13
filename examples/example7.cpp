@@ -32,4 +32,6 @@ int main(int argc, char **argv) {
   ofstream netlist_file("example7.nand");
   print_netlist(netlist_file);
   netlist_file.close();
+
+  return 0;
 }

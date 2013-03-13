@@ -484,4 +484,6 @@ int main() {
   // Print a dot file.
   ofstream dot_file("example6.dot");
   print_dot(dot_file);
+
+  return 0;
 }

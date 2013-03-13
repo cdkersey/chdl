@@ -39,4 +39,6 @@ int main(int argc, char **argv) {
   ofstream dot_file("example3.dot");
   print_dot(dot_file);
   dot_file.close();
+
+  return 0;
 }

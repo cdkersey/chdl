@@ -46,4 +46,6 @@ int main(int argc, char **argv) {
 
   ofstream dot_file("example4.dot");
   print_dot(dot_file);
+
+  return 0;
 }
