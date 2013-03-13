@@ -62,7 +62,6 @@ bool chdl::cycdet() {
   get_mem_nodes(s);
 
   for (auto it = s.begin(); it != s.end(); ++it) {
-    cerr << ".\n";
     set<nodeid_t> v;
     s.insert(*it);
     if (cycdet_internal(0, *it, v, c)) return true;
