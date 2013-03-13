@@ -1,6 +1,7 @@
 Critical
 
   Arithmetic/logic have not been tested with non power-of-two widths.
+    - Except Enc(), required by Statemachine. This one is guaranteed to work.
 
 Must Fix
 
@@ -16,4 +17,7 @@ Must Fix
 
 Nuisance
 
-  --
+  The implementation of Log2 in enc.h predates the CLOG2 macro and goes through
+  great, disgusting lengths to avoid needing to take logarithms in code. This
+  should be cleaned up (which would also probably make it work for non-power-of-
+  two-width inputs.

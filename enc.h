@@ -29,15 +29,14 @@ namespace chdl {
 
   // Cheap encoder, results valid only when exactly one input set
   template <unsigned N> bvec<CLOG2(N)> Enc(bvec<N> x) {
-    // First, produce the masks.
-    vec<N, bvec<N>> mask;
-    for (unsigned i = N/2; i > 0; i /= 2)
+    vec<CLOG2(N), bvec<N>> mask;
+    for (unsigned i = 0; i < CLOG2(N); ++i)
       for (unsigned j = 0; j < N; ++j)
-        mask[i][j] = Lit(j%(i*2) >= i);
+        mask[i][j] = Lit(j & (1 << i));
 
     bvec<CLOG2(N)> out;
     for (unsigned i = 0; i < CLOG2(N); ++i)
-      out[i] = OrN(mask[1<<i] & x);
+      out[i] = OrN(mask[i] & x);
 
     return out;
   }
