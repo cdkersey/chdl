@@ -42,7 +42,7 @@ namespace chdl {
   }
 
   // 1-2 decoder/demux
-  static inline bvec<2> Decoder(node i, node e) {
+  static inline bvec<2> Decoder(node i, node e = Lit(1)) {
     bvec<2> out;
     out[0] = And(Inv(i), e);
     out[1] = And(i, e);
@@ -50,7 +50,7 @@ namespace chdl {
   }
 
   // M-2^M decoder/demux
-  template <unsigned M> bvec<(1<<M)> Decoder(bvec<M> sel, node e) {
+  template <unsigned M> bvec<(1<<M)> Decoder(bvec<M> sel, node e = Lit(1)) {
     bvec<2*(1<<M)> nodes;
     nodes[1] = e;
     for (unsigned i = 1; i < (1<<M); ++i) {
