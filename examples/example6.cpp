@@ -20,6 +20,8 @@
 #include <analysis.h>
 #include <vis.h>
 
+#include <hierarchy.h>
+
 using namespace std;
 using namespace chdl;
 
@@ -46,22 +48,35 @@ template <typename FUNC> vector<node> ReduceInternal(vector<node> &v, FUNC f) {
 }
 // Overload this function for variable-sized vector<node>s instead of bvecs.
 node OrN(vector<node> &v) {
-  if (v.size() == 0) return Lit(0);
-  return ReduceInternal<node (*)(node, node)>(v, Or)[0];
+  HIERARCHY_ENTER();
+  node r;
+  if (v.size() == 0) r = Lit(0);
+  else r = ReduceInternal<node (*)(node, node)>(v, Or)[0];
+  HIERARCHY_EXIT();
+  return r;
 }
 
 node AndN(vector<node> &v) {
-  if (v.size() == 0) return Lit(1);
-  return ReduceInternal<node (*)(node, node)>(v, And)[0];
+  HIERARCHY_ENTER();
+  node r;
+  if (v.size() == 0) r = Lit(1);
+  else r = ReduceInternal<node (*)(node, node)>(v, And)[0];
+  HIERARCHY_EXIT();
+  return r;
 }
 
 node operator==(vector<node> a, vector<node> b) {
-  if (a.size() != b.size()) return Lit(0);
-
-  vector<node> eq;
-  for (unsigned i = 0; i < a.size(); ++i) eq.push_back(a[i] == b[i]);
- 
-  return AndN(eq);
+  HIERARCHY_ENTER();
+  node r;
+  if (a.size() != b.size()) {
+    r = Lit(0);
+  } else {
+    vector<node> eq;
+    for (unsigned i = 0; i < a.size(); ++i) eq.push_back(a[i] == b[i]);
+    r = AndN(eq);
+  }
+  HIERARCHY_EXIT();
+  return r;
 }
 
 // One bit of a pipeline register
@@ -229,6 +244,8 @@ void genPipelineRegs() {
 
   // Create the pipeline registers
   for (auto it = pregs.begin(); it != pregs.end(); ++it) {
+    ostringstream oss; oss << it->first;
+    hierarchy_enter("pipeline_reg" + oss.str());
     preg &pr(it->second);
     pr.anystall = OrN(pr.stall);
     for (unsigned i = 0; i < pr.bits.size(); ++i)
@@ -236,6 +253,7 @@ void genPipelineRegs() {
         !pr.anystall,
         Mux(OrN(pr.flush) || OrN(pr.bubble), pr.bits[i].d, Lit(0))
       );
+    hierarchy_exit();
   }
 }
 
@@ -259,6 +277,7 @@ template <unsigned M, unsigned N> struct wrport {
 template <unsigned M, unsigned N, unsigned R>
   void Regfile(vec<R, rdport<M, N>> r, wrport<M, N> w)
 {
+  HIERARCHY_ENTER();
   const unsigned long SIZE(1<<M);
 
   bvec<SIZE> wrsig;
@@ -274,6 +293,7 @@ template <unsigned M, unsigned N, unsigned R>
 
   for (unsigned i = 0; i < R; ++i)
     r[i].q = Mux(w.we && w.a == r[i].a, Mux(r[i].a, regs), w.d);
+  HIERARCHY_EXIT();
 }
 
 // For the implementation of the LUI instruction, move lower N/2 bits of input
@@ -296,6 +316,7 @@ template <unsigned N> bvec<N> ToUpper(bvec<N> in) {
 //     0xe   | Bitwise XOR             0xf   | Bitwise NOR
 template <unsigned M> bvec<1<<M> Alu(bvec<4> opsel, bvec<1<<M> a, bvec<1<<M> b)
 {
+  HIERARCHY_ENTER();
   bvec<1<<M> subbit;
   for (unsigned i = 0; i < (1<<M); ++i) subbit[i] = opsel[1];
 
@@ -314,11 +335,14 @@ template <unsigned M> bvec<1<<M> Alu(bvec<4> opsel, bvec<1<<M> a, bvec<1<<M> b)
   aluResult[2] = Adder(a, (b ^ subbit), opsel[1]);
   aluResult[3] = logic;
 
-  return Mux(opsel[range<2,3>()], aluResult);
+  bvec<1<<M> r(Mux(opsel[range<2,3>()], aluResult));
+  HIERARCHY_EXIT();
+  return r;
 }
 
 void pipeline() {
   // // // Fetch stage // // //
+  hierarchy_enter("Fetch");
   bvec<32> pcplus4_f, brtarg_x;
   node taken_br_x; 
   bvec<32> pc_f(Wreg(!GetStall(0), Mux(taken_br_x, pcplus4_f, brtarg_x)));
@@ -331,8 +355,10 @@ void pipeline() {
   // // // F->D Pipeline Regs // // //
   bvec<32> pcplus4_d(PipelineReg(0, pcplus4_f));
   bvec<32> iramq_d  (PipelineReg(0, iramq_f));
+  hierarchy_exit();
 
   // // // Decode stage // // //
+  hierarchy_enter("Decode");
   bvec<32> sext_imm_d(Sext<32>(iramq_d[range<0, 15>()]));
 
   bvec<6> opcode(iramq_d[range<26, 31>()]), func(iramq_d[range<0, 5>()]);
@@ -408,7 +434,11 @@ void pipeline() {
   node    rdsrc0_x(PipelineReg(1, rdsrc0_d)),
           rdsrc1_x(PipelineReg(1, rdsrc1_d));
 
+  hierarchy_exit();
+
   // // // Execute stage // // //
+  hierarchy_enter("Execute");
+
   node wb_m;
   bvec<5> didx_m;
   bvec<32> aluval_m;
@@ -439,8 +469,10 @@ void pipeline() {
   node    wrmem_m(PipelineReg(2, wrmem_x)),
           rdmem_m(PipelineReg(2, itype_x[1]));
   bvec<32>  rfb_m(PipelineReg(2, rfb_fd_x));
+  hierarchy_exit();
 
   // // // Memory stage // // //
+  hierarchy_enter("Memory");
   // The ALU output from the previous stage is a source for forwarding if the
   // instruction in this stage is not a memory instruction.
   HazSrc(2, !rdmem_m, wb_m, aluval_m, didx_m);
@@ -454,9 +486,15 @@ void pipeline() {
   wb_w = PipelineReg(3, wb_m);
   didx_w = PipelineReg(3, didx_m);
 
+  hierarchy_exit();
+
   // // // Writeback stage // // //
+  hierarchy_enter("Writeback");
+
   wbval_w = Mux(rdmem_w, aluval_w, memq_w);
   HazSrc(3, Lit(1), wb_w, wbval_w, didx_w);
+
+  hierarchy_exit();
 
   genPipelineRegs();
 }
@@ -464,10 +502,10 @@ void pipeline() {
 int main() {
   pipeline();
 
-  if (cycdet()) {
-    cerr << "Cycle detected in logic DAG. Exiting." << endl;
-    return 1;
-  }
+  //if (cycdet()) {
+  //  cerr << "Cycle detected in logic DAG. Exiting." << endl;
+  //  return 1;
+  //}
 
   optimize();
 
@@ -484,6 +522,8 @@ int main() {
   // Print a dot file.
   ofstream dot_file("example6.dot");
   print_dot(dot_file);
+
+  print_hierarchy();
 
   return 0;
 }
