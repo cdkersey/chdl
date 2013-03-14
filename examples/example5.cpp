@@ -13,6 +13,8 @@
 #include <netlist.h>
 #include <vis.h>
 
+#include <hierarchy.h>
+
 using namespace std;
 using namespace chdl;
 
@@ -46,13 +48,14 @@ int main(int argc, char **argv) {
   optimize();
 
   ofstream wave_file("example5.vcd");
-  run(wave_file, 8);
+  run(wave_file, 1000);
 
   ofstream netlist_file("example5.nand");
   print_netlist(netlist_file);
 
   ofstream dot_file("example5.dot");
-  print_dot(dot_file);
+  //print_dot(dot_file);
+  dot_schematic(dot_file);
 
   return 0;
 }
