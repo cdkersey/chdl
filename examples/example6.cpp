@@ -502,10 +502,10 @@ void pipeline() {
 int main() {
   pipeline();
 
-  //if (cycdet()) {
-  //  cerr << "Cycle detected in logic DAG. Exiting." << endl;
-  //  return 1;
-  //}
+  if (cycdet()) {
+    cerr << "Cycle detected in logic DAG. Exiting." << endl;
+    return 1;
+  }
 
   optimize();
 
@@ -524,7 +524,7 @@ int main() {
   print_dot(dot_file);
 
   ofstream h_file("example6.hier");
-  print_hierarchy(h_file, 1);
+  print_hierarchy(h_file, 2);
 
   return 0;
 }
