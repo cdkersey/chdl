@@ -7,6 +7,8 @@
 #include "tap.h"
 #include "nodeimpl.h"
 
+#include "hierarchy.h"
+
 using namespace chdl;
 using namespace std;
 
@@ -16,7 +18,9 @@ typedef taps_t::iterator taps_it;
 taps_t taps;
 
 void chdl::tap(string name, node node) {
+  HIERARCHY_ENTER();
   taps[name].push_back(node);
+  HIERARCHY_EXIT();
 }
 
 void chdl::print_tap_nodes(ostream &out) {

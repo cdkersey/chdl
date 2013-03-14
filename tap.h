@@ -9,6 +9,8 @@
 #include "node.h"
 #include "bvec.h"
 
+#include "hierarchy.h"
+
 namespace chdl {
   void tap(std::string name, node node);
   template <unsigned N> void tap(std::string name, const bvec<N> &vec);
@@ -24,7 +26,9 @@ namespace chdl {
 template <unsigned N>
   void chdl::tap(std::string name, const bvec<N> &vec)
 {
+  HIERARCHY_ENTER();
   for (unsigned i = 0; i < N; ++i) tap(name, vec[i]);
+  HIERARCHY_EXIT();
 }
 
 #define TAP(x) do { tap(#x, x); } while(0)
