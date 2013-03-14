@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <stack>
+#include <ostream>
 
 #include "hierarchy.h"
 
@@ -12,20 +13,27 @@ using namespace std;
 using namespace chdl;
 
 struct hierarchy {
-  hierarchy(string name): name(name) {}
+  hierarchy(string name, hpath_t path = hpath_t()): name(name), path(path) {}
 
-  void new_child(string n) { c.push_back(hierarchy(n)); }
+  void new_child(string n) {
+    hpath_t cpath(path);
+    cpath.push_back(c.size());
+    c.push_back(hierarchy(n, cpath));
+  }
 
-  void print(unsigned level=0) {
+  void print(ostream &out, int maxlevel, unsigned level=0) {
+    if (maxlevel > 0 && level > maxlevel) return;
+
     // Print this
-    for (unsigned i = 0; i < level; ++i) cout << ' ';
-    cout << name << endl;
+    for (unsigned i = 0; i < level; ++i) out << ' ';
+    out << name << endl;
 
     // Print children
     for (unsigned i = 0; i < c.size(); ++i)
-      c[i].print(level+1);
+      c[i].print(out, maxlevel, level+1);
   }
 
+  hpath_t path;
   string name;
   vector<hierarchy> c;
 };
@@ -44,6 +52,8 @@ void chdl::hierarchy_exit() {
   hstack.pop();
 }
 
-void chdl::print_hierarchy() {
-  root.print();
+void chdl::print_hierarchy(ostream &out, int maxlevel) {
+  root.print(out, maxlevel);
 }
+
+hpath_t chdl::get_hpath() { return hstack.top()->path; }

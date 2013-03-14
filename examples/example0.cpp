@@ -12,6 +12,7 @@
 #include <sim.h>
 
 #include <vis.h>
+#include <hierarchy.h>
 
 using namespace std;
 using namespace chdl;
@@ -46,6 +47,9 @@ int main(int argc, char **argv) {
   ofstream dot_file("example0.dot");
   print_dot(dot_file);
   dot_file.close();
+
+  ofstream h_file("example0.hier");
+  print_hierarchy(h_file);
 
   return 0;
 }

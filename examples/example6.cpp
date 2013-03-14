@@ -523,7 +523,8 @@ int main() {
   ofstream dot_file("example6.dot");
   print_dot(dot_file);
 
-  print_hierarchy();
+  ofstream h_file("example6.hier");
+  print_hierarchy(h_file, 1);
 
   return 0;
 }

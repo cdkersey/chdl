@@ -2,4 +2,6 @@
 *.ps
 *.dot
 *.nand
+*.hier
 example[0-9]
+text.hex

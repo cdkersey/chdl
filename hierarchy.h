@@ -3,11 +3,17 @@
 #ifndef __HIERARCHY_H
 #define __HIERARCHY_H
 #include <string>
+#include <vector>
+#include <ostream>
 
 namespace chdl {
+  typedef std::vector<unsigned> hpath_t;
+
   void hierarchy_enter(std::string name);
   void hierarchy_exit();
-  void print_hierarchy();
+  void print_hierarchy(std::ostream &out, int maxlevel=-1);
+
+  hpath_t get_hpath();
 };
 
 #define HIERARCHY_ENTER() chdl::hierarchy_enter(__func__)
