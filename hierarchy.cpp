@@ -56,4 +56,7 @@ void chdl::print_hierarchy(ostream &out, int maxlevel) {
   root.print(out, maxlevel);
 }
 
-hpath_t chdl::get_hpath() { return hstack.top()->path; }
+hpath_t chdl::get_hpath() {
+  if (hstack.empty()) return hpath_t();
+  return hstack.top()->path;
+}
