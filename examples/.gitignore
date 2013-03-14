@@ -1,4 +1,5 @@
-*.o
 *.vcd
 *.ps
 *.dot
+*.nand
+example[0-9]
