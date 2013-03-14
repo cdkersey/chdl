@@ -14,6 +14,7 @@
 #include <sim.h>
 #include <opt.h>
 #include <netlist.h>
+#include <hierarchy.h>
 
 using namespace chdl;
 using namespace std;
@@ -61,7 +62,7 @@ int main(int argc, char **argv) {
   optimize();
 
   ofstream dot_file("example8.dot");
-  print_dot(dot_file);
+  dot_schematic(dot_file);
   dot_file.close();
 
   if (cycdet()) {

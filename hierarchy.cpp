@@ -126,6 +126,8 @@ hierarchy &get_by_path(hpath_t path) {
 }
 
 void chdl::dot_schematic(std::ostream &out, hpath_t path) {
+  count_refs();
+
   hierarchy &r(get_by_path(path));
   number_instances(r);
 
@@ -164,6 +166,12 @@ void chdl::dot_schematic(std::ostream &out, hpath_t path) {
   }
 
   out << "digraph G {" << endl;
+  for (unsigned i = 0; i < r.c.size(); ++i) {
+    if (r.c[i].refcount == 0) continue;
+    out << ' ' << r.c[i].name << '_' << r.c[i].number << " [shape=square];"
+        << endl;
+  }
+
   for (auto it = incoming_edges.begin(); it != incoming_edges.end(); ++it) {
     hierarchy &h(r.c[it->first]);
     out << ' ' << h.name << '_' << h.number
