@@ -139,7 +139,7 @@ void chdl::dot_schematic(std::ostream &out, hpath_t path) {
     regimpl* rp = dynamic_cast<regimpl*>(nodes[i]);
     if (rp) { 
       // TODO: un-copypaste this chunk of code and clean it up.
-      nodeid_t s(rp->q);
+      nodeid_t s(rp->d);
       if (first_elements_eq(r.path, nodes[s]->path)) {
         if (nodes[s]->path[r.path.size()] == child_idx) continue;
         pair<unsigned, unsigned>
