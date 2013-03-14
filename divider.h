@@ -6,11 +6,13 @@
 #include "bvec-basic-op.h"
 #include "shifter.h"
 #include "adder.h"
+#include "hierarchy.h"
 
 namespace chdl {
   template <unsigned N>
     bvec<N> divider(bvec<N> a, bvec<N> b, bvec<N> mod = Lit<N>(0))
   {
+    HIERARCHY_ENTER();
     bvec<N> q;
     vec<N + 1, bvec<N>> rem;
     rem[0] = a;
@@ -23,6 +25,7 @@ namespace chdl {
     }
 
     mod = rem[N];
+    HIERARCHY_EXIT();
     return q;
   }
 
