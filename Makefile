@@ -2,7 +2,7 @@ PREFIX ?= /usr/local
 CXXFLAGS += -fPIC -g -std=c++11 #-g
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
-       memory.o opt.o netlist.o input.o analysis.o vis.o
+       memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o
 
 UTILS = util/nand2v
 
@@ -26,10 +26,11 @@ uninstall:
 	  rm -f $(PREFIX)/bin/`echo $$x | sed 's/.*\///'`;\
 	done
 
-gates.o: gates.cpp node.h gates.h nodeimpl.h gatesimpl.h sim.h
+gates.o: gates.cpp node.h gates.h nodeimpl.h gatesimpl.h sim.h hierarchy.h
 gatesimpl.o: gatesimpl.cpp gatesimpl.h sim.h nodeimpl.h node.h
 lit.o: lit.cpp lit.h litimpl.h nodeimpl.h node.h
-memory.o: memory.cpp memory.h node.h bvec.h bvec-basic.h lit.h gates.h
+memory.o: memory.cpp memory.h node.h bvec.h bvec-basic.h lit.h gates.h \
+          hierarchy.h
 nodeimpl.o: nodeimpl.cpp nodeimpl.h node.h litimpl.h lit.h
 opt.o: opt.cpp opt.h nodeimpl.h gatesimpl.h sim.h litimpl.h lit.h node.h \
        gates.h memory.h
@@ -42,6 +43,7 @@ netlist.o: netlist.cpp netlist.h node.h nodeimpl.h tap.h input.h
 input.o: input.cpp input.h node.h nodeimpl.h bvec.h gates.h
 analysis.o: analysis.cpp opt.h tap.h gates.h nodeimpl.h gatesimpl.h litimpl.h \
             netlist.h lit.h node.h memory.h
+hierarchy.o: hierarchy.cpp hierarchy.h
 
 clean:
 	rm -f libchdl.so $(OBJS) *~ *\#
