@@ -6,9 +6,11 @@
 
 #include "gateops.h"
 #include "bvec.h"
+#include "hierarchy.h"
 
 namespace chdl {
   template <unsigned N> bvec<N> Adder(bvec<N> a, bvec<N> b, node cin = Lit(0)) {
+    HIERARCHY_ENTER();
     std::vector<bvec<N+1>> g(log2(N)+3), p(log2(N)+3), i(log2(N)+3);
     bvec<N> s;
 
@@ -33,6 +35,7 @@ namespace chdl {
     }
 
     for (unsigned j = 0; j < N; ++j) s[j] = Xor(p[0][j+1], g[k][j]);
+    HIERARCHY_EXIT();
 
     return s;
   }

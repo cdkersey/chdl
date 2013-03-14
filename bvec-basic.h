@@ -4,6 +4,7 @@
 
 #include "bvec.h"
 #include "gates.h"
+#include "hierarchy.h"
 
 namespace chdl {
   // Concatenate two bit vectors
@@ -31,21 +32,27 @@ namespace chdl {
 
   // Create an array of registers.
   template <unsigned N> bvec<N> Reg() {
+    HIERARCHY_ENTER();
     bvec<N> r;
     for (unsigned i = 0; i < N; ++i) r[i] = Reg();
+    HIERARCHY_EXIT();
     return r;
   }
 
   template <unsigned N> bvec<N> Reg(bvec<N> d) {
+    HIERARCHY_ENTER();
     bvec<N> r;
     for (unsigned i = 0; i < N; ++i) r[i] = Reg(d[i]);
+    HIERARCHY_EXIT();
     return r;
   }
 
   // Add a write signal to an existing array of registers
   template <unsigned N> void Wreg(bvec<N> q, bvec<N> d, node w) {
+    HIERARCHY_ENTER();
     for (unsigned i = 0; i < N; ++i)
       q[i] = Reg(Mux(w, q[i], d[i]));
+    HIERARCHY_EXIT();
   }
 
   // Create an array of registers with a "write" signal
@@ -57,13 +64,16 @@ namespace chdl {
 
   // Create a binary integer literal with the given value
   template <unsigned N> bvec<N> Lit(unsigned long val) {
+    HIERARCHY_ENTER();
     bvec<N> r;
     for (size_t i = 0; i < N; ++i) r[i] = Lit((val>>i)&1);
+    HIERARCHY_EXIT();
     return r;
   }
 
   // Zero-extend (or truncate if output is smaller)
   template <unsigned N, unsigned M> bvec<N> Zext(bvec<M> x) {
+    HIERARCHY_ENTER();
     bvec<N> rval;
     if (M >= N) {
       for (unsigned i = 0; i < N; ++i) rval[i] = x[i];
@@ -71,12 +81,14 @@ namespace chdl {
       for (unsigned i = 0; i < M; ++i) rval[i] = x[i];
       for (unsigned i = M; i < N; ++i) rval[i] = Lit(0);
     }
+    HIERARCHY_EXIT();
 
     return rval;
   }
 
   // Sign-extend (or truncate if output is smaller)
   template <unsigned N, unsigned M> bvec<N> Sext(bvec<M> x) {
+    HIERARCHY_ENTER();
     bvec<N> rval;
     if (M >= N) {
       for (unsigned i = 0; i < N; ++i) rval[i] = x[i];
@@ -84,6 +96,7 @@ namespace chdl {
       for (unsigned i = 0; i < M; ++i) rval[i] = x[i];
       for (unsigned i = M; i < N; ++i) rval[i] = x[M-1];
     }
+    HIERARCHY_EXIT();
 
     return rval;
   }
@@ -112,29 +125,62 @@ namespace chdl {
   template <unsigned N>
     bvec<N> Not(bvec<N> in)
   {
+      HIERARCHY_ENTER();
       bvec<N> r;
       for (unsigned i = 0; i < N; ++i) r[i] = !in[i];
+      HIERARCHY_EXIT();
       return r; 
   }
 
-  template <unsigned N>
-    bvec<N> And(bvec<N> a, bvec<N> b) { return OpElementwise<N, And>(a, b); }
-  template <unsigned N>
-    bvec<N> Or (bvec<N> a, bvec<N> b) { return OpElementwise<N,  Or>(a, b); }
-  template <unsigned N>
-    bvec<N> Xor(bvec<N> a, bvec<N> b) { return OpElementwise<N, Xor>(a, b); }
+  template <unsigned N> bvec<N> And(bvec<N> a, bvec<N> b) {
+    HIERARCHY_ENTER();
+    bvec<N> r(OpElementwise<N, And>(a, b));
+    HIERARCHY_EXIT();
+    return r;
+  }
+
+  template <unsigned N> bvec<N> Or (bvec<N> a, bvec<N> b) {
+    HIERARCHY_ENTER();
+    bvec<N> r(OpElementwise<N,  Or>(a, b));
+    HIERARCHY_EXIT();
+    return r;
+  }
+
+  template <unsigned N> bvec<N> Xor(bvec<N> a, bvec<N> b) {
+    HIERARCHY_ENTER();
+    bvec<N> r(OpElementwise<N, Xor>(a, b));
+    HIERARCHY_EXIT();
+    return r;
+  }
 
   // Those same operations in all-reduce form
-  template <unsigned N>
-    node AndN(bvec<N> in) { return OpReduce<N, And>(in); }
-  template <unsigned N>
-    node OrN (bvec<N> in) { return OpReduce<N,  Or>(in); }
-  template <unsigned N>
-    node XorN(bvec<N> in) { return OpReduce<N, Xor>(in); }
+  template <unsigned N> node AndN(bvec<N> in) {
+    HIERARCHY_ENTER();
+    node r(OpReduce<N, And>(in));
+    HIERARCHY_EXIT();
+    return r;
+  }
+
+  template <unsigned N> node OrN (bvec<N> in) {
+    HIERARCHY_ENTER();
+    node r(OpReduce<N,  Or>(in));
+    HIERARCHY_EXIT();
+    return r;
+  }
+
+  template <unsigned N> node XorN(bvec<N> in) {
+    HIERARCHY_ENTER();
+    node r(OpReduce<N, Xor>(in));
+    HIERARCHY_EXIT();
+    return r;
+  }
 
   // Detect whether two values are equal
   template <unsigned N> node EqDetect(bvec<N> a, bvec<N> b) {
-    return AndN(Not(Xor(a, b)));
+    HIERARCHY_ENTER();
+    node r(AndN(Not(Xor(a, b))));
+    HIERARCHY_EXIT();
+    return r;
   }
 };
 
