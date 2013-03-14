@@ -66,7 +66,7 @@ node AndN(vector<node> &v) {
 }
 
 node operator==(vector<node> a, vector<node> b) {
-  HIERARCHY_ENTER();
+  hierarchy_enter("EqDetect");
   node r;
   if (a.size() != b.size()) {
     r = Lit(0);
@@ -75,7 +75,7 @@ node operator==(vector<node> a, vector<node> b) {
     for (unsigned i = 0; i < a.size(); ++i) eq.push_back(a[i] == b[i]);
     r = AndN(eq);
   }
-  HIERARCHY_EXIT();
+  hierarchy_exit();
   return r;
 }
 
@@ -293,6 +293,7 @@ template <unsigned M, unsigned N, unsigned R>
 
   for (unsigned i = 0; i < R; ++i)
     r[i].q = Mux(w.we && w.a == r[i].a, Mux(r[i].a, regs), w.d);
+
   HIERARCHY_EXIT();
 }
 
@@ -519,12 +520,11 @@ int main() {
   ofstream netlist_file("example6.nand");
   print_netlist(netlist_file);
 
-  // Print a dot file.
-  ofstream dot_file("example6.dot");
-  print_dot(dot_file);
-
   ofstream h_file("example6.hier");
   print_hierarchy(h_file, 2);
+
+  ofstream schem_file("example6.dot");
+  dot_schematic(schem_file);
 
   return 0;
 }
