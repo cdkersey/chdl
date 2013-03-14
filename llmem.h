@@ -11,10 +11,14 @@
 #include "reg.h"
 #include "mux.h"
 
+#include "hierarchy.h"
+
 namespace chdl {
   template <unsigned M, unsigned N>
     bvec<N> LLRom(bvec<M> a, std::string filename)
   {
+    HIERARCHY_ENTER();
+
     using namespace std;
     vector<bool> contents(N<<M);
 
@@ -35,20 +39,30 @@ namespace chdl {
       for (unsigned j = 0; j < N; ++j)
         bits[i][j] = Lit(contents[i*N + j]);
 
-    return Mux(a, bits);
+    bvec<N> r(Mux(a, bits));
+
+    HIERARCHY_EXIT();
+
+    return r;
   }
 
   // For now, RAM has no initialization.
   template <unsigned M, unsigned N>
     bvec<N> LLRam(bvec<M> qa, bvec<N> d, bvec<M> da, node w)
   {
+    HIERARCHY_ENTER();
+
     bvec<1<<M> wrsig(Decoder(da, w));
 
     vec<1<<M, bvec<N>> bits;
     for (unsigned i = 0; i < 1<<M; ++i)
       bits[i] = Wreg(wrsig[i], d);
     
-    return Mux(qa, bits);
+    bvec<N> r(Mux(qa, bits));
+
+    HIERARCHY_EXIT();
+
+    return r;
   }
 
   template <unsigned M, unsigned N>

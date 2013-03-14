@@ -9,6 +9,8 @@
 #include "node.h"
 #include "lit.h"
 
+#include "hierarchy.h"
+
 namespace chdl {
   void get_mem_nodes(std::set<nodeid_t> &s);
 
@@ -18,6 +20,8 @@ namespace chdl {
       std::string filename = "", bool sync=false
     )
   {
+    HIERARCHY_ENTER();
+
     // Provides interface to low-level node structures; prototyped here to avoid
     // pollution of chdl namespace.
     std::vector<node> memory_internal(
@@ -38,6 +42,8 @@ namespace chdl {
     bvec<N> q;
     for (unsigned i = 0; i < N; ++i) q[i] = qvec[i];
     
+    HIERARCHY_EXIT();
+
     return q;
   }
 
