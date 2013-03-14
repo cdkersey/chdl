@@ -16,7 +16,7 @@ namespace chdl {
 
   // Equality detection (re-implemented from bvec-basic.h)
   template <unsigned N>
-    node operator==(bvec<N> a, bvec<N> b) { return AndN(~(a ^ b)); }
+    node operator==(bvec<N> a, bvec<N> b) { return EqDetect(a, b); }
   template <unsigned N>
     node operator!=(bvec<N> a, bvec<N> b) { return !(a == b); }
 };
