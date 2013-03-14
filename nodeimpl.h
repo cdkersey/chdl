@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "node.h"
+#include "hierarchy.h"
 
 namespace chdl {
   struct nodeimpl;
@@ -13,7 +14,7 @@ namespace chdl {
   extern std::vector<nodeimpl*> nodes;
 
   struct nodeimpl {
-    nodeimpl() { id = nodes.size(); nodes.push_back(this); }
+    nodeimpl() { id = nodes.size(); nodes.push_back(this); path = get_hpath(); }
     virtual ~nodeimpl() {}
 
     virtual bool eval() = 0;
@@ -22,6 +23,9 @@ namespace chdl {
     // The node keeps a copy of its ID. This makes mapping from nodeimpl
     // pointers to node objects straightforward.
     nodeid_t id;
+
+    // Where is this node in the hierarchy?
+    hpath_t path;
 
     std::vector<node> src;
   };

@@ -53,12 +53,14 @@ void chdl::opt_contract() {
   do {
     changes = 0;
     for (unsigned i = 0; i < nodes.size(); ++i) {
+      hpath_t hp(nodes[i]->path);
       litimpl *l0, *l1;
       invimpl *inv = dynamic_cast<invimpl*>(nodes[i]);
       
       if (inv && (l0 = dynamic_cast<litimpl*>(nodes[inv->src[0]]))) {
         ++changes;
         nodes[i] = new litimpl(!l0->eval());
+        nodes[i]->path = hp;
         nodes.pop_back();
         nodes[i]->id = i;
         delete inv;
@@ -78,6 +80,7 @@ void chdl::opt_contract() {
       {
         ++changes;
         nodes[i] = new litimpl(!(l0->eval() && l1->eval()));
+        nodes[i]->path = hp;
         nodes.pop_back();
         nodes[i]->id = i;
         delete nand;
@@ -90,6 +93,7 @@ void chdl::opt_contract() {
       {
         ++changes;
         nodes[i] = new litimpl(1);
+        nodes[i]->path = hp;
         nodes.pop_back();
         nodes[i]->id = i;
         delete nand;
@@ -102,12 +106,14 @@ void chdl::opt_contract() {
         ++changes;
         node n(i), m(nand->src[l0?1:0]);
         n = Inv(m);
+        nodes[nodeid_t(n)]->path = hp;
         continue; 
       }
 
       if (nand && nand->src[0] == nand->src[1]) {
         node n(i), m(nand->src[0]);
         n = Inv(m);
+        nodes[nodeid_t(n)]->path = hp;
         ++changes;
         continue;
       }

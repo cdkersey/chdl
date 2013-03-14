@@ -8,6 +8,7 @@
 #include <ostream>
 
 #include "hierarchy.h"
+#include "nodeimpl.h"
 
 using namespace std;
 using namespace chdl;
@@ -25,14 +26,24 @@ struct hierarchy {
     if (maxlevel > 0 && level > maxlevel) return;
 
     // Print this
-    for (unsigned i = 0; i < level; ++i) out << ' ';
-    out << name << endl;
+    if (refcount != 0) {
+      for (unsigned i = 0; i < level; ++i) out << ' ';
+      out << name << " (" << refcount << ')' << endl;
+    }
 
     // Print children
     for (unsigned i = 0; i < c.size(); ++i)
       c[i].print(out, maxlevel, level+1);
   }
 
+  void clear_refcount() {
+    refcount = 0;
+
+    for (unsigned i = 0; i < c.size(); ++i)
+      c[i].clear_refcount();
+  }
+
+  unsigned refcount;
   hpath_t path;
   string name;
   vector<hierarchy> c;
@@ -40,6 +51,22 @@ struct hierarchy {
 
 static hierarchy root("chdl_root");
 static stack<hierarchy*> hstack;
+
+void inc_path(hpath_t &path, hierarchy &root, unsigned offset=0)
+{
+  root.refcount++;
+
+  if (path.size() == offset) return;
+
+  inc_path(path, root.c[path[offset]], offset+1);
+}
+
+static void count_refs() {
+  root.clear_refcount();
+
+  for (size_t i = 0; i < nodes.size(); ++i)
+    inc_path(nodes[i]->path, root);
+}
 
 void chdl::hierarchy_enter(string name) {
   if (hstack.empty()) hstack.push(&root);
@@ -53,6 +80,7 @@ void chdl::hierarchy_exit() {
 }
 
 void chdl::print_hierarchy(ostream &out, int maxlevel) {
+  count_refs();
   root.print(out, maxlevel);
 }
 

@@ -31,7 +31,7 @@ gatesimpl.o: gatesimpl.cpp gatesimpl.h sim.h nodeimpl.h node.h hierarchy.h
 lit.o: lit.cpp lit.h litimpl.h nodeimpl.h node.h hierarchy.h
 memory.o: memory.cpp memory.h node.h bvec.h bvec-basic.h lit.h gates.h \
           hierarchy.h
-nodeimpl.o: nodeimpl.cpp nodeimpl.h node.h litimpl.h lit.h
+nodeimpl.o: nodeimpl.cpp nodeimpl.h node.h litimpl.h lit.h hierarchy.h
 opt.o: opt.cpp opt.h nodeimpl.h gatesimpl.h sim.h litimpl.h lit.h node.h \
        gates.h memory.h hierarchy.h
 vis.o: vis.cpp vis.h nodeimpl.h gatesimpl.h litimpl.h lit.h node.h gates.h \
