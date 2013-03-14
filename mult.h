@@ -10,6 +10,8 @@
 #include "bvec-basic-op.h"
 #include "adder.h"
 
+#include "hierarchy.h"
+
 namespace chdl {
   // Shift input left by L bits
   template <unsigned N> bvec<N> ShiftLeft(bvec<N> in, unsigned l) {
@@ -20,19 +22,24 @@ namespace chdl {
   }
 
   void HalfAdder(node &sum, node &carry, node a, node b) {
+    HIERARCHY_ENTER();
     using namespace std;
     sum = Xor(a, b);
     carry = a && b;
+    HIERARCHY_EXIT();
   }
 
   void FullAdder(node &sum, node &carry, node a, node b, node c) {
+    HIERARCHY_ENTER();
     using namespace std;
     node p1 = Xor(a, b);
     sum = Xor(c, p1);
     carry = a && b || p1 && c; 
+    HIERARCHY_EXIT();
   }
 
   template <unsigned N> bvec<N> Mult(bvec<N> a, bvec<N> b) {
+    HIERARCHY_ENTER();
     using namespace std;
     vector<vector<node>> terms(N);
     
@@ -89,6 +96,8 @@ namespace chdl {
       }
     }
     prod = term1 + term2;
+
+    HIERARCHY_EXIT();
 
     return prod;
   }

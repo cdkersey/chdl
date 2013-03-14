@@ -6,6 +6,8 @@
 #include "regimpl.h"
 #include "nodeimpl.h"
 
+#include "hierarchy.h"
+
 using namespace chdl;
 using namespace std;
 
@@ -20,12 +22,25 @@ void regimpl::print(ostream &out) {
   out << "  reg " << d << ' ' << id << endl;
 }
 
-node chdl::Reg() { return (new regimpl())->id; }
-node chdl::Reg(node d) { return (new regimpl(d))->id; }
+node chdl::Reg() {
+  HIERARCHY_ENTER();
+  node r((new regimpl())->id);
+  HIERARCHY_EXIT();
+  return r;
+}
+
+node chdl::Reg(node d) {
+  HIERARCHY_ENTER();
+  node r((new regimpl(d))->id);
+  HIERARCHY_EXIT();
+  return r;
+}
 
 node chdl::Wreg(node w, node d) {
+  HIERARCHY_ENTER();
   node q;
   q = Reg(Mux(w, q, d));
+  HIERARCHY_EXIT();
   return q;
 }
 

@@ -4,6 +4,8 @@
 #include "bvec-basic.h"
 #include "mux.h"
 
+#include "hierarchy.h"
+
 #define  LOG2_INT_1(x) 0
 #define  LOG2_INT_2(x) ((x&       0x2)?LOG2_INT_1 (x>> 1)+ 1: LOG2_INT_1(x))
 #define  LOG2_INT_4(x) ((x&       0xc)?LOG2_INT_2 (x>> 2)+ 2: LOG2_INT_2(x))
@@ -20,6 +22,8 @@ namespace chdl {
   template <unsigned N>
     bvec<N> ShifterStage(int B, bvec<N> in, node enable, node arith)
   {
+    HIERARCHY_ENTER();
+
     bvec<N> shifted;
     for (int i = 0; i < N; ++i) {
       if (i+B >= 0 && i+B < N) shifted[i] = in[i+B];
@@ -27,13 +31,19 @@ namespace chdl {
       else                     shifted[i] = Lit(0);
     }
 
-    return Mux(enable, in, shifted);
+    bvec<N> r(Mux(enable, in, shifted));
+    
+    HIERARCHY_EXIT();
+
+    return r;
   }
 
   // 2^M bit bidirectional barrel shifter.
   template <unsigned M>
     bvec<M> Shifter(bvec<M> in, bvec<CLOG2(M)> shamt, node arith, node dir)
   {
+    HIERARCHY_ENTER();
+
     vec<CLOG2(M)+1, bvec<M>> vl, vr;
     vl[0] = vr[0] = in;
 
@@ -42,7 +52,11 @@ namespace chdl {
       vr[i+1] = ShifterStage<M>( (1<<i), vr[i], shamt[i], arith);
     }
 
-    return Mux(dir, vl[CLOG2(M)], vr[CLOG2(M)]);
+    bvec<M> r(Mux(dir, vl[CLOG2(M)], vr[CLOG2(M)]));
+
+    HIERARCHY_EXIT();
+
+    return r;
   }
 
   template <unsigned M>
