@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <map>
@@ -16,8 +17,9 @@ class inputimpl : public nodeimpl {
     inputimpl(string n, int i=-1): nodeimpl(), name(n), pos(i) {}
     
     bool eval() {
-      cerr << "Attempted to simulate a design with unassociated inputs.";
-      return 0;
+      cerr << "Attempted to simulate a design with unassociated inputs."
+           << endl;
+      abort();
     }
 
     void print(ostream &out) {}
