@@ -11,7 +11,6 @@
 using namespace chdl;
 using namespace std;
 
-regimpl::regimpl(): q(0), next_q(0) {}
 regimpl::regimpl(node d): q(0), next_q(0), d(d) {}
 
 regimpl::~regimpl() {}
@@ -20,13 +19,6 @@ bool regimpl::eval() { return q; }
 
 void regimpl::print(ostream &out) {
   out << "  reg " << d << ' ' << id << endl;
-}
-
-node chdl::Reg() {
-  HIERARCHY_ENTER();
-  node r((new regimpl())->id);
-  HIERARCHY_EXIT();
-  return r;
 }
 
 node chdl::Reg(node d) {

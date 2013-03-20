@@ -8,14 +8,11 @@
 
 namespace chdl {
   struct regimpl : public tickable, public nodeimpl {
-    regimpl();
     regimpl(node d);
     ~regimpl();
 
     bool eval();
     void print(std::ostream &out);
-
-    void connect(node new_d) { d = new_d; }
 
     void tick() { next_q = nodes[d]->eval(); }
     void tock() { q = next_q; }

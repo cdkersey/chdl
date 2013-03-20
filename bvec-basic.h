@@ -31,14 +31,6 @@ namespace chdl {
   }
 
   // Create an array of registers.
-  template <unsigned N> bvec<N> Reg() {
-    HIERARCHY_ENTER();
-    bvec<N> r;
-    for (unsigned i = 0; i < N; ++i) r[i] = Reg();
-    HIERARCHY_EXIT();
-    return r;
-  }
-
   template <unsigned N> bvec<N> Reg(bvec<N> d) {
     HIERARCHY_ENTER();
     bvec<N> r;
