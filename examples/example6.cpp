@@ -285,7 +285,7 @@ template <unsigned M, unsigned N, unsigned R>
 
   vec<SIZE, bvec<N>> regs;
   for (unsigned i = 0; i < SIZE; ++i) {
-    regs[i] = Wreg(wrsig[i], w.d);
+    regs[i] = Wreg(wrsig[i], w.d, i);
     ostringstream oss;
     oss << "reg" << i;
     tap(oss.str(), regs[i]);

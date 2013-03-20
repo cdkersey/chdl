@@ -41,19 +41,23 @@ namespace chdl {
   }
 
   // Add a write signal to an existing array of registers
-  template <unsigned N> void Wreg(bvec<N> q, bvec<N> d, node w) {
+  template <unsigned N>
+    void Wreg(bvec<N> q, bvec<N> d, node w, unsigned long val=0)
+  {
     HIERARCHY_ENTER();
     for (unsigned i = 0; i < N; ++i)
-      q[i] = Reg(Mux(w, q[i], d[i]));
+      q[i] = Reg(Mux(w, q[i], d[i]), val & (1ul<<i));
     HIERARCHY_EXIT();
   }
 
   // Create an array of registers with a "write" signal
-  template <unsigned N> bvec<N> Wreg(node w, bvec<N> d) {
+  template <unsigned N>
+    bvec<N> Wreg(node w, bvec<N> d, unsigned long val=0)
+  {
     bvec<N> r;
-    Wreg(r, d, w);
+    Wreg(r, d, w, val);
     return r;
- }
+  }
 
   // Create a binary integer literal with the given value
   template <unsigned N> bvec<N> Lit(unsigned long val) {
