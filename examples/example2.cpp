@@ -24,10 +24,10 @@ int main(int argc, char **argv) {
   bvec<4> w, x, y, z;
   bvec<16> o;
 
-  a = Reg(a + Lit<4>(1));
-  b = Reg(b + Lit<4>(3));
-  c = Reg(c + Lit<4>(5));
-  d = Reg(d + Lit<4>(7));
+  a = Reg(a + Lit<4>(1), 4);
+  b = Reg(b + Lit<4>(3), 8);
+  c = Reg(c + Lit<4>(5), 7);
+  d = Reg(d + Lit<4>(7), 5);
 
   o[range< 0, 3>()] = a;
   o[range< 4, 7>()] = b;

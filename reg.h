@@ -6,7 +6,7 @@
 #include "node.h"
 
 namespace chdl {
-  node Reg(node d);
+  node Reg(node d, bool val=0);
   
   node Wreg(node w, node d);
 

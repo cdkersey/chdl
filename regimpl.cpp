@@ -21,11 +21,17 @@ void regimpl::print(ostream &out) {
   out << "  reg " << d << ' ' << id << endl;
 }
 
-node chdl::Reg(node d) {
-  HIERARCHY_ENTER();
-  node r((new regimpl(d))->id);
-  HIERARCHY_EXIT();
-  return r;
+node chdl::Reg(node d, bool val) {
+  HIERARCHY_ENTER();  
+  if (val) {
+    node r((new regimpl(Inv(d)))->id);
+    HIERARCHY_EXIT();
+    return Inv(r);
+  } else {
+    node r((new regimpl(d))->id);
+    HIERARCHY_EXIT();
+    return r;
+  }
 }
 
 node chdl::Wreg(node w, node d) {

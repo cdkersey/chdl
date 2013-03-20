@@ -31,10 +31,11 @@ namespace chdl {
   }
 
   // Create an array of registers.
-  template <unsigned N> bvec<N> Reg(bvec<N> d) {
+  template <unsigned N> bvec<N> Reg(bvec<N> d, unsigned long val=0) {
     HIERARCHY_ENTER();
     bvec<N> r;
-    for (unsigned i = 0; i < N; ++i) r[i] = Reg(d[i]);
+    for (unsigned i = 0; i < N; ++i)
+      r[i] = Reg(d[i], val & (1ul<<i));
     HIERARCHY_EXIT();
     return r;
   }
@@ -52,7 +53,7 @@ namespace chdl {
     bvec<N> r;
     Wreg(r, d, w);
     return r;
-  }
+ }
 
   // Create a binary integer literal with the given value
   template <unsigned N> bvec<N> Lit(unsigned long val) {
