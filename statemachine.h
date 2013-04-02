@@ -14,7 +14,6 @@ namespace chdl {
    public:
   Statemachine(): nextState(Enc(nextState1h)), state(Reg(nextState)) {
       state1h = Zext<N>(Decoder(state));
-      TAP(nextState1h); TAP(nextState);
     }
 
     void edge(unsigned from, unsigned to, node take) {
