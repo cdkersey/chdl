@@ -22,10 +22,15 @@ void regimpl::print(ostream &out) {
 }
 
 void regimpl::print_vl(ostream &out) {
-  out << "  always @ (posedge phi)" << endl
+  out << "  reg __x" << id << ';' << endl
+      << "  initial" << endl
+      << "    begin" << endl
+      << "      __x" << id << " <= 0;" << endl
+      << "    end" << endl
+      << "  always @ (posedge phi)" << endl
       << "    begin" << endl
       << "      __x" << id << " <= " << "__x" << d << ';' << endl
-      << "    end" << endl;
+      << "    end" << endl << endl;
 }
 
 node chdl::Reg(node d, bool val) {

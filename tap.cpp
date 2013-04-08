@@ -32,9 +32,14 @@ void chdl::print_taps_vl_body(std::ostream &out) {
     if (it->second.size() > 1)
       out << '[' << it->second.size()-1 << ":0] ";
     out << it->first << ';' << endl;
-    for (unsigned i = 0; i < it->second.size(); ++i) {
-      out << "  assign __x" << it->second[i] << " = " << it->first
-          << '[' << i << "];" << endl;
+    if (it->second.size() == 1) {
+      out << "  assign " << it->first << " = __x" << it->second[0] << ';'
+          << endl;
+    } else {
+      for (unsigned i = 0; i < it->second.size(); ++i) {
+        out << "  assign " << it->first << '[' << i << "] = __x"
+            << it->second[i] << ';' << endl;
+      }
     }
   }
 }

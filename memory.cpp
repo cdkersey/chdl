@@ -105,6 +105,7 @@ void memory::print_vl(ostream &out) {
       << "[__mem_da" << id << "] <= __mem_d" << id << ';' << endl
       << "  end" << endl;
   
+  out << "  assign __mem_w" << id << " = __x" << w << ';' << endl;
   for (unsigned i = 0; i < qa.size(); ++i)
     out << "  assign __mem_qa" << id << '[' << i << "] = __x" << qa[i] << ';'
         << endl;
