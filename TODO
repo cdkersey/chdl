@@ -23,8 +23,3 @@ Possible future features:
     - Is there any reason to optimize in an order other than the one used by
       the optimize function?
     - Could technology mapping be handled by this same pass manager?
-  _ NodeType enumeration
-    - Why? Sure enumerations can be extended but that would just lead to many
-      possible integers for each enum name.
-    - So we can easily pass info about node types to e.g. print them in
-      different ways. Might look prettier than RTTI.
