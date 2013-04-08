@@ -14,10 +14,8 @@ Must Fix
     - g++-4.7 (Ubuntu/Linaro 4.7.2-11precise2) 4.7.2; Ubuntu 12.04
     - complaint of double free
     - probably related to stale node pointers in node_dir seen by valgrind
+    - has not been reproduced recently
 
 Nuisance
 
-  The implementation of Log2 in enc.h predates the CLOG2 macro and goes through
-  great, disgusting lengths to avoid needing to take logarithms in code. This
-  should be cleaned up (which would also probably make it work for non-power-of-
-  two-width inputs.
+  -
