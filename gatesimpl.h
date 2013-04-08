@@ -11,6 +11,7 @@ namespace chdl {
 
     virtual bool eval();
     virtual void print(std::ostream &out);
+    virtual void print_vl(std::ostream &out);
   private:
     bool cval;
     cycle_t t_cval;
@@ -24,6 +25,7 @@ namespace chdl {
 
     virtual bool eval();
     virtual void print(std::ostream &out);
+    virtual void print_vl(std::ostream &out);
 
   private:
     bool cval;

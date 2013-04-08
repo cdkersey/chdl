@@ -34,6 +34,7 @@ struct memory : public tickable {
   void tock();
 
   void print(ostream &out);
+  void print_vl(ostream &out);
 
   node w;
   vector<node> qa, da, d, q;
@@ -80,6 +81,44 @@ void memory::print(ostream &out) {
   out << endl;
 }
 
+void memory::print_vl(ostream &out) {
+  unsigned id(d[0]);
+
+  if (!sync) {
+    cerr << "Async RAM not currently supported in verilog. Use llmem." << endl;
+    exit(1);
+  }
+
+  size_t words(1ul<<qa.size()), bits(d.size());
+  out << "  wire [" << qa.size()-1 << ":0] __mem_qa" << id << ';' << endl
+      << "  reg [" << bits-1 << ":0] __mem_q" << id << ';' << endl
+      << "  wire [" << da.size()-1 << ":0] __mem_da" << id << ';' << endl
+      << "  wire [" << bits-1 << ":0] __mem_d" << id << ';' << endl
+      << "  wire __mem_w" << id << ';' << endl
+      << "  reg [" << bits-1 << ":0] __mem_array" << id
+      << '[' << words-1 << ":0];" << endl
+      << "  always @(posedge phi)" << endl
+      << "    begin" << endl
+      << "      __mem_q" << id
+      << " <= __mem_array" << id << "[__mem_da" << id << "];" << endl
+      << "      if (__mem_w" << id << ") __mem_array" << id
+      << "[__mem_da" << id << "] <= __mem_d" << id << ';' << endl
+      << "  end" << endl;
+  
+  for (unsigned i = 0; i < qa.size(); ++i)
+    out << "  assign __mem_qa" << id << '[' << i << "] = __x" << qa[i] << ';'
+        << endl;
+  for (unsigned i = 0; i < da.size(); ++i)
+    out << "  assign __mem_da" << id << '[' << i << "] = __x" << da[i] << ';'
+        << endl;
+  for (unsigned i = 0; i < q.size(); ++i)
+    out << "  assign __x" << q[i] << " = __mem_q" << id << '[' << i << "];"
+        << endl;
+  for (unsigned i = 0; i < d.size(); ++i)
+    out << "  assign __mem_d" << id << '[' << i << "] = __x" << d[i] << ';'
+        << endl;
+}
+
 struct qnodeimpl : public nodeimpl {
   qnodeimpl(memory *mem, unsigned idx): mem(mem), idx(idx) {}
 
@@ -91,6 +130,7 @@ struct qnodeimpl : public nodeimpl {
   }
 
   void print(ostream &out) { if (idx == 0) mem->print(out); }
+  void print_vl(ostream &out) { if (idx == 0) mem->print_vl(out); }
 
   unsigned idx;
 

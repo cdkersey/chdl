@@ -12,6 +12,8 @@ namespace chdl {
   node Input(std::string name);
   template <unsigned N> bvec<N> Input(std::string name);
 
+  void print_inputs_vl_head(std::ostream &out);
+  void print_inputs_vl_body(std::ostream &out);
   void print_input_nodes(std::ostream &out);
 
   // Append input node IDs to the given set.

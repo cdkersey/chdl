@@ -13,6 +13,7 @@ namespace chdl {
 
     bool eval();
     void print(std::ostream &out);
+    void print_vl(std::ostream &out);
 
     void tick() { next_q = nodes[d]->eval(); }
     void tock() { q = next_q; }

@@ -21,6 +21,24 @@ void chdl::tap(string name, node node) {
   taps[name].push_back(node);
 }
 
+void chdl::print_taps_vl_head(std::ostream &out) {
+  for (auto it = taps.begin(); it != taps.end(); ++it)
+    out << ',' << endl << "  " << it->first;
+}
+
+void chdl::print_taps_vl_body(std::ostream &out) {
+  for (auto it = taps.begin(); it != taps.end(); ++it) {
+    out << "  output ";
+    if (it->second.size() > 1)
+      out << '[' << it->second.size()-1 << ":0] ";
+    out << it->first << ';' << endl;
+    for (unsigned i = 0; i < it->second.size(); ++i) {
+      out << "  assign __x" << it->second[i] << " = " << it->first
+          << '[' << i << "];" << endl;
+    }
+  }
+}
+
 void chdl::print_tap_nodes(ostream &out) {
   for (auto it = taps.begin(); it != taps.end(); ++it) {
     out << "  " << it->first;

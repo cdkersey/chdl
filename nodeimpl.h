@@ -19,6 +19,7 @@ namespace chdl {
 
     virtual bool eval() = 0;
     virtual void print(std::ostream &) = 0;
+    virtual void print_vl(std::ostream &) = 0;
 
     // The node keeps a copy of its ID. This makes mapping from nodeimpl
     // pointers to node objects straightforward.

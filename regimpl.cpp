@@ -21,6 +21,13 @@ void regimpl::print(ostream &out) {
   out << "  reg " << d << ' ' << id << endl;
 }
 
+void regimpl::print_vl(ostream &out) {
+  out << "  always @ (posedge phi)" << endl
+      << "    begin" << endl
+      << "      __x" << id << " <= " << "__x" << d << ';' << endl
+      << "    end" << endl;
+}
+
 node chdl::Reg(node d, bool val) {
   HIERARCHY_ENTER();  
   if (val) {

@@ -23,6 +23,7 @@ class inputimpl : public nodeimpl {
     }
 
     void print(ostream &out) {}
+    void print_vl(ostream &out) {}
 
   private:
     // Name of input in input map
@@ -35,6 +36,24 @@ node chdl::Input(std::string name) {
   inputimpl *n = new inputimpl(name, -1);
   inputs[name] = vector<node>(1, n->id);
   return node(n->id);
+}
+
+void chdl::print_inputs_vl_head(std::ostream &out) {
+  for (auto it = inputs.begin(); it != inputs.end(); ++it)
+    out << ',' << endl << "  " << it->first;
+}
+
+void chdl::print_inputs_vl_body(std::ostream &out) {
+  for (auto it = inputs.begin(); it != inputs.end(); ++it) {
+    out << "  input ";
+    if (it->second.size() > 1)
+      out << '[' << it->second.size()-1 << ":0] ";
+    out << it->first << ';' << endl;
+    for (unsigned i = 0; i < it->second.size(); ++i) {
+      out << "  assign " << it->first << '[' << i << "] = __x" << it->second[i] 
+          << ';' << endl;
+    }
+  }
 }
 
 void chdl::print_input_nodes(std::ostream &out) {
