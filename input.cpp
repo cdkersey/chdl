@@ -49,9 +49,14 @@ void chdl::print_inputs_vl_body(std::ostream &out) {
     if (it->second.size() > 1)
       out << '[' << it->second.size()-1 << ":0] ";
     out << it->first << ';' << endl;
-    for (unsigned i = 0; i < it->second.size(); ++i) {
-      out << "  assign " << it->first << '[' << i << "] = __x" << it->second[i] 
-          << ';' << endl;
+    if (it->second.size() > 1) {
+      for (unsigned i = 0; i < it->second.size(); ++i) {
+        out << "  assign __x" << it->second[i] << " = "
+            << it->first << '[' << i << "];" << endl;
+      }
+    } else {
+      out << "  assign __x" << it->second[0] << " = "
+          << it->first << ';' << endl;
     }
   }
 }
