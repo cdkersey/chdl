@@ -10,6 +10,7 @@
 #include "lit.h"
 #include "node.h"
 #include "memory.h"
+#include "submodule.h"
 
 #include <vector>
 #include <set>
@@ -26,6 +27,8 @@ void chdl::opt_dead_node_elimination() {
   get_mem_nodes(live_nodes);
   get_tap_nodes(live_nodes);
   get_reg_nodes(live_nodes);
+  get_module_inputs(live_nodes);
+  get_module_outputs(live_nodes); // TODO: fix this; not necessarily live.
   
   size_t prev_count;
   do {
