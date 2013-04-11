@@ -18,7 +18,7 @@ namespace chdl {
 };
 
 template <unsigned A, unsigned B>
-  unsigned pathlen(chdl::bvec<A> av, chdl::bvec<B> bv)
+  unsigned chdl::pathlen(chdl::bvec<A> av, chdl::bvec<B> bv)
 {
   using namespace chdl;
   using namespace std;
@@ -52,11 +52,11 @@ template <unsigned A, unsigned B>
   return max_l;
 }
 
-template <unsigned B> unsigned pathlen(chdl::node a, chdl::bvec<B> bv) {
+template <unsigned B> unsigned chdl::pathlen(chdl::node a, chdl::bvec<B> bv) {
   return pathlen(chdl::bvec<1>(a), bv);
 }
 
-template <unsigned A> unsigned pathlen(chdl::bvec<A> av, chdl::node b) {
+template <unsigned A> unsigned chdl::pathlen(chdl::bvec<A> av, chdl::node b) {
   return pathlen(av, chdl::bvec<1>(b));
 }
 
