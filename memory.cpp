@@ -100,7 +100,7 @@ void memory::print_vl(ostream &out) {
       << "  always @(posedge phi)" << endl
       << "    begin" << endl
       << "      __mem_q" << id
-      << " <= __mem_array" << id << "[__mem_da" << id << "];" << endl
+      << " <= __mem_array" << id << "[__mem_qa" << id << "];" << endl
       << "      if (__mem_w" << id << ") __mem_array" << id
       << "[__mem_da" << id << "] <= __mem_d" << id << ';' << endl
       << "  end" << endl;
