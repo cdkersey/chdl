@@ -26,7 +26,7 @@ namespace chdl {
     // pollution of chdl namespace.
     std::vector<node> memory_internal(
       std::vector<node> &qa, std::vector<node> &d, std::vector<node> &da,
-      node w, std::string filename, bool sync
+      node w, std::string filename, bool sync, size_t &id
     );
 
     std::vector<node> qavec, dvec, davec, qvec;
@@ -37,7 +37,8 @@ namespace chdl {
     for (unsigned i = 0; i < N; ++i)
       dvec.push_back(d[i]);
   
-    qvec = memory_internal(qavec, dvec, davec, w, filename, sync);
+    size_t id;
+    qvec = memory_internal(qavec, dvec, davec, w, filename, sync, id);
 
     bvec<N> q;
     for (unsigned i = 0; i < N; ++i) q[i] = qvec[i];

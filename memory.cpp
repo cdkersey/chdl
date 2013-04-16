@@ -23,12 +23,12 @@ unsigned long toUint(vector<node> &v) {
 struct memory;
 
 // Set of all currently-existing memory objects.
-set<memory *> memories;
+vector<memory *> memories;
 
 struct memory : public tickable {
   memory(vector<node> &qa, vector<node> &d, vector<node> &da, node w,
-         string filename, bool sync);
-  ~memory() { memories.erase(this); }
+         string filename, bool sync, size_t &id);
+  ~memory() { cout << "Destructing a memory." << endl; }
 
   void tick();
   void tock();
@@ -123,7 +123,7 @@ void memory::print_vl(ostream &out) {
   out << "  assign __mem_w" << id << " = __x" << w << ';' << endl;
   for (unsigned j = 0; j < qa.size(); ++j) {
     for (unsigned i = 0; i < qa[0].size(); ++i)
-      out << "  assign __mem_qa" << id << '_' << i << '[' << i << "] = __x"
+      out << "  assign __mem_qa" << id << '_' << j << '[' << i << "] = __x"
           << qa[j][i] << ';' << endl;
   }
 
@@ -132,7 +132,7 @@ void memory::print_vl(ostream &out) {
         << endl;
   for (unsigned j = 0; j < q.size(); ++j) {
     for (unsigned i = 0; i < q[j].size(); ++i) {
-      out << "  assign __x" << q[j][i] << " = __mem_q" << id << '_' << i
+      out << "  assign __x" << q[j][i] << " = __mem_q" << id << '_' << j
           << '[' << i << "];" << endl;
     }
   }
@@ -179,7 +179,7 @@ void load_contents(unsigned n, vector<bool> &contents, string filename) {
 
 memory::memory(
   vector<node> &qai, vector<node> &di, vector<node> &dai, node w,
-  string filename, bool sync
+  string filename, bool sync, size_t &id
 ) :
   contents(di.size()<<(qai.size())), wrdata(di.size()-1), filename(filename),
   w(w), d(di.size()), da(qai.size()), raddr(0), waddr(0),
@@ -204,7 +204,8 @@ memory::memory(
     q[0].push_back((new qnodeimpl(this, 0, i))->id);
   }
 
-  memories.insert(this);
+  id = memories.size();
+  memories.push_back(this);
 }
 
 // The function used by memory.h, and the simplest of all. Just create a new
@@ -212,10 +213,10 @@ memory::memory(
 namespace chdl {
   vector<node> memory_internal(
     vector<node> &qa, vector<node> &d, vector<node> &da, node w,
-    string filename, bool sync
+    string filename, bool sync, size_t &id
   )
   {
-    memory *m = new memory(qa, d, da, w, filename, sync);
+    memory *m = new memory(qa, d, da, w, filename, sync, id);
     return m->q[0];
   }
 };
