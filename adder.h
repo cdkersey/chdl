@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "gateops.h"
-#include "bvec.h"
+#include "bvec-basic.h"
 #include "hierarchy.h"
 
 namespace chdl {

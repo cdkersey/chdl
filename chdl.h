@@ -1,7 +1,7 @@
 #ifndef CHDL_H
 #define CHDL_H
 #include <chdl/adder.h>
-#include <chdl/analysis.h
+#include <chdl/analysis.h>
 #include <chdl/bvec-basic.h>
 #include <chdl/bvec-basic-op.h>
 #include <chdl/divider.h>
