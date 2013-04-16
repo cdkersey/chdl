@@ -37,13 +37,16 @@ struct memory : public tickable {
   void print_vl(ostream &out);
 
   node w;
-  vector<node> qa, da, d, q;
+  vector<node> da, d;
+  vector<vector<node>> qa, q;
 
   bool do_write;
   vector<bool> wrdata;
 
-  size_t raddr, waddr;
-  vector<bool> contents, rdval;
+  size_t waddr;
+  vector<size_t> raddr;
+  vector<bool> contents;
+  vector<vector<bool>> rdval;
   string filename;
 
   bool sync;
@@ -51,7 +54,7 @@ struct memory : public tickable {
 
 void memory::tick() {
   do_write = nodes[w]->eval();
-  if (sync) raddr = toUint(qa);
+  if (sync) for (unsigned i = 0; i < qa.size(); ++i) raddr[i] = toUint(qa[i]);
   waddr = toUint(da);
 
   if (do_write)
@@ -61,8 +64,9 @@ void memory::tick() {
 
 void memory::tock() {
   if (sync)
-    for (unsigned i = 0; i < d.size(); ++i)
-      rdval[i] = contents[raddr*d.size() + i];
+    for (unsigned i = 0; i < q.size(); ++i)
+      for (unsigned j = 0; j < d.size(); ++j)
+        rdval[i][j] = contents[raddr[i]*d.size() + j];
 
   if (do_write)
     for (unsigned i = 0; i < d.size(); ++i)
@@ -70,14 +74,16 @@ void memory::tock() {
 }
 
 void memory::print(ostream &out) {
-  out << "  " << (sync?"sync":"") << "ram <" << qa.size() << ' ' << d.size();
+  out << "  " << (sync?"sync":"") << "ram <" << qa[0].size() << ' ' << d.size();
   if (filename != "") out << " \"" << filename << '"';
   out << '>';
   for (unsigned i = 0; i < da.size(); ++i) out << ' ' << da[i];
   for (unsigned i = 0; i < d.size(); ++i) out << ' ' << d[i];
   out << ' ' << w;
-  for (unsigned i = 0; i < qa.size(); ++i) out << ' ' << qa[i];
-  for (unsigned i = 0; i < q.size(); ++i) out << ' ' << q[i];
+  for (unsigned j = 0; j < qa.size(); ++j) {
+    for (unsigned i = 0; i < qa[0].size(); ++i) out << ' ' << qa[j][i];
+    for (unsigned i = 0; i < q[0].size(); ++i) out << ' ' << q[j][i];
+  }
   out << endl;
 }
 
@@ -90,50 +96,66 @@ void memory::print_vl(ostream &out) {
   }
 
   size_t words(1ul<<qa.size()), bits(d.size());
-  out << "  wire [" << qa.size()-1 << ":0] __mem_qa" << id << ';' << endl
-      << "  reg [" << bits-1 << ":0] __mem_q" << id << ';' << endl
-      << "  wire [" << da.size()-1 << ":0] __mem_da" << id << ';' << endl
+  for (unsigned i = 0; i < qa.size(); ++i) {
+    out << "  wire [" << qa[0].size()-1 << ":0] __mem_qa" << id << '_' << i
+        << ';' << endl
+        << "  reg [" << bits-1 << ":0] __mem_q" << id << '_' << i <<  ';'
+        << endl;
+  }
+
+  out << "  wire [" << da.size()-1 << ":0] __mem_da" << id << ';' << endl
       << "  wire [" << bits-1 << ":0] __mem_d" << id << ';' << endl
       << "  wire __mem_w" << id << ';' << endl
       << "  reg [" << bits-1 << ":0] __mem_array" << id
       << '[' << words-1 << ":0];" << endl
       << "  always @(posedge phi)" << endl
-      << "    begin" << endl
-      << "      __mem_q" << id
-      << " <= __mem_array" << id << "[__mem_qa" << id << "];" << endl
-      << "      if (__mem_w" << id << ") __mem_array" << id
+      << "    begin" << endl;
+  for (unsigned i = 0; i < q.size(); ++i) {
+    out << "      __mem_q" << id << '_' << i
+        << " <= __mem_array" << id << "[__mem_qa" << id << '_' << i << "];"
+        << endl;
+  }
+
+  out << "      if (__mem_w" << id << ") __mem_array" << id
       << "[__mem_da" << id << "] <= __mem_d" << id << ';' << endl
       << "  end" << endl;
   
   out << "  assign __mem_w" << id << " = __x" << w << ';' << endl;
-  for (unsigned i = 0; i < qa.size(); ++i)
-    out << "  assign __mem_qa" << id << '[' << i << "] = __x" << qa[i] << ';'
-        << endl;
+  for (unsigned j = 0; j < qa.size(); ++j) {
+    for (unsigned i = 0; i < qa[0].size(); ++i)
+      out << "  assign __mem_qa" << id << '_' << i << '[' << i << "] = __x"
+          << qa[j][i] << ';' << endl;
+  }
+
   for (unsigned i = 0; i < da.size(); ++i)
     out << "  assign __mem_da" << id << '[' << i << "] = __x" << da[i] << ';'
         << endl;
-  for (unsigned i = 0; i < q.size(); ++i)
-    out << "  assign __x" << q[i] << " = __mem_q" << id << '[' << i << "];"
-        << endl;
+  for (unsigned j = 0; j < q.size(); ++j) {
+    for (unsigned i = 0; i < q[j].size(); ++i) {
+      out << "  assign __x" << q[j][i] << " = __mem_q" << id << '_' << i
+          << '[' << i << "];" << endl;
+    }
+  }
   for (unsigned i = 0; i < d.size(); ++i)
     out << "  assign __mem_d" << id << '[' << i << "] = __x" << d[i] << ';'
         << endl;
 }
 
 struct qnodeimpl : public nodeimpl {
-  qnodeimpl(memory *mem, unsigned idx): mem(mem), idx(idx) {}
+  qnodeimpl(memory *mem, unsigned port, unsigned idx):
+    mem(mem), port(port), idx(idx) {}
 
   bool eval() {
     if (mem->sync)
-      return mem->rdval[idx];
+      return mem->rdval[port][idx];
     else
-      return mem->contents[toUint(mem->qa)*mem->d.size() + idx];
+      return mem->contents[toUint(mem->qa[port])*mem->d.size() + idx];
   }
 
-  void print(ostream &out) { if (idx == 0) mem->print(out); }
-  void print_vl(ostream &out) { if (idx == 0) mem->print_vl(out); }
+  void print(ostream &out) { if (port == 0 && idx == 0) mem->print(out); }
+  void print_vl(ostream &out) { if (port == 0 && idx == 0) mem->print_vl(out); }
 
-  unsigned idx;
+  unsigned port, idx;
 
   memory *mem;
 };
@@ -160,22 +182,26 @@ memory::memory(
   string filename, bool sync
 ) :
   contents(di.size()<<(qai.size())), wrdata(di.size()-1), filename(filename),
-  w(w), qa(qai.size()), d(di.size()), da(qai.size()), raddr(0), waddr(0),
-  sync(sync), rdval(di.size())
+  w(w), d(di.size()), da(qai.size()), raddr(0), waddr(0),
+  sync(sync)
 {
   // Load contents from file
   if (filename != "") load_contents(d.size(), contents, filename);
 
   // Populate the address arrays.
-  for (unsigned i = 0; i < qa.size(); ++i) {
-    qa[i] = qai[i];
+  qa.push_back(vector<node>());
+  raddr.push_back(0);
+  rdval.push_back(vector<bool>(di.size()));
+  for (unsigned i = 0; i < qai.size(); ++i) {
+    qa[0].push_back(qai[i]);
     da[i] = dai[i];
   }
 
   // Create the q bits.
+  q.push_back(vector<node>());
   for (unsigned i = 0; i < d.size(); ++i) {
     d[i] = di[i];
-    q.push_back((new qnodeimpl(this, i))->id);
+    q[0].push_back((new qnodeimpl(this, 0, i))->id);
   }
 
   memories.insert(this);
@@ -190,14 +216,15 @@ namespace chdl {
   )
   {
     memory *m = new memory(qa, d, da, w, filename, sync);
-    return m->q;
+    return m->q[0];
   }
 };
 
 void chdl::get_mem_nodes(set<nodeid_t> &s) {
   for (auto it = memories.begin(); it != memories.end(); ++it) {
     memory &m(**it);
-    for (unsigned i = 0; i < m.qa.size(); ++i) s.insert(m.qa[i]);
+    for (unsigned j = 0; j < m.qa.size(); ++j)
+      for (unsigned i = 0; i < m.qa[j].size(); ++i) s.insert(m.qa[j][i]);
     for (unsigned i = 0; i < m.da.size(); ++i) s.insert(m.da[i]);
     for (unsigned i = 0; i < m.d.size(); ++i)  s.insert(m.d[i]);
     s.insert(m.w);
