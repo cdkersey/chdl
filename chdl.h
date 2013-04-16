@@ -1,0 +1,27 @@
+#ifndef CHDL_H
+#define CHDL_H
+#include <chdl/adder.h>
+#include <chdl/analysis.h
+#include <chdl/bvec-basic.h>
+#include <chdl/bvec-basic-op.h>
+#include <chdl/divider.h>
+#include <chdl/enc.h>
+#include <chdl/gateops.h>
+#include <chdl/gates.h>
+#include <chdl/hierarchy.h>
+#include <chdl/input.h>
+#include <chdl/lit.h>
+#include <chdl/llmem.h>
+#include <chdl/memory.h>
+#include <chdl/mult.h>
+#include <chdl/mux.h>
+#include <chdl/netlist.h>
+#include <chdl/opt.h>
+#include <chdl/reg.h>
+#include <chdl/shifter.h>
+#include <chdl/sim.h>
+#include <chdl/statemachine.h>
+#include <chdl/submodule.h>
+#include <chdl/tap.h>
+#include <chdl/vis.h>
+#endif
