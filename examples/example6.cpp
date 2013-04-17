@@ -258,6 +258,7 @@ void genPipelineRegs() {
 }
 
 // Types describing read and write ports
+// TODO: replace this outdated interface with direct use of RAM
 template <unsigned M, unsigned N> struct rdport {
   rdport() {}
   rdport(bvec<M> a, bvec<N> q): a(a), q(q) {}
@@ -278,21 +279,19 @@ template <unsigned M, unsigned N, unsigned R>
   void Regfile(vec<R, rdport<M, N>> r, wrport<M, N> w)
 {
   HIERARCHY_ENTER();
-  const unsigned long SIZE(1<<M);
 
-  bvec<SIZE> wrsig;
-  wrsig = Decoder(w.a, w.we);
+  vec<R, bvec<M>> qa;
+  vec<R, bvec<N>> q;
 
-  vec<SIZE, bvec<N>> regs;
-  for (unsigned i = 0; i < SIZE; ++i) {
-    regs[i] = Wreg(wrsig[i], w.d, i);
-    ostringstream oss;
-    oss << "reg" << i;
-    tap(oss.str(), regs[i]);
+  for (unsigned i = 0; i < R; ++i) {
+    qa[i] = r[i].a; q[i] = r[i].q;
   }
 
-  for (unsigned i = 0; i < R; ++i)
-    r[i].q = Mux(w.we && w.a == r[i].a, Mux(r[i].a, regs), w.d);
+  bvec<M> da(w.a);
+  bvec<N> d(w.d);
+  node we(w.we);
+  
+  q = Memory(qa, d, da, we);
 
   HIERARCHY_EXIT();
 }
