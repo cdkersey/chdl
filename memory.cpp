@@ -30,6 +30,8 @@ struct memory : public tickable {
          string filename, bool sync, size_t &id);
   ~memory() { cout << "Destructing a memory." << endl; }
 
+  vector<node> add_read_port(vector<node> &qa);
+
   void tick();
   void tock();
 
@@ -188,21 +190,17 @@ memory::memory(
   // Load contents from file
   if (filename != "") load_contents(d.size(), contents, filename);
 
-  // Populate the address arrays.
-  qa.push_back(vector<node>());
-  raddr.push_back(0);
+  // Add the read port
+  add_read_port(qai);
+
+  // Populate the write address array.
   rdval.push_back(vector<bool>(di.size()));
-  for (unsigned i = 0; i < qai.size(); ++i) {
-    qa[0].push_back(qai[i]);
+  for (unsigned i = 0; i < qai.size(); ++i)
     da[i] = dai[i];
-  }
 
   // Create the q bits.
-  q.push_back(vector<node>());
-  for (unsigned i = 0; i < d.size(); ++i) {
+  for (unsigned i = 0; i < d.size(); ++i)
     d[i] = di[i];
-    q[0].push_back((new qnodeimpl(this, 0, i))->id);
-  }
 
   id = memories.size();
   memories.push_back(this);
@@ -219,7 +217,25 @@ namespace chdl {
     memory *m = new memory(qa, d, da, w, filename, sync, id);
     return m->q[0];
   }
+
+  vector<node> memory_add_read_port(size_t id, vector<node> &qa) {
+    return memories[id]->add_read_port(qa);
+  }
 };
+
+vector<node> memory::add_read_port(vector<node> &qai) {
+  size_t idx(q.size());
+
+  qa.push_back(qai);
+  raddr.push_back(0);
+  rdval.push_back(vector<bool>(d.size()));
+
+  q.push_back(vector<node>());
+  for (unsigned i = 0; i < d.size(); ++i)
+    q[idx].push_back((new qnodeimpl(this, idx, i))->id);
+
+  return q[idx];
+}
 
 void chdl::get_mem_nodes(set<nodeid_t> &s) {
   for (auto it = memories.begin(); it != memories.end(); ++it) {
