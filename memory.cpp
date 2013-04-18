@@ -97,7 +97,7 @@ void memory::print_vl(ostream &out) {
     exit(1);
   }
 
-  size_t words(1ul<<qa.size()), bits(d.size());
+  size_t words(1ul<<da.size()), bits(d.size());
   for (unsigned i = 0; i < qa.size(); ++i) {
     out << "  wire [" << qa[0].size()-1 << ":0] __mem_qa" << id << '_' << i
         << ';' << endl
