@@ -12,8 +12,9 @@
 #include "hierarchy.h"
 
 namespace chdl {
-  void tap(std::string name, node node);
-  template <unsigned N> void tap(std::string name, const bvec<N> &vec);
+  void tap(std::string name, node node, bool output=false);
+  template <unsigned N>
+    void tap(std::string name, const bvec<N> &vec, bool output=false);
 
   void print_taps_vl_head(std::ostream &out);
   void print_taps_vl_body(std::ostream &out);
@@ -26,11 +27,12 @@ namespace chdl {
 };
 
 template <unsigned N>
-  void chdl::tap(std::string name, const bvec<N> &vec)
+  void chdl::tap(std::string name, const bvec<N> &vec, bool output)
 {
-  for (unsigned i = 0; i < N; ++i) tap(name, vec[i]);
+  for (unsigned i = 0; i < N; ++i) tap(name, vec[i], output);
 }
 
 #define TAP(x) do { tap(#x, x); } while(0)
+#define OUTPUT(x) do { tap(#x, x, true); } while(0)
 
 #endif

@@ -1,6 +1,7 @@
 // This interface allows values to be assigned names so that they can be watched
 // during simulation.
 #include <map>
+#include <set>
 #include <vector>
 #include <iostream>
 
@@ -16,22 +17,30 @@ typedef map<string, vector<node> > taps_t;
 typedef taps_t::iterator taps_it;
 
 taps_t taps;
+set<string> output_taps;
 
-void chdl::tap(string name, node node) {
+void chdl::tap(string name, node node, bool output) {
   taps[name].push_back(node);
+  if (output) output_taps.insert(name);
 }
 
 void chdl::print_taps_vl_head(std::ostream &out) {
   for (auto it = taps.begin(); it != taps.end(); ++it)
-    out << ',' << endl << "  " << it->first;
+    if (output_taps.find(it->first) != output_taps.end())
+      out << ',' << endl << "  " << it->first;
 }
 
 void chdl::print_taps_vl_body(std::ostream &out) {
   for (auto it = taps.begin(); it != taps.end(); ++it) {
-    out << "  output ";
+    if (output_taps.find(it->first) != output_taps.end())
+      out << "  output ";
+    else
+      out << "  wire ";
+
     if (it->second.size() > 1)
       out << '[' << it->second.size()-1 << ":0] ";
     out << it->first << ';' << endl;
+
     if (it->second.size() == 1) {
       out << "  assign " << it->first << " = __x" << it->second[0] << ';'
           << endl;
