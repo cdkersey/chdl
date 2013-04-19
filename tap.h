@@ -17,7 +17,7 @@ namespace chdl {
     void tap(std::string name, const bvec<N> &vec, bool output=false);
 
   void print_taps_vl_head(std::ostream &out);
-  void print_taps_vl_body(std::ostream &out);
+  void print_taps_vl_body(std::ostream &out, bool print_non_out=false);
   void print_tap_nodes(std::ostream &out);
   void print_taps(std::ostream &out);
   void print_vcd_header(std::ostream &out);

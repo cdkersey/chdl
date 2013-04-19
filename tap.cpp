@@ -30,12 +30,14 @@ void chdl::print_taps_vl_head(std::ostream &out) {
       out << ',' << endl << "  " << it->first;
 }
 
-void chdl::print_taps_vl_body(std::ostream &out) {
+void chdl::print_taps_vl_body(std::ostream &out, bool print_non_output) {
   for (auto it = taps.begin(); it != taps.end(); ++it) {
     if (output_taps.find(it->first) != output_taps.end())
       out << "  output ";
-    else
+    else if (print_non_output)
       out << "  wire ";
+    else
+      continue;
 
     if (it->second.size() > 1)
       out << '[' << it->second.size()-1 << ":0] ";
