@@ -291,7 +291,7 @@ template <unsigned M, unsigned N, unsigned R>
   bvec<N> d(w.d);
   node we(w.we);
   
-  q = Memory(qa, d, da, we);
+  q = Syncmem(qa, d, da, we);
 
   HIERARCHY_EXIT();
 }
@@ -383,7 +383,7 @@ void pipeline() {
   bvec<5> sidx0_d(iramq_d[range<21,25>()]), sidx1_d(iramq_d[range<16,20>()]),
           didx_d(Mux(dsel, iramq_d[range<11,15>()], iramq_d[range<16,20>()]));
 
-  bvec<32> rfa_d, rfb_d;
+  bvec<32> rfa_d, rfb_d; TAP(rfa_d); TAP(rfb_d);
 
   // Predeclaring the write port for the writeback stage.
   node wb_w; bvec<5> didx_w; bvec<32> wbval_w;
@@ -416,6 +416,9 @@ void pipeline() {
     pcplus4_d + Cat(sext_imm_d[range<0,29>()], Lit<2>(0))
   );
 
+  // Create a delayed-by-1-cycle stall signal
+  node stall1(Reg(GetStall(1))); TAP(stall1);
+
   // // // D->X Pipeline Regs // // //
   node wrmem_x(PipelineReg(1, wrmem_d)),
        br_x   (PipelineReg(1, br_d)),
@@ -428,8 +431,8 @@ void pipeline() {
   bvec<5> sidx0_x(PipelineReg(1, sidx0_d)),
           sidx1_x(PipelineReg(1, sidx1_d));
   bvec<32> sext_imm_x(PipelineReg(1, sext_imm_d)), 
-           rfa_x(PipelineReg(1, rfa_d)),
-           rfb_x(PipelineReg(1, rfb_d));
+           rfa_x(Mux(stall1, rfa_d, Wreg(!stall1, rfa_d))),
+           rfb_x(Mux(stall1, rfb_d, Wreg(!stall1, rfb_d)));
   bvec<4> opsel_x(PipelineReg(1, opsel_d));
   node    rdsrc0_x(PipelineReg(1, rdsrc0_d)),
           rdsrc1_x(PipelineReg(1, rdsrc1_d));
