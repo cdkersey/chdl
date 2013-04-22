@@ -35,8 +35,8 @@ void chdl::opt_dead_node_elimination() {
     prev_count = live_nodes.size();
 
     // Mark all of the source nodes for each already-marked node
-    for (auto it = live_nodes.begin(); it != live_nodes.end(); ++it) {
-      vector<node> &s(nodes[*it]->src);
+    for (auto n : live_nodes) {
+      vector<node> &s(nodes[n]->src);
       for (unsigned i = 0; i < s.size(); ++i) 
         live_nodes.insert(s[i]);
     }

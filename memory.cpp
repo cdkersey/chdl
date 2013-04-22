@@ -238,8 +238,8 @@ vector<node> memory::add_read_port(vector<node> &qai) {
 }
 
 void chdl::get_mem_nodes(set<nodeid_t> &s) {
-  for (auto it = memories.begin(); it != memories.end(); ++it) {
-    memory &m(**it);
+  for (auto mp : memories) {
+    memory &m(*mp);
     for (unsigned j = 0; j < m.qa.size(); ++j)
       for (unsigned i = 0; i < m.qa[j].size(); ++i) s.insert(m.qa[j][i]);
     for (unsigned i = 0; i < m.da.size(); ++i) s.insert(m.da[i]);

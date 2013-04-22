@@ -53,10 +53,10 @@ node &node::operator=(const node &r) {
 
 void show_node_dir() {
   cout << "Node directory:" << endl;
-  for (auto it = node_dir().begin(); it != node_dir().end(); ++it) {
-    cout << it->first << endl;
-    for (auto jt = it->second.begin(); jt != it->second.end(); ++jt) {
-      cout << "  " << *jt << ' ';
+  for (auto n : node_dir()) {
+    cout << n.first << endl;
+    for (auto m : n.second) {
+      cout << "  " << m << ' ';
     }
     cout << endl;
   }

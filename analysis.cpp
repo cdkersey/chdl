@@ -29,9 +29,9 @@ unsigned chdl::critpath() {
   while (!frontier.empty()) {
     set<nodeid_t> next_frontier;
 
-    for (auto it = frontier.begin(); it != frontier.end(); ++it)
-        for (unsigned i = 0; i < nodes[*it]->src.size(); ++i)
-          next_frontier.insert(nodes[*it]->src[i]);
+    for (auto n : frontier)
+        for (unsigned i = 0; i < nodes[n]->src.size(); ++i)
+          next_frontier.insert(nodes[n]->src[i]);
 
     frontier = next_frontier;
     ++l;
@@ -61,10 +61,9 @@ bool chdl::cycdet() {
   get_reg_nodes(s);
   get_mem_nodes(s);
 
-  for (auto it = s.begin(); it != s.end(); ++it) {
+  for (auto n : s) {
     set<nodeid_t> v;
-    s.insert(*it);
-    if (cycdet_internal(0, *it, v, c)) return true;
+    if (cycdet_internal(0, n, v, c)) return true;
   }
   
   return false;

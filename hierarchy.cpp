@@ -172,19 +172,19 @@ void chdl::dot_schematic(std::ostream &out, hpath_t path) {
         << endl;
   }
 
-  for (auto it = incoming_edges.begin(); it != incoming_edges.end(); ++it) {
-    hierarchy &h(r.c[it->first]);
+  for (auto e : incoming_edges) {
+    hierarchy &h(r.c[e.first]);
     out << ' ' << h.name << '_' << h.number
         << "_inputs [shape=none,label=\"\"];" << endl;
     out << ' ' << h.name << '_' << h.number << "_inputs -> " << h.name << '_'
-        << h.number << " [label=" << it->second.size() << "];" << endl;
+        << h.number << " [label=" << e.second.size() << "];" << endl;
   }
 
-  for (auto it = internal_edges.begin(); it != internal_edges.end(); ++it) {
-    hierarchy &a(r.c[it->first.first]), &b(r.c[it->first.second]);
+  for (auto e : internal_edges) {
+    hierarchy &a(r.c[e.first.first]), &b(r.c[e.first.second]);
     out << ' ' << a.name << '_' << a.number
         << " -> " << b.name << '_' << b.number
-        << " [label=" << it->second.size() << "];" << endl;
+        << " [label=" << e.second.size() << "];" << endl;
   }
   out << '}' << endl;
 }

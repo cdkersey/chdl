@@ -23,25 +23,25 @@ template <unsigned A, unsigned B>
   using namespace chdl;
   using namespace std;
  
-    set<nodeid_t> a, b;
+  set<nodeid_t> a, b;
   for (unsigned i = 0; i < A; ++i) a.insert(av[i]);
   for (unsigned i = 0; i < B; ++i) b.insert(bv[i]);
 
   unsigned max_l(0);
 
-  for (auto it = b.begin(); it != b.end(); ++it) {
+  for (auto n : b) {
     unsigned l(0), l_b(0);
     set<nodeid_t> frontier;
-    frontier.insert(*it);
+    frontier.insert(n);
 
     while (!frontier.empty()) {
       ++l;
 
       set<nodeid_t> next_frontier;
-      for (auto it = frontier.begin(); it != frontier.end(); ++it) {
-        if (a.find(*it) != a.end()) l_b = l;
-        for (unsigned i = 0; i < nodes[*it]->src.size(); ++i)
-          next_frontier.insert(nodes[*it]->src[i]);
+      for (auto n : frontier) {
+        if (a.find(n) != a.end()) l_b = l;
+        for (unsigned i = 0; i < nodes[n]->src.size(); ++i)
+          next_frontier.insert(nodes[n]->src[i]);
       }
 
       frontier = next_frontier;
