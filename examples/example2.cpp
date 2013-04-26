@@ -14,6 +14,10 @@
 #include <opt.h>
 #include <vis.h>
 
+#include <analysis.h>
+
+#include "report.h"
+
 using namespace std;
 using namespace chdl;
 
@@ -63,6 +67,10 @@ int main(int argc, char **argv) {
   ofstream dot_file("example2.dot");
   print_dot(dot_file);
   dot_file.close();
+
+  cout << "Critical path length: " << critpath() << endl;
+
+  report();
 
   return 0;
 }

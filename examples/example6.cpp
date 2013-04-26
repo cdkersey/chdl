@@ -22,6 +22,8 @@
 
 #include <hierarchy.h>
 
+#include "report.h"
+
 using namespace std;
 using namespace chdl;
 
@@ -527,6 +529,8 @@ int main() {
 
   ofstream schem_file("example6.dot");
   dot_schematic(schem_file);
+
+  report();
 
   return 0;
 }

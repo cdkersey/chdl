@@ -16,6 +16,8 @@
 #include <netlist.h>
 #include <hierarchy.h>
 
+#include "report.h"
+
 using namespace chdl;
 using namespace std;
 
@@ -75,6 +77,8 @@ int main(int argc, char **argv) {
   
   ofstream netlist_file("example8.nand");
   print_netlist(netlist_file);
+
+  report();
 
   return 0;
 }
