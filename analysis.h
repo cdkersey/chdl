@@ -13,6 +13,11 @@ namespace chdl {
   template <unsigned B> unsigned pathlen(node a, bvec<B> bv);
   template <unsigned A> unsigned pathlen(bvec<A> av, node b);
 
+  size_t num_nands();
+  size_t num_inverters();
+  size_t num_regs();
+  size_t num_sram_bits();
+
   unsigned critpath();
   bool cycdet();
 };

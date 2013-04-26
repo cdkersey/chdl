@@ -3,6 +3,7 @@
 #include "gates.h"
 #include "nodeimpl.h"
 #include "gatesimpl.h"
+#include "regimpl.h"
 #include "litimpl.h"
 #include "netlist.h"
 #include "lit.h"
@@ -68,4 +69,25 @@ bool chdl::cycdet() {
   }
   
   return false;
+}
+
+size_t chdl::num_nands() {
+  size_t count(0);
+  for (nodeid_t i = 0; i < nodes.size(); ++i)
+    if (dynamic_cast<nandimpl*>(nodes[i])) ++count;
+  return count;
+}
+
+size_t chdl::num_inverters() {
+  size_t count(0);
+  for (nodeid_t i = 0; i < nodes.size(); ++i)
+    if (dynamic_cast<invimpl*>(nodes[i])) ++count;
+  return count;  
+}
+
+size_t chdl::num_regs() {
+  size_t count(0);
+  for (nodeid_t i = 0; i < nodes.size(); ++i)
+    if (dynamic_cast<regimpl*>(nodes[i])) ++count;
+  return count;
 }

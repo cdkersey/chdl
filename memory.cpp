@@ -9,6 +9,7 @@
 #include "tickable.h"
 #include "nodeimpl.h"
 #include "regimpl.h"
+#include "analysis.h"
 
 using namespace chdl;
 using namespace std;
@@ -246,4 +247,11 @@ void chdl::get_mem_nodes(set<nodeid_t> &s) {
     for (unsigned i = 0; i < m.d.size(); ++i)  s.insert(m.d[i]);
     s.insert(m.w);
   }
+}
+
+size_t chdl::num_sram_bits() {
+  size_t count(0);
+  for (auto m : memories)
+    count += m->contents.size();
+  return count;
 }

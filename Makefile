@@ -30,7 +30,7 @@ gates.o: gates.cpp node.h gates.h nodeimpl.h gatesimpl.h sim.h hierarchy.h
 gatesimpl.o: gatesimpl.cpp gatesimpl.h sim.h nodeimpl.h node.h hierarchy.h
 lit.o: lit.cpp lit.h litimpl.h nodeimpl.h node.h hierarchy.h
 memory.o: memory.cpp memory.h node.h bvec.h bvec-basic.h lit.h gates.h \
-          hierarchy.h
+          hierarchy.h analysis.h
 nodeimpl.o: nodeimpl.cpp nodeimpl.h node.h litimpl.h lit.h hierarchy.h
 opt.o: opt.cpp opt.h nodeimpl.h gatesimpl.h sim.h litimpl.h lit.h node.h \
        gates.h memory.h hierarchy.h submodule.h
@@ -43,7 +43,7 @@ tap.o: tap.cpp tap.h nodeimpl.h node.h bvec.h gates.h hierarchy.h
 netlist.o: netlist.cpp netlist.h node.h nodeimpl.h tap.h input.h hierarchy.h
 input.o: input.cpp input.h node.h nodeimpl.h bvec.h gates.h hierarchy.h
 analysis.o: analysis.cpp opt.h tap.h gates.h nodeimpl.h gatesimpl.h litimpl.h \
-            netlist.h lit.h node.h memory.h hierarchy.h
+            netlist.h lit.h node.h memory.h hierarchy.h regimpl.h
 hierarchy.o: hierarchy.cpp hierarchy.h
 submodule.o: submodule.cpp submodule.h bvec.h node.h
 
