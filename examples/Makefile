@@ -23,7 +23,7 @@ text.hex : text.txt
 	dot -Tps $< -o $@
 
 %.vcd %.dot : %
-	LD_LIBRARY_PATH=../ ./$<
+	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):../ ./$<
 
 clean:
 	rm -f $(EXAMPLES) $(EXAMPLE_OUTPUT) *.nand *.vcd *.ps *.dot text.hex \
