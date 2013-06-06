@@ -40,4 +40,3 @@ submodule.o: submodule.cpp submodule.h bvec.h node.h
 
 clean:
 	rm -f libchdl.so $(OBJS) *~ *\#
-	cd util; make clean
