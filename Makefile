@@ -4,27 +4,18 @@ CXXFLAGS += -fPIC -g -std=c++11 #-g
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o submodule.o
 
-UTILS = util/nand2v
-
-all : libchdl.so $(UTILS)
-
-util/% : 
-	cd util; $(MAKE) $(MFLAGS) $(@F); cd ..
+all : libchdl.so
 
 libchdl.so : $(OBJS)
 	g++ -shared $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 install: libchdl.so
 	cp libchdl.so $(PREFIX)/lib
-	cp $(UTILS) /usr/local/bin
 	if [ ! -e $(PREFIX)/include/chdl ]; then mkdir $(PREFIX)/include/chdl; fi
 	cp *.h $(PREFIX)/include/chdl
 
 uninstall:
 	rm -rf $(PREFIX)/lib/libchdl.so $(PREFIX)/include/chdl
-	for x in $(UTILS); do\
-	  rm -f $(PREFIX)/bin/`echo $$x | sed 's/.*\///'`;\
-	done
 
 gates.o: gates.cpp node.h gates.h nodeimpl.h gatesimpl.h sim.h hierarchy.h
 gatesimpl.o: gatesimpl.cpp gatesimpl.h sim.h nodeimpl.h node.h hierarchy.h
