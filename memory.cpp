@@ -91,7 +91,7 @@ void memory::print(ostream &out) {
 }
 
 void memory::print_vl(ostream &out) {
-  unsigned id(d[0]);
+  unsigned id(q[0][0]);
 
   if (!sync) {
     cerr << "Async RAM not currently supported in verilog. Use llmem." << endl;
