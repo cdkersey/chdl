@@ -42,9 +42,10 @@ node &node::operator=(const node &r) {
     for (auto it = node_dir()[from].begin(); it != node_dir()[from].end(); ++it)
     {
       node_dir()[to].insert(*it);
-      node_dir()[from].erase(it);
       (*it)->idx = to;
     }
+
+    node_dir()[from].clear();
   }
 
   node_dir()[to].insert(this);
