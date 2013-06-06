@@ -7,11 +7,12 @@
 #include "gateops.h"
 #include "bvec-basic.h"
 #include "hierarchy.h"
+#include "shifter.h" // for CLOG2
 
 namespace chdl {
   template <unsigned N> bvec<N> Adder(bvec<N> a, bvec<N> b, node cin = Lit(0)) {
     HIERARCHY_ENTER();
-    std::vector<bvec<N+1>> g(log2(N)+3), p(log2(N)+3), i(log2(N)+3);
+    vec<CLOG2(N)+3, bvec<N+1>> g, p, i;
     bvec<N> s;
 
     g[0][0] = cin;
