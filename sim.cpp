@@ -15,7 +15,7 @@ cycle_t chdl::advance() {
   for (size_t i = 0; i < tickables.size(); ++i) tickables[i]->tick();
   for (size_t i = 0; i < tickables.size(); ++i) tickables[i]->tock();
 
-  ++now;
+  return now++;
 }
 
 void chdl::print_time(ostream &out) {

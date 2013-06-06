@@ -49,6 +49,8 @@ node &node::operator=(const node &r) {
 
   node_dir()[to].insert(this);
   idx = to;
+
+  return *this;
 }
 
 void show_node_dir() {
