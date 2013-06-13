@@ -22,6 +22,12 @@ void invimpl::print_vl(ostream &out) {
       << endl;
 }
 
+void invimpl::print_c_val(ostream &out) {
+  out << "!(";
+  nodes[src[0]]->print_c_val(out);
+  out << ')';
+}
+
 bool nandimpl::eval() {
   if (t_cval != sim_time()) {
     cval =  !(nodes[src[0]]->eval() && nodes[src[1]]->eval());
@@ -39,4 +45,12 @@ void nandimpl::print_vl(ostream &out) {
   out << "  wire __x" << id << ';' << endl
       << "  nand __n" << id << "(__x" << id << ", __x" << src[0] << ", __x"
       << src[1] << ");" << endl;
+}
+
+void nandimpl::print_c_val(ostream &out) {
+  out << "!(";
+  nodes[src[0]]->print_c_val(out);
+  out << "&&";
+  nodes[src[1]]->print_c_val(out);
+  out << ')';
 }

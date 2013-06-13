@@ -15,6 +15,10 @@ namespace chdl {
     void print(std::ostream &out);
     void print_vl(std::ostream &out);
 
+    void print_c_decl(std::ostream &out);
+    void print_c_impl(std::ostream &out);
+    void print_c_val(std::ostream &out);
+
     void tick() { next_q = nodes[d]->eval(); }
     void tock() { q = next_q; }
 

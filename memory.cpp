@@ -39,6 +39,9 @@ struct memory : public tickable {
   void print(ostream &out);
   void print_vl(ostream &out);
 
+  void print_c_decl(ostream &out);
+  void print_c_impl(ostream &out);
+
   node w;
   vector<node> da, d;
   vector<vector<node>> qa, q;
@@ -91,7 +94,7 @@ void memory::print(ostream &out) {
 }
 
 void memory::print_vl(ostream &out) {
-  unsigned id(q[0][0]);
+  nodeid_t id(q[0][0]);
 
   if (!sync) {
     cerr << "Async RAM not currently supported in verilog. Use llmem." << endl;
@@ -144,6 +147,39 @@ void memory::print_vl(ostream &out) {
         << endl;
 }
 
+void memory::print_c_decl(ostream &out) {
+  size_t sz(1ul<<qa.size());
+  nodeid_t id(q[0][0]);
+
+  for (unsigned i = 0; i < d.size(); ++i) {
+    out << "  char mem" << id << '_' << i << '[' << sz << "];\n";
+    out << "  { size_t i; for (i = 0; i < " << sz << "; i++) "
+           "mem" << id << '_' << i << "[i] = 0; }\n";
+  }
+}
+
+void memory::print_c_impl(ostream &out) {
+  nodeid_t id(q[0][0]);
+
+  out << "  size_t mem" << id << "_da(";
+  for (unsigned i = 0; i < da.size(); ++i) {
+    out << "((";
+    nodes[da[i]]->print_c_val(out);
+    out << ")<<" << i << ')';
+    if (i != da.size()-1) out << '|';
+  }
+  out << ')';
+
+  out << "  if (";
+  nodes[w]->print_c_val(out);
+  out << ") {";
+  for (unsigned i = 0; i < d.size(); ++i) {
+    out << "    mem" << id << '_' << i << "[mem" << id << "_da] = ";
+    nodes[d[i]]->print_c_val(out);
+    out << ";\n";
+  }
+}
+
 struct qnodeimpl : public nodeimpl {
   qnodeimpl(memory *mem, unsigned port, unsigned idx):
     mem(mem), port(port), idx(idx) {}
@@ -157,11 +193,26 @@ struct qnodeimpl : public nodeimpl {
 
   void print(ostream &out) { if (port == 0 && idx == 0) mem->print(out); }
   void print_vl(ostream &out) { if (port == 0 && idx == 0) mem->print_vl(out); }
+  void print_c_decl(ostream &out) {
+    if (port == 0 && idx == 0) mem->print_c_decl(out);
+  }
+  void print_c_val(ostream &out);
 
   unsigned port, idx;
 
   memory *mem;
 };
+
+void qnodeimpl::print_c_val(ostream &out) {
+  out << "mem" << id << '_' << idx << '[';
+  for (unsigned i = 0; i < mem->qa[port].size(); ++i) {
+    out << "((";
+    nodes[mem->qa[port][i]]->print_c_val(out);
+    out << ")<<" << idx << ')';
+    if (i != mem->qa[port].size()-1) out << '|';
+  }
+  out << ']';
+}
 
 // Load a hex file.
 void load_contents(unsigned n, vector<bool> &contents, string filename) {

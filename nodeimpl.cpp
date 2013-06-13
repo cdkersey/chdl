@@ -27,6 +27,8 @@ void litimpl::print_vl(ostream &out) {
   out << "  assign __x" << id << " = " << val << ';' << endl;
 }
 
+void litimpl::print_c_val(ostream &out) { out << val; }
+
 node::node():              idx(Lit(0))  { node_dir()[idx].insert(this); }
 node::node(nodeid_t i):    idx(i)       { node_dir()[idx].insert(this); }
 node::node(const node &r): idx(r.idx)   { node_dir()[idx].insert(this); }

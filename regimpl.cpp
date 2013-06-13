@@ -33,6 +33,20 @@ void regimpl::print_vl(ostream &out) {
       << "    end" << endl << endl;
 }
 
+void regimpl::print_c_decl(ostream &out) {
+  out << "  char r" << id << " = 0;\n";
+}
+
+void regimpl::print_c_impl(ostream &out) {
+  out << "    r" << id << " = ";
+  nodes[d]->print_c_val(out);
+  out << ";\n";
+}
+
+void regimpl::print_c_val(ostream &out) {
+  out << 'r' << id;
+}
+
 node chdl::Reg(node d, bool val) {
   HIERARCHY_ENTER();  
   if (val) {

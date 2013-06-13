@@ -55,6 +55,19 @@ void chdl::print_taps_vl_body(std::ostream &out, bool print_non_output) {
   }
 }
 
+void chdl::print_taps_c(ostream &out) {
+  for (auto t : taps) {
+    out << "    printf(\"" << t.first << ": \");\n";
+    for (int i = t.second.size()-1; i >= 0; --i) {
+      out << "    putc((";
+      nodes[t.second[i]]->print_c_val(out);
+      out << ")?'1':'0', stdout);\n";
+    }
+    out << "    putc('\\n', stdout);\n";
+  }
+  out << "    putc('\\n', stdout);\n\n";
+}
+
 void chdl::print_tap_nodes(ostream &out) {
   for (auto t : taps) {
     out << "  " << t.first;
