@@ -7,6 +7,9 @@
 #include "tap.h"
 #include "input.h"
 
+#include "regimpl.h"
+#include "analysis.h"
+
 using namespace std;
 using namespace chdl;
 
@@ -34,10 +37,17 @@ void chdl::print_verilog(const char* module_name, ostream &out) {
 
 void chdl::print_c(ostream &out) {
   // Boilerplate top
-  out << "#include <stdio.h>\n\n"
-      << "int main(int argc, char** argv) {\n";
+  out << "#include <stdio.h>\n"
+         "#include <string.h>\n\n"
+         "int main(int argc, char** argv) {\n";
 
   // Declarations
+  regimpl::assign_rids();
+  out << "  char regs0[" << num_regs() << "], regs1[" << num_regs() << "],"
+         " *regs_from = regs0, *regs_to = regs1;\n\n"
+         "  bzero(regs0, " << num_regs() << ");\n"
+         "  bzero(regs1, " << num_regs() << ");\n\n";
+
   for (nodeid_t i = 0; i < nodes.size(); ++i) nodes[i]->print_c_decl(out);
 
   // Loop top
@@ -50,9 +60,13 @@ void chdl::print_c(ostream &out) {
   // Register transfer functions
   for (nodeid_t i = 0; i < nodes.size(); ++i) nodes[i]->print_c_impl(out);
 
+  // Flip register states.
+  out << "    { char *t = regs_from; regs_from = regs_to; regs_to = t; }\n";
+
   // Loop bottom
   out << "  }\n";
 
   // Boilerplate bottom
-  out << "}\n";
+  out << "  return 0;\n"
+         "}\n";
 }

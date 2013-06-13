@@ -38,13 +38,20 @@ void regimpl::print_c_decl(ostream &out) {
 }
 
 void regimpl::print_c_impl(ostream &out) {
-  out << "    r" << id << " = ";
+  out << "    regs_to[" << rid << "] = ";
   nodes[d]->print_c_val(out);
   out << ";\n";
 }
 
 void regimpl::print_c_val(ostream &out) {
-  out << 'r' << id;
+  out << "regs_from[" << rid << ']';
+}
+
+void regimpl::assign_rids() {
+  size_t count(0);
+  for (nodeid_t i = 0; i < nodes.size(); ++i)
+    if (regimpl* r = dynamic_cast<regimpl*>(nodes[i]))
+      r->rid = count++;
 }
 
 node chdl::Reg(node d, bool val) {

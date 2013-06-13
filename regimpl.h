@@ -25,6 +25,9 @@ namespace chdl {
     node d;
 
     bool q, next_q;
+
+    nodeid_t rid;
+    static void assign_rids();
   };
 };
 
