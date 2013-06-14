@@ -1,6 +1,14 @@
 CHDL Near-term Roadmap
 ======================
 
+_ C output support
+  - Dump a simple C program (no bit-level parallelism, dump VCD)
+    - Right now the dump isn't even VCD. Fix the format.
+  - Fix memory behavior to match built-in simulator.
+    - Specifically, don't forward writes to reads.
+  - Add support for asynchronous memories.
+  - Modularize input/output (support more than just dumping VCD)
+
 _ Technology mapping
   - Use a truth table based approach.
   - Each truth table is a binary vector and a set of at most 6 inputs
