@@ -148,36 +148,36 @@ void memory::print_vl(ostream &out) {
 }
 
 void memory::print_c_decl(ostream &out) {
-  size_t sz(1ul<<qa.size());
+  size_t sz(1ul<<da.size());
   nodeid_t id(q[0][0]);
 
   for (unsigned i = 0; i < d.size(); ++i) {
     out << "  char mem" << id << '_' << i << '[' << sz << "];\n";
-    out << "  { size_t i; for (i = 0; i < " << sz << "; i++) "
-           "mem" << id << '_' << i << "[i] = 0; }\n";
+    out << "  bzero(mem" << id << '_' << i << ", " << sz << "ul);\n";
   }
 }
 
 void memory::print_c_impl(ostream &out) {
   nodeid_t id(q[0][0]);
 
-  out << "  size_t mem" << id << "_da(";
+  out << "    size_t mem" << id << "_da = ";
   for (unsigned i = 0; i < da.size(); ++i) {
     out << "((";
     nodes[da[i]]->print_c_val(out);
     out << ")<<" << i << ')';
     if (i != da.size()-1) out << '|';
   }
-  out << ')';
+  out << ";\n";
 
-  out << "  if (";
+  out << "    if (";
   nodes[w]->print_c_val(out);
-  out << ") {";
+  out << ") {\n";
   for (unsigned i = 0; i < d.size(); ++i) {
-    out << "    mem" << id << '_' << i << "[mem" << id << "_da] = ";
+    out << "      mem" << id << '_' << i << "[mem" << id << "_da] = ";
     nodes[d[i]]->print_c_val(out);
     out << ";\n";
   }
+  out << "    }\n";
 }
 
 struct qnodeimpl : public nodeimpl {
@@ -196,6 +196,9 @@ struct qnodeimpl : public nodeimpl {
   void print_c_decl(ostream &out) {
     if (port == 0 && idx == 0) mem->print_c_decl(out);
   }
+  void print_c_impl(ostream &out) {
+    if (port == 0 && idx == 0) mem->print_c_impl(out);
+  }
   void print_c_val(ostream &out);
 
   unsigned port, idx;
@@ -204,11 +207,11 @@ struct qnodeimpl : public nodeimpl {
 };
 
 void qnodeimpl::print_c_val(ostream &out) {
-  out << "mem" << id << '_' << idx << '[';
+  out << "mem" << mem->q[0][0] << '_' << idx << '[';
   for (unsigned i = 0; i < mem->qa[port].size(); ++i) {
     out << "((";
     nodes[mem->qa[port][i]]->print_c_val(out);
-    out << ")<<" << idx << ')';
+    out << ")<<" << i << ')';
     if (i != mem->qa[port].size()-1) out << '|';
   }
   out << ']';

@@ -7,10 +7,15 @@ using namespace std;
 using namespace chdl;
 
 int main(int argc, char **argv) {
-  bvec<8> x, y;
-  x = Reg(x + Lit<8>(1));
-  y = Zext<8>(x[range<0, 3>()]) * Zext<8>(x[range<4, 7>()]);
-  TAP(x); TAP(Reg(y));
+  bvec<5> ctr; ctr = Reg(ctr + Lit<5>(1));
+  bvec<4> adr(ctr[range<0,3>()]);
+  bvec<8> wval;
+  wval = Reg(wval + Lit<8>(17), 29);
+  node w(ctr[4]);
+
+  bvec<8> q = Memory(adr, wval, w);
+
+  TAP(wval); TAP(w); TAP(adr); TAP(ctr); TAP(q);
 
   // The simulation (generate .vcd file)
   optimize();
@@ -21,6 +26,10 @@ int main(int argc, char **argv) {
   ofstream c_file("example-c.c");
   print_c(c_file);
   c_file.close();
+
+  ofstream nand_file("example.nand");
+  print_netlist(nand_file);
+  nand_file.close();
 
   return 0;
 }
