@@ -80,8 +80,9 @@ void chdl::print_c(ostream &out) {
 
   // Boilerplate top
   out << "#include <stdio.h>\n"
-         "#include <string.h>\n\n"
-         "int main(int argc, char** argv) {\n";
+         "#include <string.h>\n\n";
+
+  out << "int main(int argc, char** argv) {\n";
 
   // Declarations
   regimpl::assign_rids();
@@ -96,9 +97,6 @@ void chdl::print_c(ostream &out) {
   out << "  unsigned long stopat = (argc == 2)?atol(argv[1]):1000, i;\n"
       << "  for (i = 0; i < stopat; i++) {\n";
 
-  // Print state of taps
-  print_taps_c(out);
-
   // Register transfer functions.
   for (auto p : ll_r) {
     nodeid_t id(p.second);
@@ -106,6 +104,9 @@ void chdl::print_c(ostream &out) {
     if (!dynamic_cast<regimpl*>(nodes[id]))
       nodes[id]->print_c_impl(out);
   }
+
+  // Print outputs.
+  print_taps_c(out);
 
   out << "    // Register updates.\n";
   for (auto r : regs)

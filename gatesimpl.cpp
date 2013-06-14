@@ -22,8 +22,12 @@ void invimpl::print_vl(ostream &out) {
       << endl;
 }
 
+void invimpl::print_c_decl(ostream &out) {
+  out << "  char x" << id << " = 0;\n";
+}
+
 void invimpl::print_c_impl(ostream &out) {
-  out << "    char x" << id << " = !(";
+  out << "    x" << id << " = !(";
   nodes[src[0]]->print_c_val(out);
   out << ");\n";
 }
@@ -45,6 +49,10 @@ void nandimpl::print_vl(ostream &out) {
   out << "  wire __x" << id << ';' << endl
       << "  nand __n" << id << "(__x" << id << ", __x" << src[0] << ", __x"
       << src[1] << ");" << endl;
+}
+
+void nandimpl::print_c_decl(ostream &out) {
+  out << "  char x" << id << ";\n";
 }
 
 void nandimpl::print_c_impl(ostream &out) {

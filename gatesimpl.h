@@ -13,6 +13,7 @@ namespace chdl {
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
+    virtual void print_c_decl(std::ostream &out);
     virtual void print_c_impl(std::ostream &out);
 
   private:
@@ -30,6 +31,7 @@ namespace chdl {
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
+    virtual void print_c_decl(std::ostream &out);
     virtual void print_c_impl(std::ostream &out);
 
   private:
