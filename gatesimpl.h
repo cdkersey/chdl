@@ -13,7 +13,7 @@ namespace chdl {
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
-    virtual void print_c_val(std::ostream &out);
+    virtual void print_c_impl(std::ostream &out);
 
   private:
     bool cval;
@@ -30,7 +30,7 @@ namespace chdl {
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
-    virtual void print_c_val(std::ostream &out);
+    virtual void print_c_impl(std::ostream &out);
 
   private:
     bool cval;

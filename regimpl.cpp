@@ -33,10 +33,6 @@ void regimpl::print_vl(ostream &out) {
       << "    end" << endl << endl;
 }
 
-void regimpl::print_c_decl(ostream &out) {
-  out << "  char r" << id << " = 0;\n";
-}
-
 void regimpl::print_c_impl(ostream &out) {
   out << "    regs_to[" << rid << "] = ";
   nodes[d]->print_c_val(out);

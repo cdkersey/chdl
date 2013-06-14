@@ -22,10 +22,10 @@ void invimpl::print_vl(ostream &out) {
       << endl;
 }
 
-void invimpl::print_c_val(ostream &out) {
-  out << "!(";
+void invimpl::print_c_impl(ostream &out) {
+  out << "    char x" << id << " = !(";
   nodes[src[0]]->print_c_val(out);
-  out << ')';
+  out << ");\n";
 }
 
 bool nandimpl::eval() {
@@ -47,10 +47,10 @@ void nandimpl::print_vl(ostream &out) {
       << src[1] << ");" << endl;
 }
 
-void nandimpl::print_c_val(ostream &out) {
-  out << "!(";
+void nandimpl::print_c_impl(ostream &out) {
+  out << "    char x" << id << " = !(";
   nodes[src[0]]->print_c_val(out);
   out << "&&";
   nodes[src[1]]->print_c_val(out);
-  out << ')';
+  out << ");\n";
 }
