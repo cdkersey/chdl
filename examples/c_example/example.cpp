@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
   bvec<8> x, y;
   x = Reg(x + Lit<8>(1));
   y = Zext<8>(x[range<0, 3>()]) * Zext<8>(x[range<4, 7>()]);
-  TAP(x); TAP(y);
+  TAP(x); TAP(Reg(y));
 
   // The simulation (generate .vcd file)
   optimize();
