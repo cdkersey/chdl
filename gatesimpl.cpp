@@ -23,7 +23,7 @@ void invimpl::print_vl(ostream &out) {
 }
 
 void invimpl::print_c_decl(ostream &out) {
-  out << "  char x" << id << " = 0;\n";
+  out << "  char x" << id << ";\n";
 }
 
 void invimpl::print_c_impl(ostream &out) {
