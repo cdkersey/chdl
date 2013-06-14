@@ -11,11 +11,11 @@ int main(int argc, char **argv) {
   bvec<4> adr(ctr[range<0,3>()]);
   bvec<8> wval;
   wval = Reg(wval + Lit<8>(17), 29);
-  node w(ctr[4]);
+  node w(!ctr[4]);
 
   bvec<8> q = Memory(adr, wval, w);
 
-  TAP(wval); TAP(w); TAP(adr); TAP(ctr); TAP(q);
+  TAP(wval); TAP(w); TAP(adr); TAP(q);
 
   // The simulation (generate .vcd file)
   optimize();

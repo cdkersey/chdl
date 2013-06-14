@@ -182,7 +182,16 @@ void memory::print_c_impl(ostream &out) {
 
 struct qnodeimpl : public nodeimpl {
   qnodeimpl(memory *mem, unsigned port, unsigned idx):
-    mem(mem), port(port), idx(idx) {}
+    mem(mem), port(port), idx(idx) 
+  {
+    for (unsigned i = 0; i < mem->d.size(); ++i) src.push_back(mem->d[i]);
+    for (unsigned i = 0; i < mem->da.size(); ++i) src.push_back(mem->da[i]);
+
+    for (unsigned i = 0; i < mem->qa[port].size(); ++i)
+      src.push_back(mem->qa[port][i]);
+
+    src.push_back(mem->w);
+  }
 
   bool eval() {
     if (mem->sync)
@@ -245,9 +254,6 @@ memory::memory(
   // Load contents from file
   if (filename != "") load_contents(d.size(), contents, filename);
 
-  // Add the read port
-  add_read_port(qai);
-
   // Populate the write address array.
   rdval.push_back(vector<bool>(di.size()));
   for (unsigned i = 0; i < qai.size(); ++i)
@@ -256,6 +262,9 @@ memory::memory(
   // Create the q bits.
   for (unsigned i = 0; i < d.size(); ++i)
     d[i] = di[i];
+
+  // Add the read port
+  add_read_port(qai);
 
   id = memories.size();
   memories.push_back(this);
