@@ -155,6 +155,11 @@ void memory::print_c_decl(ostream &out) {
   for (unsigned i = 0; i < d.size(); ++i) {
     out << "  char mem" << id << '_' << i << '[' << sz << "];\n";
     out << "  bzero(mem" << id << '_' << i << ", " << sz << "ul);\n";
+    if (sync) {
+      for (unsigned j = 0; j < q.size(); ++j) {
+        out << "  char mem" << id << "_q" << j << '_' << i << " = 0;\n";
+      }
+    }
   }
 }
 
@@ -169,6 +174,17 @@ void memory::print_c_impl(ostream &out) {
     if (i != da.size()-1) out << '|';
   }
   out << ";\n";
+
+  for (unsigned j = 0; j < qa.size(); ++j) {
+    out << "    size_t mem" << id << "_qa" << j << " = ";
+    for (unsigned i = 0; i < qa[j].size(); ++i) {
+      out << "((";
+      nodes[qa[j][i]]->print_c_val(out);
+      out << ")<<" << i << ')';
+      if (i != qa[j].size()-1) out << '|';
+    }
+    out << ";\n";
+  }
 }
 
 void memory::print_c_final(ostream &out) {
@@ -183,6 +199,15 @@ void memory::print_c_final(ostream &out) {
     out << ";\n";
   }
   out << "    }\n";
+
+  if (sync) {
+    for (unsigned j = 0; j < q.size(); ++j) {
+      for (unsigned i = 0; i < q[j].size(); ++i) {
+        out << "    mem" << id << "_q" << j << '_' << i << " = mem" << id << '_'
+            << i << "[mem" << id << "_qa" << j << "];\n";
+      }
+    }
+  }
 }
 
 struct qnodeimpl : public nodeimpl {
@@ -224,14 +249,12 @@ struct qnodeimpl : public nodeimpl {
 };
 
 void qnodeimpl::print_c_val(ostream &out) {
-  out << "mem" << mem->q[0][0] << '_' << idx << '[';
-  for (unsigned i = 0; i < mem->qa[port].size(); ++i) {
-    out << "((";
-    nodes[mem->qa[port][i]]->print_c_val(out);
-    out << ")<<" << i << ')';
-    if (i != mem->qa[port].size()-1) out << '|';
+  if (mem->sync) {
+    out << "mem" << mem->q[0][0] << "_q" << port << '_' << idx;
+  } else {
+    out << "mem" << mem->q[0][0] << '_' << idx;
+    out << "[mem" << mem->q[0][0] << "_qa" << port << ']';
   }
-  out << ']';
 }
 
 // Load a hex file.
