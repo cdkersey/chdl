@@ -41,6 +41,7 @@ struct memory : public tickable {
 
   void print_c_decl(ostream &out);
   void print_c_impl(ostream &out);
+  void print_c_final(ostream &out);
 
   node w;
   vector<node> da, d;
@@ -168,6 +169,10 @@ void memory::print_c_impl(ostream &out) {
     if (i != da.size()-1) out << '|';
   }
   out << ";\n";
+}
+
+void memory::print_c_final(ostream &out) {
+  nodeid_t id(q[0][0]);
 
   out << "    if (";
   nodes[w]->print_c_val(out);
@@ -207,6 +212,9 @@ struct qnodeimpl : public nodeimpl {
   }
   void print_c_impl(ostream &out) {
     if (port == 0 && idx == 0) mem->print_c_impl(out);
+  }
+  void print_c_final(ostream &out) {
+    if (port == 0 && idx == 0) mem->print_c_final(out);
   }
   void print_c_val(ostream &out);
 

@@ -24,6 +24,7 @@ namespace chdl {
     virtual void print_c_decl(std::ostream &) {}
     virtual void print_c_impl(std::ostream &) {}
     virtual void print_c_val(std::ostream &out) { out << 'x' << id; }
+    virtual void print_c_final(std::ostream &) {}
 
     // The node keeps a copy of its ID. This makes mapping from nodeimpl
     // pointers to node objects straightforward.

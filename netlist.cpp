@@ -105,8 +105,15 @@ void chdl::print_c(ostream &out) {
       nodes[id]->print_c_impl(out);
   }
 
-  // Print outputs.
+  // Print outputs
   print_taps_c(out);
+
+  // Final operations (used for memory writes)
+  for (auto p : ll_r) {
+    nodeid_t id(p.second);
+
+    nodes[id]->print_c_final (out);
+  }
 
   out << "    // Register updates.\n";
   for (auto r : regs)
