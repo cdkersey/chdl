@@ -9,7 +9,7 @@ out.dump : example-c
 example-c : example-c.c
 	$(CC) -O2 -o example-c example-c.c
 
-example-c.c example.vcd : example
+example-c.c example.vcd : example sieve.hex
 	./example
 
 example : example.cpp
