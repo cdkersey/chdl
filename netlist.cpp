@@ -73,7 +73,12 @@ void chdl::print_c(ostream &out) {
   out << "#include <stdio.h>\n"
          "#include <string.h>\n\n";
 
-  out << "int main(int argc, char** argv) {\n";
+  out << "void sim_main(unsigned long stopat);\n\n"
+      << "int main(int argc, char** argv) {\n"
+      << "  sim_main(argc == 2?atol(argv[1]):1000);\n"
+      << "  return 0;\n"
+      << "}\n\n"
+      << "void sim_main(unsigned long stopat) {\n";
 
   // Declarations
   regimpl::assign_rids();
@@ -84,8 +89,11 @@ void chdl::print_c(ostream &out) {
 
   for (nodeid_t i = 0; i < nodes.size(); ++i) nodes[i]->print_c_decl(out);
 
+  // Code to print VCD header
+  print_taps_c_head(out);
+
   // Loop top
-  out << "  unsigned long stopat = (argc == 2)?atol(argv[1]):1000, i;\n"
+  out << "  unsigned long i;\n"
       << "  for (i = 0; i < stopat; i++) {\n";
 
   // Register transfer functions.
@@ -97,7 +105,7 @@ void chdl::print_c(ostream &out) {
   }
 
   // Print outputs
-  print_taps_c(out);
+  print_taps_c_body(out);
 
   // Final operations (used for memory writes)
   for (auto p : ll_r) {
@@ -118,6 +126,5 @@ void chdl::print_c(ostream &out) {
   out << "  }\n";
 
   // Boilerplate bottom
-  out << "  return 0;\n"
-         "}\n";
+  out << "}\n";
 }

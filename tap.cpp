@@ -55,17 +55,32 @@ void chdl::print_taps_vl_body(std::ostream &out, bool print_non_output) {
   }
 }
 
-void chdl::print_taps_c(ostream &out) {
+void chdl::print_taps_c_head(ostream &out) {
+  out << "    fputs(\"$timescale 1 ns $end\\n\"\n";
+  for (auto t : taps)
+    out << "          \"$var reg " << t.second.size() << ' ' << t.first << ' '
+        << t.first << " $end\\n\"\n";
+  out << "          \"$enddefinitions $end\\n\", stdout);\n";
+}
+
+void chdl::print_taps_c_body(ostream &out) {
+  out << "    printf(\"#%lu\\n\", i);\n";
   for (auto t : taps) {
-    out << "    printf(\"" << t.first << ": \");\n";
-    for (int i = t.second.size()-1; i >= 0; --i) {
+    if (t.second.size() == 1) {
       out << "    putc((";
-      nodes[t.second[i]]->print_c_val(out);
+      nodes[t.second[0]]->print_c_val(out);
       out << ")?'1':'0', stdout);\n";
+    } else {
+      out << "    putc('b', stdout);\n";
+      for (int i = t.second.size()-1; i >= 0; --i) {
+        out << "    putc((";
+        nodes[t.second[i]]->print_c_val(out);
+        out << ")?'1':'0', stdout);\n";
+      }
+      out << "    putc(' ', stdout);\n";
     }
-    out << "    putc('\\n', stdout);\n";
+    out << "    fputs(\"" << t.first << "\\n\", stdout);\n";
   }
-  out << "    putc('\\n', stdout);\n\n";
 }
 
 void chdl::print_tap_nodes(ostream &out) {
