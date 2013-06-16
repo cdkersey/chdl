@@ -69,15 +69,6 @@ void chdl::print_c(ostream &out) {
 
   for (auto l : ll) ll_r.insert(pair<int, nodeid_t>(l.second, l.first));
   
-  cout << "max_ll (critpath) = " << max_ll << endl;
-
-  for (unsigned i = 0; i < max_ll; ++i) {
-    cout << i << ": ";
-    auto j(ll_r.find(i));
-    while (j != ll_r.end() && j->first == i) { cout << ' ' << j->second; ++j; }
-    cout << '\n';
-  }
-
   // Boilerplate top
   out << "#include <stdio.h>\n"
          "#include <string.h>\n\n";
