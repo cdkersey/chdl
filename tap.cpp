@@ -64,7 +64,7 @@ void chdl::print_taps_c_head(ostream &out) {
 }
 
 void chdl::print_taps_c_body(ostream &out) {
-  out << "    printf(\"#%lu\\n\", i);\n";
+  out << "    if (i == 0) fputs(\"#0\\n\", stdout);\n";
   for (auto t : taps) {
     if (t.second.size() == 1) {
       out << "    putc((";
@@ -81,6 +81,7 @@ void chdl::print_taps_c_body(ostream &out) {
     }
     out << "    fputs(\"" << t.first << "\\n\", stdout);\n";
   }
+  out << "    printf(\"#%lu\\n\", i+1);\n";
 }
 
 void chdl::print_tap_nodes(ostream &out) {
