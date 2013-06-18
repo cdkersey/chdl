@@ -22,8 +22,7 @@ void regimpl::print(ostream &out) {
 }
 
 void regimpl::print_vl(ostream &out) {
-  out << "  reg __x" << id << ';' << endl
-      << "  initial" << endl
+  out << "  initial" << endl
       << "    begin" << endl
       << "      __x" << id << " <= 0;" << endl
       << "    end" << endl

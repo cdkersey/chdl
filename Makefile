@@ -31,7 +31,8 @@ regimpl.o: regimpl.cpp reg.h regimpl.h nodeimpl.h tickable.h node.h gates.h \
            hierarchy.h
 sim.o: sim.cpp sim.h tickable.h tap.h
 tap.o: tap.cpp tap.h nodeimpl.h node.h bvec.h gates.h hierarchy.h
-netlist.o: netlist.cpp netlist.h node.h nodeimpl.h tap.h input.h hierarchy.h
+netlist.o: netlist.cpp netlist.h node.h nodeimpl.h tap.h input.h hierarchy.h \
+           reg.h
 input.o: input.cpp input.h node.h nodeimpl.h bvec.h gates.h hierarchy.h
 analysis.o: analysis.cpp opt.h tap.h gates.h nodeimpl.h gatesimpl.h litimpl.h \
             netlist.h lit.h node.h memory.h hierarchy.h regimpl.h
