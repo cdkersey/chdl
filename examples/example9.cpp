@@ -21,6 +21,9 @@ int main(int argc, char **argv) {
 
   optimize();
 
+  ofstream nand_file("example9.nand");
+  print_netlist(nand_file);
+
   ofstream wave_file("example9.vcd");
   run(wave_file, 256);
 
