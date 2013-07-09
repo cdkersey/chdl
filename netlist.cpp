@@ -71,7 +71,15 @@ void chdl::print_c(ostream &out) {
   
   // Boilerplate top
   out << "#include <stdio.h>\n"
-         "#include <string.h>\n\n";
+         "#include <stdlib.h>\n"
+         "#include <string.h>\n"
+         "#include <sys/time.h>\n";
+
+  out << "unsigned long get_time_us() {\n"
+         "  struct timeval tv;\n"
+         "  gettimeofday(&tv, NULL);\n"
+         "  return 1000000ul * tv.tv_sec + tv.tv_usec;\n"
+         "}\n\n";
 
   out << "void sim_main(unsigned long stopat);\n\n"
       << "int main(int argc, char** argv) {\n"
@@ -88,6 +96,8 @@ void chdl::print_c(ostream &out) {
          "  bzero(regs1, " << num_regs() << ");\n\n";
 
   for (nodeid_t i = 0; i < nodes.size(); ++i) nodes[i]->print_c_decl(out);
+
+  out << "\n  unsigned long start_time = get_time_us();\n\n";
 
   // Code to print VCD header
   print_taps_c_head(out);
@@ -124,6 +134,9 @@ void chdl::print_c(ostream &out) {
 
   // Loop bottom
   out << "  }\n";
+
+  out << "\n  unsigned long end_time = get_time_us();\n"
+         "  fprintf(stderr, \"%fms.\\n\", (end_time-start_time)/1000.0);\n\n";
 
   // Boilerplate bottom
   out << "}\n";
