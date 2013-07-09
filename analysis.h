@@ -4,6 +4,7 @@
 #define __ANALYSIS_H
 
 #include <set>
+#include <vector>
 
 #include "bvec-basic-op.h"
 #include "nodeimpl.h"
@@ -17,6 +18,14 @@ namespace chdl {
   size_t num_inverters();
   size_t num_regs();
   size_t num_sram_bits();
+
+  struct gatecluster {
+    gatecluster(nodeid_t o, const std::set<nodeid_t> &g);
+    nodeid_t output;
+    std::vector<nodeid_t> inputs;
+    std::set<nodeid_t> gates;
+  };
+  std::vector<gatecluster> get_gate_clusters(unsigned max_inputs=0);
 
   unsigned critpath();
   bool cycdet();
