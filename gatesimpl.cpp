@@ -17,8 +17,7 @@ void invimpl::print(ostream &out) {
 }
 
 void invimpl::print_vl(ostream &out) {
-  out << "  wire __x" << id << ';' << endl
-      << "  not __i" << id << "(__x" << id << ", " << "__x" << src[0] << ");"
+  out << "  not __i" << id << "(__x" << id << ", " << "__x" << src[0] << ");"
       << endl;
 }
 
@@ -46,8 +45,7 @@ void nandimpl::print(ostream &out) {
 }
 
 void nandimpl::print_vl(ostream &out) {
-  out << "  wire __x" << id << ';' << endl
-      << "  nand __n" << id << "(__x" << id << ", __x" << src[0] << ", __x"
+  out << "  nand __n" << id << "(__x" << id << ", __x" << src[0] << ", __x"
       << src[1] << ");" << endl;
 }
 

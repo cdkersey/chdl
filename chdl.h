@@ -10,6 +10,7 @@
 #include <chdl/gates.h>
 #include <chdl/hierarchy.h>
 #include <chdl/input.h>
+#include <chdl/latch.h>
 #include <chdl/lit.h>
 #include <chdl/llmem.h>
 #include <chdl/memory.h>
