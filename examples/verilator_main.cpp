@@ -1,4 +1,4 @@
-#include "Vexample6.h"
+#include "Vexample2.h"
 
 #include <verilated.h>
 #include <verilated_vcd_c.h>
@@ -18,7 +18,11 @@ unsigned long time_us() {
 int main(int argc, char **argv) {
   Verilated::commandArgs(argc, argv);
   Verilated::traceEverOn(true);
+<<<<<<< HEAD
   Vexample6 *top = new Vexample6;
+=======
+  Vexample2 *top = new Vexample2;
+>>>>>>> 6675bb9f977ccc7df773b7ca23cd66819dc135b2
   VerilatedVcdC trace_obj;
 
 

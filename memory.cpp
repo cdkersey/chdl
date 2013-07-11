@@ -278,21 +278,11 @@ memory::memory(
   vector<node> &qai, vector<node> &di, vector<node> &dai, node w,
   string filename, bool sync, size_t &id
 ) :
-  contents(di.size()<<(qai.size())), wrdata(di.size()-1), filename(filename),
-  w(w), d(di.size()), da(qai.size()), raddr(0), waddr(0),
-  sync(sync)
+  contents(di.size()<<(dai.size())), wrdata(di.size()), filename(filename),
+  w(w), raddr(0), waddr(0), da(dai), d(di), sync(sync)
 {
   // Load contents from file
-  if (filename != "") load_contents(d.size(), contents, filename);
-
-  // Populate the write address array.
-  rdval.push_back(vector<bool>(di.size()));
-  for (unsigned i = 0; i < qai.size(); ++i)
-    da[i] = dai[i];
-
-  // Create the q bits.
-  for (unsigned i = 0; i < d.size(); ++i)
-    d[i] = di[i];
+  if (filename != "") load_contents(di.size(), contents, filename);
 
   // Add the read port
   add_read_port(qai);
