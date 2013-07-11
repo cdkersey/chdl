@@ -92,8 +92,8 @@ void chdl::print_c(ostream &out) {
   regimpl::assign_rids();
   out << "  char regs0[" << num_regs() << "], regs1[" << num_regs() << "],"
          " *regs_from = regs0, *regs_to = regs1;\n\n"
-         "  bzero(regs0, " << num_regs() << ");\n"
-         "  bzero(regs1, " << num_regs() << ");\n\n";
+         "  memset(regs0, 0, " << num_regs() << ");\n"
+         "  memset(regs1, 0, " << num_regs() << ");\n\n";
 
   for (nodeid_t i = 0; i < nodes.size(); ++i) nodes[i]->print_c_decl(out);
 

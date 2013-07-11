@@ -56,9 +56,9 @@ void nandimpl::print_c_decl(ostream &out) {
 }
 
 void nandimpl::print_c_impl(ostream &out) {
-  out << "    char x" << id << " = !(";
+  out << "    x" << id << " = !(";
   nodes[src[0]]->print_c_val(out);
-  out << "&&";
+  out << "&";
   nodes[src[1]]->print_c_val(out);
   out << ");\n";
 }
