@@ -32,6 +32,19 @@ namespace chdl {
     return out;
   }
 
+  // Find index of lowest set bit; reverse of the Log2 priority encoder
+  template <unsigned N> bvec<CLOG2(N)> Lsb(bvec<N> x) {
+    bvec<CLOG2(N)> out;
+
+    HIERARCHY_ENTER();
+    bvec<N> xrev;
+    for (unsigned i = 0; i < N; ++i) xrev[N-i-1] = x[i];
+    out = ~Log2(xrev);
+    HIERARCHY_EXIT();
+
+    return out;
+  }
+
   // Cheap encoder, results valid only when exactly one input set
   template <unsigned N> bvec<CLOG2(N)> Enc(bvec<N> x) {
     HIERARCHY_ENTER();
