@@ -44,6 +44,7 @@ void chdl::print_verilog(const char* module_name, ostream &out) {
   out << "endmodule" << endl;
 }
 
+#if 0
 void chdl::print_c(ostream &out) {
   // First, compute "logic layer" of each node, its distance from the farthest
   // register or literal. This is used to determine the order in which node
@@ -147,3 +148,5 @@ void chdl::print_c(ostream &out) {
   // Boilerplate bottom
   out << "}\n";
 }
+
+#endif

@@ -484,7 +484,10 @@ void pipeline() {
 }
 
 int main(int argc, char **argv) {
-  pipeline();
+  //pipeline();
+
+  bvec<8> x;
+  x = Reg(x + Lit<8>(1));
 
   if (cycdet()) {
     cerr << "Cycle detected in logic DAG." << endl;

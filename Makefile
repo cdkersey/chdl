@@ -3,7 +3,7 @@ CXXFLAGS += -fPIC -g -std=c++11 #-g
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o \
-       submodule.o latch.o
+       submodule.o latch.o fastcgen.o
 
 all : libchdl.so
 
@@ -34,6 +34,8 @@ sim.o: sim.cpp sim.h tickable.h tap.h
 tap.o: tap.cpp tap.h nodeimpl.h node.h bvec.h gates.h hierarchy.h
 netlist.o: netlist.cpp netlist.h node.h nodeimpl.h tap.h input.h hierarchy.h \
            analysis.h regimpl.h reg.h
+fastcgen.o: fastcgen.cpp netlist.h node.h nodeimpl.h tap.h input.h hierarchy.h\
+            analysis.h regimpl.h reg.h gatesimpl.h
 input.o: input.cpp input.h node.h nodeimpl.h bvec.h gates.h hierarchy.h
 analysis.o: analysis.cpp opt.h tap.h gates.h nodeimpl.h gatesimpl.h litimpl.h \
             netlist.h lit.h node.h memory.h hierarchy.h regimpl.h
