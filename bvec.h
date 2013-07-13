@@ -2,6 +2,8 @@
 #ifndef __BVEC_H
 #define __BVEC_H
 
+#include <cstdlib>
+
 #include "reg.h"
 #include "lit.h"
 #include "node.h"
