@@ -55,6 +55,7 @@ void chdl::print_c(ostream &out) {
     nodetype_t type;
     nodeid_t node;
     unsigned width;
+    vector<unsigned> src;
   };
 
   // Generate the internal representation of the gates
@@ -115,13 +116,28 @@ void chdl::print_c(ostream &out) {
     }
   }
 
-  // // // Optimize // // //
-
   // Create a way to quickly look up node indices
   vector<map<nodeid_t, unsigned>> ll_idx(cnodes.size());
   for (unsigned i = 0; i < cnodes.size(); ++i)
     for (unsigned j = 0; j < cnodes[i].size(); ++j)
       ll_idx[i][cnodes[i][j].node] = j;
+
+  // Set up src vectors
+  for (unsigned i = 1; i < cnodes.size(); ++i) {
+    for (unsigned j = 0; j < cnodes[i].size(); ++j) {
+      if (cnodes[i][j].type == WIRE) {
+        nodeid_t n(cnodes[i][j].node);
+        cnodes[i][j].src.push_back(ll_idx[i-1][n]);
+      } else {
+        nodeid_t n(cnodes[i][j].node);
+        for (unsigned k = 0; k < nodes[n]->src.size(); ++k) {
+          cnodes[i][j].src.push_back(ll_idx[i-1][nodes[n]->src[k]]);
+        }
+      }
+    }
+  }
+
+  // // // Optimize // // //
 
   // Set width field appropriately.
   for (unsigned i = 0; i < cnodes.size(); ++i) {
@@ -134,29 +150,31 @@ void chdl::print_c(ostream &out) {
 
         if (t == DUMMY || i == 0) continue;
 
-        nodeid_t n0(cnodes[i][k-1].node), n1(cnodes[i][k].node);
-        if (t == WIRE) {
-          unsigned i0(ll_idx[input_lvl][n0]), i1(ll_idx[input_lvl][n1]);
-          if (i0 + 1 != i1) break;
-        } else if (t == NAND || t == INV) {
-          unsigned i00(ll_idx[input_lvl][nodes[n0]->src[0]]),
-                   i01(t == NAND?ll_idx[input_lvl][nodes[n0]->src[1]]:0),
-                   i10(ll_idx[input_lvl][nodes[n1]->src[0]]),
-                   i11(t == NAND?ll_idx[input_lvl][nodes[n1]->src[1]]:0);
+        if (t == NAND || t == INV || t == WIRE) {
+          unsigned i00(cnodes[i][k-1].src[0]),
+                   i01(t == NAND?cnodes[i][k-1].src[1]:0),
+                   i10(cnodes[i][k].src[0]),
+                   i11(t == NAND?cnodes[i][k].src[1]:0);
         
-          if (i00 + 1 != i10) { cout << "  input0\n"; break; }
-          if (t == NAND && i01 + 1 != i11) { cout << "  input1\n"; break; }
+          if (i00 + 1 != i10) break;
+          if (t == NAND && i01 + 1 != i11) break;
         }
       }
     }
   }
 
-  // Erase redundant operations.
+  // Erase redundant operations and re-generate the ll_idx lookup.
   vector<vector<cnode_t>> cnodes2(max_ll+1);
   for (unsigned i = 0; i < cnodes.size(); ++i)
     for (unsigned j = 0; j < cnodes[i].size(); j += cnodes[i][j].width)
       cnodes2[i].push_back(cnodes[i][j]);
   cnodes = cnodes2;
+
+  vector<map<nodeid_t, unsigned>> ll_idx2(cnodes.size());
+  for (unsigned i = 0; i < cnodes.size(); ++i)
+    for (unsigned j = 0; j < cnodes[i].size(); ++j)
+      ll_idx2[i][cnodes[i][j].node] = j;
+  ll_idx = ll_idx2;
 
   // // // Emit C code // // //
 
@@ -174,18 +192,77 @@ void chdl::print_c(ostream &out) {
     if (l != cnodes.size() - 1) out << ",\n           ";
   }
   out << ";\n"
-      << "unsigned long cycle;\n\n";
+      << "  unsigned long cycle;\n\n";
 
   // Loop top
-  out << "  for (cycle = 0; cycle < 1000; ++cycle) {\n";
+  out << "  for (cycle = 0; cycle < 1000; ++cycle) {\n"
+      << "    printf(\"%x\\n\", (unsigned int)ll0[0]);\n";
 
   // Perform Boolean evaluation
   for (unsigned l = 1; l < cnodes.size(); ++l) {
-    
+    unsigned cur_idx(0);
+    for (unsigned i = 0; i < cnodes[l].size(); ++i) {
+      out << "    {\n";
+
+      // Gather inputs
+      nodeid_t n(cnodes[l][i].node);
+      unsigned w(cnodes[l][i].width);
+      for (unsigned k = 0; k < cnodes[l][i].src.size(); ++k) {
+        unsigned idx(cnodes[l][i].src[k]);
+        out << "      uint" << BITS << "_t i" << k << " = ";
+        for (unsigned i = idx; i < idx + w;) {
+          unsigned chunk(BITS - i%BITS), remaining_bits(w - (i - idx));
+          if (chunk > remaining_bits) chunk = remaining_bits;
+
+          if (i != idx) out << " | ";
+
+          out << "(ll" << l-1 << '[' << i/BITS << ']';
+          if (i%BITS) out << ">>" << (i%BITS);
+          out << ')';
+
+          if (chunk < BITS) out << '&' << ((1<<chunk)-1);
+          i += chunk;
+        }
+        out << ";\n";
+      }
+
+      // Perform computation
+      out << "      uint" << BITS << "_t v = ";
+      if (cnodes[l][i].type == WIRE) {
+        out << "i0";
+      } else if (cnodes[l][i].type == INV) {
+        out << "~i0";
+        if (w < BITS) out << '&' << ((1<<w)-1);
+      } else if (cnodes[l][i].type == NAND) {
+        out << "~(i0&i1)";
+        if (w < BITS) out << '&' << ((1<<w)-1);
+      }
+      out << ";\n";
+
+      // Write value into output vector
+      for (unsigned i = cur_idx; i < cur_idx + w;) {
+        unsigned chunk(BITS - i%BITS), remaining_bits(w - (i - cur_idx));
+        if (chunk > remaining_bits) chunk = remaining_bits;
+        if (chunk == BITS) {
+          out << "      ll" << l << '[' << i/BITS << "] = v;\n";
+        } else {
+          out << "      ll" << l << '[' << i/BITS << "] |= "
+              << (((1<<chunk)-1)<<(i%BITS)) << ";\n"
+              << "      ll" << l << '[' << i/BITS << "] &= v";
+          if (i%BITS) out << " << " << (i%BITS);
+          out << ";\n";
+        }
+        i += chunk;
+      }
+
+      out << "    }\n\n";
+
+      cur_idx += w;
+    }
   }
 
   // Swap register outputs and inputs;
-  out << "\n    uint" << BITS << "_t *tmp = ll0; ll0 = ll" << cnodes.size()-1
+  out << "    uint" << BITS << "_t *tmp = ll0; ll0 = ll" << cnodes.size()-1
       << "; ll" << cnodes.size()-1 << " = tmp;\n";
 
   out << "  }\n\n";
