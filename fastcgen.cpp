@@ -123,22 +123,21 @@ void chdl::print_c(ostream &out) {
     for (unsigned j = 0; j < cnodes[i].size(); ++j)
       ll_idx[i][cnodes[i][j].node] = j;
 
-  // Set width variable appropriately.
+  // Set width field appropriately.
   for (unsigned i = 0; i < cnodes.size(); ++i) {
     unsigned input_lvl(i == 0 ? cnodes.size() - 1 : i-1);
     for (unsigned j = 0; j < cnodes[i].size() - 1; j += cnodes[i][j].width) {
-      cout << "Setting width at: " << i << ", " << j << endl;
       nodetype_t t(cnodes[i][j].type);
       for (unsigned k = j+1; k < cnodes[i].size(); ++k, ++cnodes[i][j].width) {
-        if (cnodes[i][j].width == BITS) { cout << "  BITS\n"; break; }
-        if (cnodes[i][k].type != t) { cout << "  type\n"; break; }
+        if (cnodes[i][j].width == BITS) break;
+        if (cnodes[i][k].type != t) break;
 
         if (t == DUMMY || i == 0) continue;
 
         nodeid_t n0(cnodes[i][k-1].node), n1(cnodes[i][k].node);
         if (t == WIRE) {
           unsigned i0(ll_idx[input_lvl][n0]), i1(ll_idx[input_lvl][n1]);
-          if (i0 + 1 != i1) { cout << "  wire input\n"; break; }
+          if (i0 + 1 != i1) break;
         } else if (t == NAND || t == INV) {
           unsigned i00(ll_idx[input_lvl][nodes[n0]->src[0]]),
                    i01(t == NAND?ll_idx[input_lvl][nodes[n0]->src[1]]:0),
@@ -152,8 +151,7 @@ void chdl::print_c(ostream &out) {
     }
   }
 
-  // Erase redundant operations, make multi-element operations start on BITS-bit
-  // boundaries.
+  // Erase redundant operations.
   vector<vector<cnode_t>> cnodes2(max_ll+1);
   for (unsigned i = 0; i < cnodes.size(); ++i)
     for (unsigned j = 0; j < cnodes[i].size(); j += cnodes[i][j].width)
