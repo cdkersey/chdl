@@ -9,7 +9,14 @@
 using namespace std;
 using namespace chdl;
 
+void print_c_boilerplate_top(ostream &out);
+void print_c_boilerplate_bottom(ostream &out);
+
 void chdl::print_c(ostream &out) {
+  const unsigned BITS(8);
+
+  // // // Generate internal representation // // //
+
   // First, compute "logic layer" of each node, its distance from the farthest
   // register or literal. This is used to determine the order in which node
   // values are computed.
@@ -44,10 +51,13 @@ void chdl::print_c(ostream &out) {
   // passes through a given logic level.
   enum nodetype_t { NAND, INV, WIRE, DUMMY };
   struct cnode_t {
+    cnode_t() : type(DUMMY), node(0), width(1) {}
     nodetype_t type;
     nodeid_t node;
+    unsigned width;
   };
 
+  // Generate the internal representation of the gates
   vector<vector<cnode_t>> cnodes(max_ll+1);
   for (auto x : ll_r) {
     int l(x.first), inputs(0);
@@ -58,9 +68,11 @@ void chdl::print_c(ostream &out) {
     inputs = nodes[x.second]->src.size();
     
     if (nandimpl *p = dynamic_cast<nandimpl*>(nodes[x.second])) {
-      cn.type = INV;
-    } else if (invimpl *p = dynamic_cast<invimpl*>(nodes[x.second])) {
       cn.type = NAND;
+    } else if (invimpl *p = dynamic_cast<invimpl*>(nodes[x.second])) {
+      cn.type = INV;
+    } else if (regimpl *r = dynamic_cast<regimpl*>(nodes[x.second])) {
+      cn.type = WIRE;
     }
 
     for (unsigned i = 0; i < inputs; ++i) {
@@ -70,6 +82,11 @@ void chdl::print_c(ostream &out) {
       }
       int i_ll(ll[n]);
       for (int j = l - 1; j > i_ll; --j) {
+        bool already_present(false);
+        for (unsigned k = 0; k < cnodes[j].size(); ++k)
+          if (cnodes[j][k].node == n) already_present = true;
+        if (already_present) continue;
+
         cnodes[j].push_back(cnode_t());
         cnode_t &icn(*cnodes[j].rbegin());
         icn.type = WIRE;
@@ -78,6 +95,7 @@ void chdl::print_c(ostream &out) {
     }
   }
 
+  // Add wires to connect register inputs
   for (auto r : cnodes[0]) {
     regimpl *ri = dynamic_cast<regimpl*>(nodes[r.node]);
     nodeid_t d(ri->d);
@@ -85,6 +103,11 @@ void chdl::print_c(ostream &out) {
       cerr << "Node " << d << " has no logic level.\n";
     int d_ll(ll[d]);
     for (int j = max_ll; j > d_ll; --j) {
+      bool already_present(false);
+      for (unsigned k = 0; k < cnodes[j].size(); ++k)
+        if (cnodes[j][k].node == d) already_present = true;
+      if (already_present) continue;
+
       cnodes[j].push_back(cnode_t());
       cnode_t &dcn(*cnodes[j].rbegin());
       dcn.type = WIRE;
@@ -92,11 +115,90 @@ void chdl::print_c(ostream &out) {
     }
   }
 
+  // // // Optimize // // //
+
+  // Create a way to quickly look up node indices
+  vector<map<nodeid_t, unsigned>> ll_idx(cnodes.size());
+  for (unsigned i = 0; i < cnodes.size(); ++i)
+    for (unsigned j = 0; j < cnodes[i].size(); ++j)
+      ll_idx[i][cnodes[i][j].node] = j;
+
+  // Set width variable appropriately.
+  for (unsigned i = 0; i < cnodes.size(); ++i) {
+    unsigned input_lvl(i == 0 ? cnodes.size() - 1 : i-1);
+    for (unsigned j = 0; j < cnodes[i].size() - 1; j += cnodes[i][j].width) {
+      cout << "Setting width at: " << i << ", " << j << endl;
+      nodetype_t t(cnodes[i][j].type);
+      for (unsigned k = j+1; k < cnodes[i].size(); ++k, ++cnodes[i][j].width) {
+        if (cnodes[i][j].width == BITS) { cout << "  BITS\n"; break; }
+        if (cnodes[i][k].type != t) { cout << "  type\n"; break; }
+
+        if (t == DUMMY || i == 0) continue;
+
+        nodeid_t n0(cnodes[i][k-1].node), n1(cnodes[i][k].node);
+        if (t == WIRE) {
+          unsigned i0(ll_idx[input_lvl][n0]), i1(ll_idx[input_lvl][n1]);
+          if (i0 + 1 != i1) { cout << "  wire input\n"; break; }
+        } else if (t == NAND || t == INV) {
+          unsigned i00(ll_idx[input_lvl][nodes[n0]->src[0]]),
+                   i01(t == NAND?ll_idx[input_lvl][nodes[n0]->src[1]]:0),
+                   i10(ll_idx[input_lvl][nodes[n1]->src[0]]),
+                   i11(t == NAND?ll_idx[input_lvl][nodes[n1]->src[1]]:0);
+        
+          if (i00 + 1 != i10) { cout << "  input0\n"; break; }
+          if (t == NAND && i01 + 1 != i11) { cout << "  input1\n"; break; }
+        }
+      }
+    }
+  }
+
+  // Erase redundant operations, make multi-element operations start on BITS-bit
+  // boundaries.
+  vector<vector<cnode_t>> cnodes2(max_ll+1);
+  for (unsigned i = 0; i < cnodes.size(); ++i)
+    for (unsigned j = 0; j < cnodes[i].size(); j += cnodes[i][j].width)
+      cnodes2[i].push_back(cnodes[i][j]);
+  cnodes = cnodes2;
+
+  // // // Emit C code // // //
+
+  print_c_boilerplate_top(out);
+
+  // Declare variables.
+  out << "  uint" << BITS << "_t ";
+  for (unsigned l = 0; l < cnodes.size(); ++l) {
+    unsigned total_bits(0);
+    for (unsigned i = 0; i < cnodes[l].size(); ++i)
+      total_bits += cnodes[l][i].width;
+
+    out << "*ll" << l << " = calloc(" << total_bits/BITS + !!(total_bits%BITS)
+        << ", " << "sizeof(uint" << BITS << "_t))";
+    if (l != cnodes.size() - 1) out << ",\n           ";
+  }
+  out << ";\n"
+      << "unsigned long cycle;\n\n";
+
+  // Loop top
+  out << "  for (cycle = 0; cycle < 1000; ++cycle) {\n";
+
+  // Perform Boolean evaluation
+  for (unsigned l = 1; l < cnodes.size(); ++l) {
+    
+  }
+
+  // Swap register outputs and inputs;
+  out << "\n    uint" << BITS << "_t *tmp = ll0; ll0 = ll" << cnodes.size()-1
+      << "; ll" << cnodes.size()-1 << " = tmp;\n";
+
+  out << "  }\n\n";
+  print_c_boilerplate_bottom(out);
+
   // For debugging, print the evaluation order.
   for (auto v : cnodes) {
     for (auto n : v) {
-      cout << n.node;
-      if (n.type != WIRE) {
+      if (n.type == DUMMY) cout << '-';
+      else                 cout << n.node;
+      if (n.type != WIRE && n.type != DUMMY) {
         for (unsigned i = 0; i < nodes[n.node]->src.size(); ++i) {
           if (i == 0) cout << '(';
           cout << nodes[n.node]->src[i];
@@ -104,8 +206,22 @@ void chdl::print_c(ostream &out) {
           else cout << ',';
         }
       }
+      if (n.width != 1) cout << '[' << n.width << ']';
       cout << ' ';
     }
     cout << endl;
   }
+}
+
+void print_c_boilerplate_top(ostream &out) {
+  out << "#include <stdio.h>\n"
+      << "#include <string.h>\n"
+      << "#include <stdlib.h>\n"
+      << "#include <stdint.h>\n\n"
+      << "int main(int argc, char** argv) {\n";
+}
+
+void print_c_boilerplate_bottom(ostream &out) {
+  out << "  return 0;\n"
+      << "}\n";
 }
