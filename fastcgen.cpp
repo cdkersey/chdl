@@ -116,6 +116,21 @@ void chdl::print_c(ostream &out) {
     }
   }
 
+  // Reorder last logic level to correspond to register order in level 0
+  for (unsigned i = 0; i < cnodes[0].size(); ++i) {
+    nodeimpl *n(nodes[cnodes[0][i].node]);
+    regimpl *r(dynamic_cast<regimpl*>(n));
+    if (r && r->d != cnodes[max_ll][i].node) {
+      for (unsigned j = 0; j < cnodes[max_ll].size(); ++j) {
+        if (cnodes[max_ll][j].node == r->d) {
+          cnode_t tmp = cnodes[max_ll][j];
+          cnodes[max_ll][j] = cnodes[max_ll][i];
+          cnodes[max_ll][i] = tmp;
+        }
+      }
+    }
+  }
+
   // Create a way to quickly look up node indices
   vector<map<nodeid_t, unsigned>> ll_idx(cnodes.size());
   for (unsigned i = 0; i < cnodes.size(); ++i)
@@ -196,7 +211,7 @@ void chdl::print_c(ostream &out) {
 
   // Loop top
   out << "  for (cycle = 0; cycle < 1000; ++cycle) {\n"
-      << "    printf(\"%x\\n\", (unsigned int)ll0[0]);\n";
+      << "    printf(\"\\n%lu: %x\\n\", cycle, (unsigned int)ll0[0]);\n";
 
   // Perform Boolean evaluation
   for (unsigned l = 1; l < cnodes.size(); ++l) {
@@ -239,6 +254,8 @@ void chdl::print_c(ostream &out) {
       }
       out << ";\n";
 
+      //out << "      printf(\"" << n << ": %x\\n\", (unsigned int)v);\n";
+
       // Write value into output vector
       for (unsigned i = cur_idx; i < cur_idx + w;) {
         unsigned chunk(BITS - i%BITS), remaining_bits(w - (i - cur_idx));
@@ -246,9 +263,9 @@ void chdl::print_c(ostream &out) {
         if (chunk == BITS) {
           out << "      ll" << l << '[' << i/BITS << "] = v;\n";
         } else {
-          out << "      ll" << l << '[' << i/BITS << "] |= "
+          out << "      ll" << l << '[' << i/BITS << "] &= ~"
               << (((1<<chunk)-1)<<(i%BITS)) << ";\n"
-              << "      ll" << l << '[' << i/BITS << "] &= v";
+              << "      ll" << l << '[' << i/BITS << "] |= v";
           if (i%BITS) out << " << " << (i%BITS);
           out << ";\n";
         }
