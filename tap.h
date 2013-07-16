@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <set>
+#include <map>
 
 #include "node.h"
 #include "bvec.h"
@@ -23,6 +24,8 @@ namespace chdl {
   void print_vcd_header(std::ostream &out);
   void print_taps_c_head(std::ostream &out);
   void print_taps_c_body(std::ostream &out);
+
+  std::map<std::string, std::vector<node>> &get_taps();
 
   // Append the set of tap nodes to s. Do not clear s.
   void get_tap_nodes(std::set<nodeid_t> &s);

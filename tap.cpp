@@ -84,6 +84,8 @@ void chdl::print_taps_c_body(ostream &out) {
   out << "    printf(\"#%lu\\n\", i+1);\n";
 }
 
+map<string, vector<node>> &chdl::get_taps() { return taps; }
+
 void chdl::print_tap_nodes(ostream &out) {
   for (auto t : taps) {
     out << "  " << t.first;

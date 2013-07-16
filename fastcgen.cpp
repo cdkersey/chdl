@@ -5,6 +5,7 @@
 #include "reg.h"
 #include "hierarchy.h"
 #include "netlist.h"
+#include "tap.h"
 
 using namespace std;
 using namespace chdl;
@@ -13,7 +14,7 @@ void print_c_boilerplate_top(ostream &out);
 void print_c_boilerplate_bottom(ostream &out);
 
 void chdl::print_c(ostream &out) {
-  const unsigned BITS(8);
+  const unsigned BITS(32);
 
   // // // Generate internal representation // // //
 
@@ -116,21 +117,6 @@ void chdl::print_c(ostream &out) {
     }
   }
 
-  // Reorder last logic level to correspond to register order in level 0
-  for (unsigned i = 0; i < cnodes[0].size(); ++i) {
-    nodeimpl *n(nodes[cnodes[0][i].node]);
-    regimpl *r(dynamic_cast<regimpl*>(n));
-    if (r && r->d != cnodes[max_ll][i].node) {
-      for (unsigned j = 0; j < cnodes[max_ll].size(); ++j) {
-        if (cnodes[max_ll][j].node == r->d) {
-          cnode_t tmp = cnodes[max_ll][j];
-          cnodes[max_ll][j] = cnodes[max_ll][i];
-          cnodes[max_ll][i] = tmp;
-        }
-      }
-    }
-  }
-
   // Create a way to quickly look up node indices
   vector<map<nodeid_t, unsigned>> ll_idx(cnodes.size());
   for (unsigned i = 0; i < cnodes.size(); ++i)
@@ -178,71 +164,72 @@ void chdl::print_c(ostream &out) {
     }
   }
 
-  // Erase redundant operations and re-generate the ll_idx lookup.
+  // Erase redundant operations
   vector<vector<cnode_t>> cnodes2(max_ll+1);
   for (unsigned i = 0; i < cnodes.size(); ++i)
     for (unsigned j = 0; j < cnodes[i].size(); j += cnodes[i][j].width)
       cnodes2[i].push_back(cnodes[i][j]);
   cnodes = cnodes2;
 
-  vector<map<nodeid_t, unsigned>> ll_idx2(cnodes.size());
-  for (unsigned i = 0; i < cnodes.size(); ++i)
-    for (unsigned j = 0; j < cnodes[i].size(); ++j)
-      ll_idx2[i][cnodes[i][j].node] = j;
-  ll_idx = ll_idx2;
-
   // // // Emit C code // // //
 
   print_c_boilerplate_top(out);
+  print_taps_c_head(out);
 
   // Declare variables.
   out << "  uint" << BITS << "_t ";
+  unsigned size0;
   for (unsigned l = 0; l < cnodes.size(); ++l) {
     unsigned total_bits(0);
     for (unsigned i = 0; i < cnodes[l].size(); ++i)
       total_bits += cnodes[l][i].width;
-
-    out << "*ll" << l << " = calloc(" << total_bits/BITS + !!(total_bits%BITS)
-        << ", " << "sizeof(uint" << BITS << "_t))";
+    unsigned sz((total_bits + BITS - 1)/BITS);
+    if (l == 0) size0 = sz;
+    out << "ll" << l << '[' << sz << ']';
     if (l != cnodes.size() - 1) out << ",\n           ";
   }
   out << ";\n"
-      << "  unsigned long cycle;\n\n";
+      << "  unsigned long cycle;\n\n"
+      << "  unsigned long start_time = time_us();\n\n"
+      << "  memset(ll0, 0, sizeof(uint" << BITS << "_t)*" << size0 << ");\n";
 
   // Loop top
-  out << "  for (cycle = 0; cycle < 1000; ++cycle) {\n"
-      << "    printf(\"\\n%lu: %x\\n\", cycle, (unsigned int)ll0[0]);\n";
+  out << "  for (cycle = 0; cycle < 1000; ++cycle) {\n";
 
   // Perform Boolean evaluation
   for (unsigned l = 1; l < cnodes.size(); ++l) {
     unsigned cur_idx(0);
     for (unsigned i = 0; i < cnodes[l].size(); ++i) {
-      out << "    {\n";
+      out << "    { ";
 
       // Gather inputs
       nodeid_t n(cnodes[l][i].node);
       unsigned w(cnodes[l][i].width);
       for (unsigned k = 0; k < cnodes[l][i].src.size(); ++k) {
         unsigned idx(cnodes[l][i].src[k]);
-        out << "      uint" << BITS << "_t i" << k << " = ";
+        if (k == 0) out << "uint" << BITS << "_t ";
+        out << 'i' << k << " = ";
         for (unsigned i = idx; i < idx + w;) {
           unsigned chunk(BITS - i%BITS), remaining_bits(w - (i - idx));
           if (chunk > remaining_bits) chunk = remaining_bits;
 
           if (i != idx) out << " | ";
 
-          out << "(ll" << l-1 << '[' << i/BITS << ']';
+          out << "(((ll" << l-1 << '[' << i/BITS << ']';
           if (i%BITS) out << ">>" << (i%BITS);
           out << ')';
 
           if (chunk < BITS) out << '&' << ((1<<chunk)-1);
+          out << ')';
+          if (i - idx > 0) out << "<<" << i - idx;
+          out << ')';
           i += chunk;
         }
-        out << ";\n";
+        out << ", ";
       }
 
       // Perform computation
-      out << "      uint" << BITS << "_t v = ";
+      out << "v = ";
       if (cnodes[l][i].type == WIRE) {
         out << "i0";
       } else if (cnodes[l][i].type == INV) {
@@ -252,37 +239,83 @@ void chdl::print_c(ostream &out) {
         out << "~(i0&i1)";
         if (w < BITS) out << '&' << ((1<<w)-1);
       }
-      out << ";\n";
-
-      //out << "      printf(\"" << n << ": %x\\n\", (unsigned int)v);\n";
+      out << "; ";
 
       // Write value into output vector
       for (unsigned i = cur_idx; i < cur_idx + w;) {
         unsigned chunk(BITS - i%BITS), remaining_bits(w - (i - cur_idx));
         if (chunk > remaining_bits) chunk = remaining_bits;
         if (chunk == BITS) {
-          out << "      ll" << l << '[' << i/BITS << "] = v;\n";
+          out << "ll" << l << '[' << i/BITS << "] = v; ";
         } else {
-          out << "      ll" << l << '[' << i/BITS << "] &= ~"
-              << (((1<<chunk)-1)<<(i%BITS)) << ";\n"
-              << "      ll" << l << '[' << i/BITS << "] |= v";
+          out << "ll" << l << '[' << i/BITS << "] &= ~"
+              << (((1<<chunk)-1)<<(i%BITS)) << "; "
+              << "ll" << l << '[' << i/BITS << "] |= (v";
+          if (i - cur_idx > 0) out << ">>" << i - cur_idx;
+          out << ')';
           if (i%BITS) out << " << " << (i%BITS);
-          out << ";\n";
+          out << "; ";
         }
         i += chunk;
       }
 
-      out << "    }\n\n";
+      out << " }\n";
 
       cur_idx += w;
     }
   }
 
-  // Swap register outputs and inputs;
-  out << "    uint" << BITS << "_t *tmp = ll0; ll0 = ll" << cnodes.size()-1
-      << "; ll" << cnodes.size()-1 << " = tmp;\n";
+  // Print taps
+  out << "    printf(\"#%lu\\n\", cycle);\n";
+  map<string, vector<node>> &taps(get_taps());
+  for (auto t : taps) {
+    out << "    printf(\"b";
+    for (auto n : t.second)
+      out << "%d";
+    out << ' ' << t.first;
+    out << "\\n\"";
+    for (int tap_idx = t.second.size()-1; tap_idx >= 0; --tap_idx) {
+      nodeid_t n(t.second[tap_idx]);
+      out << ", (";
+      bool found(false);
+      for (unsigned l = 0; l < cnodes.size() && !found; ++l) {
+        if (ll_idx[l].find(n) == ll_idx[l].end()) continue;
 
+        unsigned idx(0), found_idx(ll_idx[l][n]);
+        for (unsigned i = 0; i < cnodes[l].size() && !found; ++i) {
+          if (idx <= found_idx && idx + cnodes[l][i].width > found_idx) {
+            found = true;
+            out << "ll" << l << '[' << found_idx/BITS << ']';
+            unsigned shift(found_idx%BITS);
+            if (shift) out << ">>" << shift;
+            out << ")&1";
+	  }
+          idx += cnodes[l][i].width;
+        }
+      }
+    }
+    out << ");\n";
+  }
+  out << '\n';
+
+  // Copy next register values into registers.
+  for (auto ni : ll_idx[0]) {
+    unsigned i(ni.second);
+    nodeid_t d(static_cast<regimpl*>(nodes[ni.first])->d);
+    unsigned j = ll_idx[max_ll][d];
+    cnode_t &m(cnodes[max_ll][j]);
+    if (m.node == d) {
+      out << "    ll0[" << i/BITS << "] &= ~" << (1<<(i%BITS)) << ";\n"
+          << "    ll0[" << i/BITS << "] |= (((ll" << max_ll << '['
+          << j/BITS << "]>>" << j%BITS << ")&1)<<" << i%BITS << ");\n";
+    }
+  }
+
+  // Loop end
   out << "  }\n\n";
+
+
+  // Final code.
   print_c_boilerplate_bottom(out);
 
   // For debugging, print the evaluation order.
@@ -309,11 +342,18 @@ void print_c_boilerplate_top(ostream &out) {
   out << "#include <stdio.h>\n"
       << "#include <string.h>\n"
       << "#include <stdlib.h>\n"
-      << "#include <stdint.h>\n\n"
+      << "#include <stdint.h>\n"
+      << "#include <sys/time.h> /* For gettimeofday() */\n\n"
+      << "unsigned long time_us() {\n"
+      << "  struct timeval tv;\n"
+      << "  gettimeofday(&tv, NULL);\n"
+      << "  return tv.tv_sec * 1000000ul + tv.tv_usec;\n"
+      << "}\n\n"
       << "int main(int argc, char** argv) {\n";
 }
 
 void print_c_boilerplate_bottom(ostream &out) {
-  out << "  return 0;\n"
+  out << "  fprintf(stderr, \"%fms\\n\", (time_us() - start_time)/1000.0);\n\n"
+      << "  return 0;\n"
       << "}\n";
 }
