@@ -1,3 +1,6 @@
+#include <random>
+#include <algorithm>
+
 #include "analysis.h"
 #include "nodeimpl.h"
 #include "gatesimpl.h"
@@ -12,21 +15,15 @@ using namespace chdl;
 
 void print_c_boilerplate_top(ostream &out);
 void print_c_boilerplate_bottom(ostream &out);
-
-void chdl::print_c(ostream &out) {
-  const unsigned BITS(32);
-
-  // // // Generate internal representation // // //
-
-  // First, compute "logic layer" of each node, its distance from the farthest
-  // register or literal. This is used to determine the order in which node
-  // values are computed.
-  map<nodeid_t, int> ll;
-  multimap<int, nodeid_t> ll_r;
+// Compute "logic layer" of each node, its distance from the farthest register
+// or literal. This is used to determine the order in which node values are
+// computed.
+void layerize(map<nodeid_t, int> &ll, int &max_ll) {
   set<nodeid_t> regs;
   get_reg_nodes(regs);
-  int max_ll(0);
+  max_ll = 0;
   for (auto r : regs) ll[r] = 0;
+
   bool changed;
   do {
     changed = false;
@@ -45,22 +42,41 @@ void chdl::print_c(ostream &out) {
       if (new_ll > max_ll) max_ll = new_ll;
     }
   } while(changed);
+}
 
-  for (auto l : ll) ll_r.insert(pair<int, nodeid_t>(l.second, l.first));
+// The internal representation for the logic. "WIRE" means that a signal
+// passes through a given logic level.
+enum nodetype_t { NAND, INV, WIRE, DUMMY };
+struct cnode_t {
+  cnode_t() : type(DUMMY), node(0), width(1) {}
+  nodetype_t type;
+  nodeid_t node;
+  unsigned width;
+  vector<unsigned> src;
 
-  // The internal representation for the logic. "WIRE" means that a signal
-  // passes through a given logic level.
-  enum nodetype_t { NAND, INV, WIRE, DUMMY };
-  struct cnode_t {
-    cnode_t() : type(DUMMY), node(0), width(1) {}
-    nodetype_t type;
-    nodeid_t node;
-    unsigned width;
-    vector<unsigned> src;
-  };
+  bool operator<(const cnode_t &r) const {
+    if (int(type) > int(r.type)) return false;
+    if (int(type) < int(r.type)) return true;
 
-  // Generate the internal representation of the gates
-  vector<vector<cnode_t>> cnodes(max_ll+1);
+    for (unsigned i = 0; i < src.size(); ++i) {
+      if (i >= r.src.size()) break;
+
+      if (src[i] > r.src[i]) return false;
+      if (src[i] < r.src[i]) return true;
+    }
+    
+    if (node > r.node) return false;
+    if (node < r.node) return true;
+
+    return false;
+  }
+};
+
+void gen_ir(vector<vector<cnode_t>> &cnodes, int max_ll,
+            map<nodeid_t, int> ll, multimap<int, nodeid_t> ll_r)
+{
+  cnodes.resize(max_ll + 1);
+
   for (auto x : ll_r) {
     int l(x.first), inputs(0);
     cnodes[l].push_back(cnode_t());
@@ -116,9 +132,14 @@ void chdl::print_c(ostream &out) {
       dcn.node = d;
     }
   }
+}
+
+void gen_idx(vector<map<nodeid_t, unsigned>> &ll_idx,
+             vector<vector<cnode_t>> &cnodes)
+{
+  ll_idx.resize(cnodes.size());
 
   // Create a way to quickly look up node indices
-  vector<map<nodeid_t, unsigned>> ll_idx(cnodes.size());
   for (unsigned i = 0; i < cnodes.size(); ++i)
     for (unsigned j = 0; j < cnodes[i].size(); ++j)
       ll_idx[i][cnodes[i][j].node] = j;
@@ -126,6 +147,8 @@ void chdl::print_c(ostream &out) {
   // Set up src vectors
   for (unsigned i = 1; i < cnodes.size(); ++i) {
     for (unsigned j = 0; j < cnodes[i].size(); ++j) {
+      cnodes[i][j].src.clear();
+
       if (cnodes[i][j].type == WIRE) {
         nodeid_t n(cnodes[i][j].node);
         cnodes[i][j].src.push_back(ll_idx[i-1][n]);
@@ -137,8 +160,34 @@ void chdl::print_c(ostream &out) {
       }
     }
   }
+}
+
+void chdl::print_c(ostream &out) {
+  const unsigned BITS(32);
+
+  // // // Generate internal representation // // //
+  map<nodeid_t, int> ll;
+  int max_ll;
+  multimap<int, nodeid_t> ll_r;
+
+  layerize(ll, max_ll);
+
+  for (auto l : ll) ll_r.insert(pair<int, nodeid_t>(l.second, l.first));
+
+  // Generate the internal representation of the gates
+  vector<vector<cnode_t>> cnodes;
+  gen_ir(cnodes, max_ll, ll, ll_r);
+
+  vector<map<nodeid_t, unsigned>> ll_idx;
+
+  gen_idx(ll_idx, cnodes);
 
   // // // Optimize // // //
+  for (unsigned l = 0; l < cnodes.size(); ++l)
+    sort(cnodes[l].begin(), cnodes[l].end());
+    // shuffle(cnodes[l].begin(), cnodes[l].end(), default_random_engine(l));
+
+  gen_idx(ll_idx, cnodes);
 
   // Set width field appropriately.
   for (unsigned i = 0; i < cnodes.size(); ++i) {
