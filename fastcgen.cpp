@@ -46,15 +46,14 @@ void layerize(map<nodeid_t, int> &ll, int &max_ll) {
   } while(changed);
 }
 
-// The internal representation for the logic. "WIRE" means that a signal
-// passes through a given logic level.
-enum nodetype_t { NAND, INV, WIRE, DUMMY };
+// The internal representation for the logic.
+enum nodetype_t { NAND, INV, REG };
 struct cnode_t {
-  cnode_t() : type(DUMMY), node(0), width(1) {}
+  cnode_t() : type(INV), node(0), width(1) {}
   nodetype_t type;
   nodeid_t node;
   unsigned width;
-  vector<unsigned> src;
+  vector<pair<int, unsigned> > src;
 
   bool operator<(const cnode_t &r) const {
     if (int(type) > int(r.type)) return false;
@@ -92,73 +91,29 @@ void gen_ir(vector<vector<cnode_t>> &cnodes, int max_ll,
     } else if (invimpl *p = dynamic_cast<invimpl*>(nodes[x.second])) {
       cn.type = INV;
     } else if (regimpl *r = dynamic_cast<regimpl*>(nodes[x.second])) {
-      cn.type = WIRE;
-    }
-
-    for (unsigned i = 0; i < inputs; ++i) {
-      nodeid_t n(nodes[x.second]->src[i]);
-      if (ll.find(n) == ll.end()) {
-        cerr << "Node " << n << " has no logic level.\n";
-      }
-      int i_ll(ll[n]);
-      for (int j = l - 1; j > i_ll; --j) {
-        bool already_present(false);
-        for (unsigned k = 0; k < cnodes[j].size(); ++k)
-          if (cnodes[j][k].node == n) already_present = true;
-        if (already_present) continue;
-
-        cnodes[j].push_back(cnode_t());
-        cnode_t &icn(*cnodes[j].rbegin());
-        icn.type = WIRE;
-        icn.node = n;
-      }
-    }
-  }
-
-  // Add wires to connect register inputs
-  for (auto r : cnodes[0]) {
-    regimpl *ri = dynamic_cast<regimpl*>(nodes[r.node]);
-    nodeid_t d(ri->d);
-    if (ll.find(d) == ll.end())
-      cerr << "Node " << d << " has no logic level.\n";
-    int d_ll(ll[d]);
-    for (int j = max_ll; j > d_ll; --j) {
-      bool already_present(false);
-      for (unsigned k = 0; k < cnodes[j].size(); ++k)
-        if (cnodes[j][k].node == d) already_present = true;
-      if (already_present) continue;
-
-      cnodes[j].push_back(cnode_t());
-      cnode_t &dcn(*cnodes[j].rbegin());
-      dcn.type = WIRE;
-      dcn.node = d;
+      cn.type = REG;
     }
   }
 }
 
-void gen_idx(vector<map<nodeid_t, unsigned>> &ll_idx,
+void gen_idx(map<nodeid_t, pair<int, unsigned>> &ll_idx,
              vector<vector<cnode_t>> &cnodes)
 {
-  ll_idx.resize(cnodes.size());
+  ll_idx.clear();
 
   // Create a way to quickly look up node indices
   for (unsigned i = 0; i < cnodes.size(); ++i)
     for (unsigned j = 0; j < cnodes[i].size(); ++j)
-      ll_idx[i][cnodes[i][j].node] = j;
+      ll_idx[cnodes[i][j].node] = make_pair(i, j);
 
   // Set up src vectors
   for (unsigned i = 1; i < cnodes.size(); ++i) {
     for (unsigned j = 0; j < cnodes[i].size(); ++j) {
       cnodes[i][j].src.clear();
 
-      if (cnodes[i][j].type == WIRE) {
-        nodeid_t n(cnodes[i][j].node);
-        cnodes[i][j].src.push_back(ll_idx[i-1][n]);
-      } else {
-        nodeid_t n(cnodes[i][j].node);
-        for (unsigned k = 0; k < nodes[n]->src.size(); ++k) {
-          cnodes[i][j].src.push_back(ll_idx[i-1][nodes[n]->src[k]]);
-        }
+      nodeid_t n(cnodes[i][j].node);
+      for (unsigned k = 0; k < nodes[n]->src.size(); ++k) {
+        cnodes[i][j].src.push_back(ll_idx[nodes[n]->src[k]]);
       }
     }
   }
@@ -178,7 +133,7 @@ void chdl::print_c(ostream &out) {
   vector<vector<cnode_t>> cnodes;
   gen_ir(cnodes, max_ll, ll, ll_r);
 
-  vector<map<nodeid_t, unsigned>> ll_idx;
+  map<nodeid_t, pair<int, unsigned>> ll_idx;
 
   gen_idx(ll_idx, cnodes);
 
@@ -198,16 +153,24 @@ void chdl::print_c(ostream &out) {
         if (cnodes[i][j].width == BITS) break;
         if (cnodes[i][k].type != t) break;
 
-        if (t == DUMMY || i == 0) continue;
+        if (i == 0) continue;
 
-        if (t == NAND || t == INV || t == WIRE) {
-          unsigned i00(cnodes[i][k-1].src[0]),
-                   i01(t == NAND?cnodes[i][k-1].src[1]:0),
-                   i10(cnodes[i][k].src[0]),
-                   i11(t == NAND?cnodes[i][k].src[1]:0);
-        
-          if (i00 + 1 != i10) break;
-          if (t == NAND && i01 + 1 != i11) break;
+        if (t == NAND) {
+          pair<int, unsigned> i00(cnodes[i][k-1].src[0]),
+	                      i01(cnodes[i][k-1].src[1]),
+                              i10(cnodes[i][k].src[0]),
+                              i11(cnodes[i][k].src[1]);
+
+          if (i00.first != i10.first) break;
+          if (i01.second != i11.second) break;
+          if (i00.second + 1 != i10.second) break;
+          if (i01.second + 1 != i11.second) break;
+        } else if (t == INV) {
+          pair<int, unsigned> i00(cnodes[i][k-1].src[0]),
+                              i10(cnodes[i][k].src[0]);
+
+          if (i00.first != i10.first) break;
+          if (i00.second + 1 != i10.second) break;
         }
       }
     }
@@ -257,7 +220,8 @@ void chdl::print_c(ostream &out) {
       nodeid_t n(cnodes[l][i].node);
       unsigned w(cnodes[l][i].width);
       for (unsigned k = 0; k < cnodes[l][i].src.size(); ++k) {
-        unsigned idx(cnodes[l][i].src[k]);
+        unsigned idx(cnodes[l][i].src[k].second),
+                 lvl(cnodes[l][i].src[k].first);
         if (k == 0) out << "uint" << BITS << "_t ";
         out << 'i' << k << " = ";
         for (unsigned i = idx; i < idx + w;) {
@@ -266,7 +230,7 @@ void chdl::print_c(ostream &out) {
 
           if (i != idx) out << " | ";
 
-          out << "(((ll" << l-1 << '_' << i/BITS;
+          out << "(((ll" << lvl << '_' << i/BITS;
           if (i%BITS) out << ">>" << i%BITS << "ull";
           out << ')';
 
@@ -281,9 +245,7 @@ void chdl::print_c(ostream &out) {
 
       // Perform computation
       out << "v = ";
-      if (cnodes[l][i].type == WIRE) {
-        out << "i0";
-      } else if (cnodes[l][i].type == INV) {
+      if (cnodes[l][i].type == INV) {
         out << "~i0";
         if (w < BITS) out << '&' << ((1<<w)-1);
       } else if (cnodes[l][i].type == NAND) {
@@ -328,38 +290,26 @@ void chdl::print_c(ostream &out) {
     for (int tap_idx = t.second.size()-1; tap_idx >= 0; --tap_idx) {
       nodeid_t n(t.second[tap_idx]);
       out << ", (";
-      bool found(false);
-      for (unsigned l = 0; l < cnodes.size() && !found; ++l) {
-        if (ll_idx[l].find(n) == ll_idx[l].end()) continue;
 
-        unsigned idx(0), found_idx(ll_idx[l][n]);
-        for (unsigned i = 0; i < cnodes[l].size() && !found; ++i) {
-          if (idx <= found_idx && idx + cnodes[l][i].width > found_idx) {
-            found = true;
-            out << "ll" << l << '_' << found_idx/BITS;
-            unsigned shift(found_idx%BITS);
-            if (shift) out << ">>" << shift;
-            out << ")&1";
-	  }
-          idx += cnodes[l][i].width;
-        }
-      }
+      unsigned found_idx(ll_idx[n].second), l(ll_idx[n].first);
+      out << "ll" << l << '_' << found_idx/BITS;
+      unsigned shift(found_idx%BITS);
+      if (shift) out << ">>" << shift;
+      out << ")&1";
     }
     out << ");\n";
   }
   out << '\n';
 
   // Copy next register values into registers.
-  for (auto ni : ll_idx[0]) {
-    unsigned i(ni.second);
+  for (auto ni : ll_idx) {
+    if (ni.second.first != 0) continue;
+    unsigned i(ni.second.second);
     nodeid_t d(static_cast<regimpl*>(nodes[ni.first])->d);
-    unsigned j = ll_idx[max_ll][d];
-    cnode_t &m(cnodes[max_ll][j]);
-    if (m.node == d) {
-      out << "    ll0_" << i/BITS << " &= ~" << (1<<(i%BITS)) << ";\n"
-          << "    ll0_" << i/BITS << " |= (((ll" << max_ll << '_'
-          << j/BITS << ">>" << j%BITS << ")&1)<<" << i%BITS << ");\n";
-    }
+    unsigned j(ll_idx[d].second), l(ll_idx[d].first);
+    out << "    ll0_" << i/BITS << " &= ~" << (1<<(i%BITS)) << "ull;\n"
+        << "    ll0_" << i/BITS << " |= (((ll" << l << '_'
+        << j/BITS << ">>" << j%BITS << ")&1)<<" << i%BITS << ");\n";
   }
 
   // Loop end
@@ -372,21 +322,19 @@ void chdl::print_c(ostream &out) {
   // For debugging, print the evaluation order.
   for (auto v : cnodes) {
     for (auto n : v) {
-      if (n.type == DUMMY) cout << '-';
-      else                 cout << n.node;
-      if (n.type != WIRE && n.type != DUMMY) {
-        for (unsigned i = 0; i < nodes[n.node]->src.size(); ++i) {
-          if (i == 0) cout << '(';
-          cout << nodes[n.node]->src[i];
-          if (i == nodes[n.node]->src.size()-1) cout << ')';
-          else cout << ',';
-        }
+      cout << n.node;
+      for (unsigned i = 0; i < nodes[n.node]->src.size(); ++i) {
+        if (i == 0) cout << '(';
+        cout << nodes[n.node]->src[i];
+        if (i == nodes[n.node]->src.size()-1) cout << ')';
+        else cout << ',';
       }
       if (n.width != 1) cout << '[' << n.width << ']';
       cout << ' ';
     }
     cout << endl;
   }
+
 }
 
 void print_c_boilerplate_top(ostream &out) {
