@@ -13,6 +13,8 @@
 using namespace std;
 using namespace chdl;
 
+const unsigned BITS(32);
+
 void print_c_boilerplate_top(ostream &out);
 void print_c_boilerplate_bottom(ostream &out);
 // Compute "logic layer" of each node, its distance from the farthest register
@@ -163,8 +165,6 @@ void gen_idx(vector<map<nodeid_t, unsigned>> &ll_idx,
 }
 
 void chdl::print_c(ostream &out) {
-  const unsigned BITS(32);
-
   // // // Generate internal representation // // //
   map<nodeid_t, int> ll;
   int max_ll;
@@ -234,13 +234,15 @@ void chdl::print_c(ostream &out) {
       total_bits += cnodes[l][i].width;
     unsigned sz((total_bits + BITS - 1)/BITS);
     if (l == 0) size0 = sz;
-    out << "ll" << l << '[' << sz << ']';
-    if (l != cnodes.size() - 1) out << ",\n           ";
+    for (unsigned i = 0; i < sz; ++i) {
+      out << "ll" << l << '_' << i;
+      if (l == 0) out << " = 0";
+      if (l != cnodes.size() - 1 || i != sz - 1) out << ",\n           ";
+    }
   }
   out << ";\n"
       << "  unsigned long cycle;\n\n"
-      << "  unsigned long start_time = time_us();\n\n"
-      << "  memset(ll0, 0, sizeof(uint" << BITS << "_t)*" << size0 << ");\n";
+      << "  unsigned long start_time = time_us();\n\n";
 
   // Loop top
   out << "  for (cycle = 0; cycle < 1000; ++cycle) {\n";
@@ -264,13 +266,13 @@ void chdl::print_c(ostream &out) {
 
           if (i != idx) out << " | ";
 
-          out << "(((ll" << l-1 << '[' << i/BITS << ']';
-          if (i%BITS) out << ">>" << (i%BITS);
+          out << "(((ll" << l-1 << '_' << i/BITS;
+          if (i%BITS) out << ">>" << i%BITS << "ull";
           out << ')';
 
-          if (chunk < BITS) out << '&' << ((1<<chunk)-1);
+          if (chunk < BITS) out << '&' << ((1ull<<chunk)-1ull) << "ull";
           out << ')';
-          if (i - idx > 0) out << "<<" << i - idx;
+          if (i - idx > 0) out << "<<" << i - idx << "ull";
           out << ')';
           i += chunk;
         }
@@ -295,14 +297,14 @@ void chdl::print_c(ostream &out) {
         unsigned chunk(BITS - i%BITS), remaining_bits(w - (i - cur_idx));
         if (chunk > remaining_bits) chunk = remaining_bits;
         if (chunk == BITS) {
-          out << "ll" << l << '[' << i/BITS << "] = v; ";
+          out << "ll" << l << '_' << i/BITS << " = v; ";
         } else {
-          out << "ll" << l << '[' << i/BITS << "] &= ~"
-              << (((1<<chunk)-1)<<(i%BITS)) << "; "
-              << "ll" << l << '[' << i/BITS << "] |= (v";
-          if (i - cur_idx > 0) out << ">>" << i - cur_idx;
+          out << "ll" << l << '_' << i/BITS << " &= ~"
+              << (((1ull<<chunk)-1ull)<<(i%BITS)) << "ull; "
+              << "ll" << l << '_' << i/BITS << " |= (v";
+          if (i - cur_idx > 0) out << ">>" << i - cur_idx << "ull";
           out << ')';
-          if (i%BITS) out << " << " << (i%BITS);
+          if (i%BITS) out << " << " << i%BITS << "ull";
           out << "; ";
         }
         i += chunk;
@@ -334,7 +336,7 @@ void chdl::print_c(ostream &out) {
         for (unsigned i = 0; i < cnodes[l].size() && !found; ++i) {
           if (idx <= found_idx && idx + cnodes[l][i].width > found_idx) {
             found = true;
-            out << "ll" << l << '[' << found_idx/BITS << ']';
+            out << "ll" << l << '_' << found_idx/BITS;
             unsigned shift(found_idx%BITS);
             if (shift) out << ">>" << shift;
             out << ")&1";
@@ -354,9 +356,9 @@ void chdl::print_c(ostream &out) {
     unsigned j = ll_idx[max_ll][d];
     cnode_t &m(cnodes[max_ll][j]);
     if (m.node == d) {
-      out << "    ll0[" << i/BITS << "] &= ~" << (1<<(i%BITS)) << ";\n"
-          << "    ll0[" << i/BITS << "] |= (((ll" << max_ll << '['
-          << j/BITS << "]>>" << j%BITS << ")&1)<<" << i%BITS << ");\n";
+      out << "    ll0_" << i/BITS << " &= ~" << (1<<(i%BITS)) << ";\n"
+          << "    ll0_" << i/BITS << " |= (((ll" << max_ll << '_'
+          << j/BITS << ">>" << j%BITS << ")&1)<<" << i%BITS << ");\n";
     }
   }
 
