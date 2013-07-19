@@ -1,5 +1,6 @@
 #include <random>
 #include <algorithm>
+#include <sstream>
 
 #include "analysis.h"
 #include "nodeimpl.h"
@@ -214,7 +215,8 @@ void chdl::print_c(ostream &out) {
   for (unsigned l = 1; l < cnodes.size(); ++l) {
     unsigned cur_idx(0);
     for (unsigned i = 0; i < cnodes[l].size(); ++i) {
-      out << "    { ";
+      vector<string> istr;
+      out << "    ";
 
       // Gather inputs
       nodeid_t n(cnodes[l][i].node);
@@ -222,48 +224,49 @@ void chdl::print_c(ostream &out) {
       for (unsigned k = 0; k < cnodes[l][i].src.size(); ++k) {
         unsigned idx(cnodes[l][i].src[k].second),
                  lvl(cnodes[l][i].src[k].first);
-        if (k == 0) out << "uint" << BITS << "_t ";
-        out << 'i' << k << " = ";
+        ostringstream oss;
+        oss << '(';
         for (unsigned i = idx; i < idx + w;) {
           unsigned chunk(BITS - i%BITS), remaining_bits(w - (i - idx));
           if (chunk > remaining_bits) chunk = remaining_bits;
 
-          if (i != idx) out << " | ";
+          if (i != idx) oss << " | ";
 
-          out << "(((ll" << lvl << '_' << i/BITS;
-          if (i%BITS) out << ">>" << i%BITS << "ull";
-          out << ')';
+          oss << " (((ll" << lvl << '_' << i/BITS;
+          if (i%BITS) oss << ">>" << i%BITS << "ull";
+          oss << ')';
 
-          if (chunk < BITS) out << '&' << ((1ull<<chunk)-1ull) << "ull";
-          out << ')';
-          if (i - idx > 0) out << "<<" << i - idx << "ull";
-          out << ')';
+          if (chunk < BITS) oss << '&' << ((1ull<<chunk)-1ull) << "ull";
+          oss << ')';
+          if (i - idx > 0) oss << "<<" << i - idx << "ull";
+          oss << ')' << ' ';
           i += chunk;
-        }
-        out << ", ";
+	}
+        oss << ')';
+        istr.push_back(oss.str());
       }
 
       // Perform computation
-      out << "v = ";
+      ostringstream oss;
       if (cnodes[l][i].type == INV) {
-        out << "~i0";
-        if (w < BITS) out << '&' << ((1<<w)-1);
+        oss << "(~" << istr[0];
+        if (w < BITS) oss << '&' << ((1<<w)-1) << "ull";
       } else if (cnodes[l][i].type == NAND) {
-        out << "~(i0&i1)";
-        if (w < BITS) out << '&' << ((1<<w)-1);
+        oss << "(~(" << istr[0] << '&' << istr[1] << ')';
+        if (w < BITS) oss << '&' << ((1<<w)-1) << "ull";
       }
-      out << "; ";
+      oss << ')';
 
       // Write value into output vector
       for (unsigned i = cur_idx; i < cur_idx + w;) {
         unsigned chunk(BITS - i%BITS), remaining_bits(w - (i - cur_idx));
         if (chunk > remaining_bits) chunk = remaining_bits;
         if (chunk == BITS) {
-          out << "ll" << l << '_' << i/BITS << " = v; ";
+          out << "ll" << l << '_' << i/BITS << " = " << oss.str() << "; ";
         } else {
           out << "ll" << l << '_' << i/BITS << " &= ~"
               << (((1ull<<chunk)-1ull)<<(i%BITS)) << "ull; "
-              << "ll" << l << '_' << i/BITS << " |= (v";
+              << "ll" << l << '_' << i/BITS << " |= (" << oss.str();
           if (i - cur_idx > 0) out << ">>" << i - cur_idx << "ull";
           out << ')';
           if (i%BITS) out << " << " << i%BITS << "ull";
@@ -272,7 +275,7 @@ void chdl::print_c(ostream &out) {
         i += chunk;
       }
 
-      out << " }\n";
+      out << '\n';
 
       cur_idx += w;
     }
