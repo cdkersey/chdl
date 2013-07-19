@@ -13,6 +13,7 @@
 #include "analysis.h"
 
 #include <vector>
+#include <queue>
 #include <set>
 #include <map>
 
@@ -74,8 +75,8 @@ gatecluster::gatecluster(nodeid_t o, const std::set<nodeid_t> &g) :
   output(o), gates(g)
 {
   set<nodeid_t> iset;
-  for (auto g : gates)
-    for (auto s : nodes[g]->src)
+  for (auto &g : gates)
+    for (auto &s : nodes[g]->src)
       if (gates.find(s) == gates.end())
         iset.insert(s);
 
@@ -83,101 +84,119 @@ gatecluster::gatecluster(nodeid_t o, const std::set<nodeid_t> &g) :
     inputs.push_back(i);
 }
 
+void get_all_delays(map<pair<nodeid_t, nodeid_t>, int> &d) {
+  d.clear();
 
-vector<gatecluster> chdl::get_gate_clusters(unsigned max_inputs) {
-  // Pre-compute successors for each node
-  map<nodeid_t, set<nodeid_t>> s;
-  for (nodeid_t i = 0; i < nodes.size(); ++i) {
-    if (regimpl* r = dynamic_cast<regimpl*>(nodes[i])) {
-      s[r->d].insert(i);
-    } else {
-      for (auto j : nodes[i]->src)
-        if (dynamic_cast<nandimpl*>(nodes[i])||dynamic_cast<invimpl*>(nodes[i]))
-          s[j].insert(i);
-    }
-  }
+  // dest -> (src -> latency)
+  map<nodeid_t, map<nodeid_t, int>> l;
 
-  // Data structures to store clusters
-  typedef size_t clusterid_t;
-  vector<set<nodeid_t>> n;      // Set of nodes in each cluster
-  map<nodeid_t, clusterid_t> c; // Map from node to cluster
+  // The delay from everything to itself is zero
+  for (unsigned n = 0; n < nodes.size(); ++n) l[n][n] = 0;
 
-  // Start: each cluster contains exactly one gate
-  for (nodeid_t i = 0; i < nodes.size(); ++i) {
-    if (dynamic_cast<nandimpl*>(nodes[i])||dynamic_cast<invimpl*>(nodes[i])) {
-      c[i] = n.size();
-      n.resize(n.size() + 1);
-      n[c[i]].insert(i);
-    }
-  }
-
-  // Iterative algorithm: if a cluster's input touches only nodes in that
-  // cluster, merge the cluster with the cluster of the gate providing that
-  // input.
-  bool changed;
+  bool changed(false);
   do {
     changed = false;
-    for (clusterid_t i = 0; i < n.size(); ++i) {
-      for (auto j : n[i]) {
-        for (auto k : nodes[j]->src) {
-          if (c.find(k) == c.end() || c[k] == i || s[k].empty()) continue;
-
-          if (n[c[k]].find(k) == n[c[k]].end()) {
-            cout << "Node " << k << " not found in:";
-            for (auto l : n[c[k]]) cout << ' ' << l;
-            cout << endl;
-            exit(1);
-          }
-
-          bool successorsInI(true);
-          for (auto l : s[k])
-            if (c.find(l) == c.end() || c[l] != i) successorsInI = false;
-          if (successorsInI) {
-            if (max_inputs) {
-              set<nodeid_t> inputs;
-              for (auto g : n[c[k]])
-                for (auto j : nodes[g]->src)
-                  if (c.find(j) == c.end() || (c[j] != c[k] && c[j] != i))
-                    inputs.insert(j);
-              for (auto g : n[i])
-                for (auto j : nodes[g]->src)
-                  if (c.find(j) == c.end() || (c[j] != c[k] && c[j] != i))
-                    inputs.insert(j);
-              if (inputs.size() > max_inputs) continue;
-            }
-
+    for (unsigned n = 0; n < nodes.size(); ++n) {
+      map<nodeid_t, int> &m(l[n]);
+      for (auto s : nodes[n]->src) {
+        map<nodeid_t, int> &sm(l[s]);
+        for (auto p : sm) {
+          if (m[p.first] < p.second + 1) {
             changed = true;
-            clusterid_t oldcluster(c[k]);
-            for (auto l : n[c[k]]) {
-              n[i].insert(l);
-              c[l] = i;
-            }
-            n[oldcluster].clear();
+            m[p.first] = p.second + 1;
           }
         }
       }
     }
-  } while (changed);
+  } while(changed);
 
-  // Output: Prune out the empty sets
-  vector<gatecluster> out;
-  for (clusterid_t i = 0; i < n.size(); ++i) {
-    if (!n[i].empty()) {
-      nodeid_t output;
-      for (nodeid_t g : n[i]) {
-        if(s.find(g) == s.end()) {
-          output = g;
-        } else {
-          for (nodeid_t j : s[g])
-            if (n[i].find(j) == n[i].end())
-              output = g;
-        }
-      }
-      out.push_back(gatecluster(output, n[i]));
+  // Populate d from l
+  for (auto x : l)
+    for (auto y : x.second)
+      if (y.second) d[pair<nodeid_t, nodeid_t>(y.first, x.first)] = y.second;
+}
+
+void show_delay_matrix(const map<pair<nodeid_t, nodeid_t>, int> &d) {
+  for (auto x : d)
+    cout << x.first.first << "->" << x.first.second
+         << ": " << x.second << endl;
+  cout << endl;
+}
+
+void get_preds(set<nodeid_t> &p, nodeid_t n) {
+  queue<nodeid_t> q;
+  for (auto s : nodes[n]->src) q.push(s);
+
+  while (!q.empty()) {
+    for (auto s : nodes[q.front()]->src)
+      q.push(s);
+    p.insert(q.front());
+    q.pop();
+  }
+}
+
+void topo_ordered_nodes(vector<nodeid_t> &v,
+                        const map<pair<nodeid_t, nodeid_t>, int> &d)
+{
+  v.clear();
+  map<int, nodeid_t> m;
+
+  for (auto x : d)
+    if (x.second > m[x.first.second]) m[x.first.second] = x.second;
+
+  for (auto n : m) {
+    v.push_back(n.second);
+    cout << n.first << ": " << n.second << endl;
+  }
+}
+
+size_t n_max_val(map<nodeid_t, int> &s) {
+  if (s.empty()) return 0;
+
+  size_t count(0), firstval(s.rbegin()->second);
+  for (auto i = s.rbegin(); i != s.rend() && i->second == firstval; ++i)
+    ++count;
+
+  return count;
+}
+
+void label_nodes(map<nodeid_t, int> &l,
+                 map<pair<nodeid_t, nodeid_t>, int> &d, unsigned csize)
+{
+  l.clear();
+
+  vector<nodeid_t> ordered_nodes;
+  topo_ordered_nodes(ordered_nodes, d);
+
+  for (auto n : ordered_nodes) {
+    set<nodeid_t> p, cluster;
+    get_preds(p, n);
+
+    map<nodeid_t, int> lv;
+    for (auto &x : p)
+      lv[x] = l[x] + d[pair<nodeid_t, nodeid_t>(x, n)];
+
+    int l1(0), l2(0);
+    cluster.insert(n);
+
+    while (!p.empty() && lv.size() + n_max_val(lv) <= csize) {
+      cluster.insert(
     }
   }
+}
 
-  return out;
+// Rajaraman and Wong clustering
+vector<gatecluster> chdl::get_gate_clusters(unsigned max_inputs) {
+  // Compute delays from each node to each rechable successor
+  map<pair<nodeid_t, nodeid_t>, int> delay;
+  get_all_delays(delay);
+  show_delay_matrix(delay);
+
+  // Label the nodes
+  map<nodeid_t, int> label;
+  label_nodes(label, delay, max_inputs);
+
+  return vector<gatecluster>();
 }
 
 size_t chdl::num_nands() {
