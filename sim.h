@@ -8,9 +8,9 @@ namespace chdl {
 
   cycle_t sim_time();
   void print_time(std::ostream&);
-  cycle_t advance();
+  cycle_t advance(unsigned threads=1);
 
-  void run(std::ostream &vcdout, cycle_t time);
+  void run(std::ostream &vcdout, cycle_t time, unsigned threads=1);
 };
 
 #endif
