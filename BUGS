@@ -2,6 +2,7 @@ Critical
 
   Arithmetic/logic have not been tested with non power-of-two widths.
     - Except Enc(), required by Statemachine. This one is guaranteed to work.
+    - Log2 has been shown not to work.
 
 Must Fix
 
@@ -17,5 +18,3 @@ Must Fix
     - has not been reproduced recently
 
 Nuisance
-
-  -
