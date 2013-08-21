@@ -1,0 +1,10 @@
+xor2  inn12ni1i2
+xnor2 nn12ni1i2
+nor2  ini1i2
+nand2 n12
+nor3  inni1i2i3
+nand3 nin123
+nor4  inni1i2ni3i4
+nand4 inn12n34
+inv   i1
+dff   r1

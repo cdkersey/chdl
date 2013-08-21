@@ -14,6 +14,8 @@
 #include <opt.h>
 #include <vis.h>
 
+#include <techmap.h>
+
 #include <analysis.h>
 
 #include "report.h"
@@ -67,6 +69,10 @@ int main(int argc, char **argv) {
   ofstream dot_file("example2.dot");
   print_dot(dot_file);
   dot_file.close();
+
+  ofstream netl_file("example2.netl");
+  techmap(netl_file);
+  netl_file.close();
 
   cout << "Critical path length: " << critpath() << endl;
 

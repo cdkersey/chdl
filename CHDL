@@ -47,8 +47,12 @@ Structure of this Document
     - Simulator
     - HDL Writer
   - Simulation Tools
-  - NAND File Format
+  - File Formats
+    - NAND File Format
+    - NETL File Format
+    - TLIB File Format
   - HDL Writer
+  - Technology Mapper
 
 Concepts
 --------
@@ -59,6 +63,9 @@ API
 Nodes
 -----
 
+File Formats
+------------
+
 NAND File Format
 ----------------
 
@@ -66,5 +73,41 @@ A very basic netlist format has been developed for storing CHDL designs for use
 by other utilities. This file is called a "nand" file because all logic is
 represented (currently) as a network of nand gates and inverters.
 
+NETL File Format
+----------------
+
+The NETL file format produced by the technology mapper follows the same basic
+netlist structure as the NAND file format but allows a richer set of primitives
+instead of the basic NAND-inverter graph of the NAND format.
+
+TLIB File Format
+----------------
+
+The TLIB format is used to define a technology library as a set of gates to be
+matched. Each line contains the name of a gate, followed by whitespace,
+followed by a description of the NAND-inverter structure that matches that
+gate. This structure must be a tree in form, but leaf nodes (inputs) can be
+connected.
+
+As an example, let's write a 2-input XOR gate in TLIB format:
+
+  xor2 inn12ni1i2
+
+"xor2" is obviously the name of the gate. The string on the right is the
+structure of the gate; a tree output in depth-first form:
+
+            i
+            |
+            n
+          /   \
+        n       n
+       / \     / \
+      1   2   i   i
+              |   |
+              1   2
+
 HDL Writer
 ----------
+
+Technology Mapper
+-----------------
