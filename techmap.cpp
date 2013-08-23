@@ -45,7 +45,7 @@ struct tlibgate {
 
 tlibgate::tlibgate(): seq(false), i0(NULL), i1(NULL), c('x'), t(INPUT) {}
 
-tlibgate::tlibgate(string s, int *idx) {
+tlibgate::tlibgate(string s, int *idx): seq(false) {
   if (s.find("r") != string::npos) seq = true;
   c = s[0];
 
@@ -72,6 +72,10 @@ tlibgate::tlibgate(string s, int *idx) {
     t = INPUT;
     i0 = i1 = NULL;
   }
+
+  if (i0 && i0->seq) seq = true;
+  if (i1 && i1->seq) seq = true;
+
   if (idx) ++*idx;
 }
 
@@ -162,11 +166,25 @@ bool operator<(const tlibgate &l, const tlibgate &r) {
   return l.get_size() < r.get_size();
 }
 
-static vector<pair<tlibgate, string>> tlib;
+
+
+bool no_internal_outputs(const set<nodeid_t> &nodes, nodeid_t output,
+                         map<nodeid_t, set<nodeid_t>> &users)
+{
+  for (auto n : nodes)
+    for (auto &u : users[n])
+      if (n != output && nodes.find(u) == nodes.end()) return false;
+
+  return true;
+}
 
 void chdl::techmap(ostream &out) {
   using namespace std;
   using namespace chdl;
+
+  const bool ALLOW_REP(true);
+
+  vector<pair<tlibgate, string>> tlib;
 
   // Read technology library
   ifstream tf("TLIB");
@@ -174,24 +192,34 @@ void chdl::techmap(ostream &out) {
     string name, desc;
     tf >> name >> desc;
     if (!tf) break;
-    tlib.push_back(make_pair(tlibgate(desc), name));
-    cout << name << ": " << tlib.rbegin()->first.dump() << '(' << tlib.rbegin()->first.get_size() << ")\n";
+    tlibgate t(desc);
+    tlib.push_back(make_pair(t, name));
+
+    cout << name << ": " << t.dump() << '(' << t.get_size() << ')'
+         << (t.seq?" [seq]\n":"\n");
   }
 
   sort(tlib.begin(), tlib.end());
 
   vector<mapping> bestmaps(nodes.size());
 
-  // Find the best (covers most nodes) mapping for each node.
-  for (unsigned e_idx = 0;  e_idx < tlib.size(); ++e_idx) {
-    auto &e(tlib[e_idx]);
-    tlibgate &t(e.first);
-    for (unsigned n = 0; n < nodes.size(); ++n) {
+  map<nodeid_t, set<nodeid_t>> users;
+  for (unsigned n = 0; n < nodes.size(); ++n) {
+    if (regimpl *r = dynamic_cast<regimpl*>(nodes[n])) users[r->d].insert(n);
+    for (auto s : nodes[n]->src) users[s].insert(n);
+  }
+
+  for (unsigned n = 0; n < nodes.size(); ++n) {
+    for (unsigned e_idx = 0; e_idx < tlib.size(); ++e_idx) {
+      auto &e(tlib[e_idx]);
+      tlibgate &t(e.first);
       mapping m;
       if (t.match(n, m)) {
-        m.t = e_idx;
-        m.output = n;
-        bestmaps[n] = m;
+        if (ALLOW_REP || no_internal_outputs(m.covered, n, users)) {
+          m.t = e_idx;
+          m.output = n;
+          bestmaps[n] = m;
+        }
       }
     }
   }
