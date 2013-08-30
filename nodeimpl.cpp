@@ -54,6 +54,12 @@ node &node::operator=(const node &r) {
   return *this;
 }
 
+void node::change_net(nodeid_t i) {
+  node_dir()[idx].erase(this);
+  node_dir()[i].insert(this);
+  idx = i;
+}
+
 void show_node_dir() {
   cout << "Node directory:" << endl;
   for (auto n : node_dir()) {

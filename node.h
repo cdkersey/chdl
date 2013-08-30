@@ -25,6 +25,7 @@ namespace chdl {
     operator nodeid_t() const { return idx; }
 
     node &operator=(const node &r);
+    void change_net(nodeid_t i);
     
   protected:
     nodeid_t idx;
