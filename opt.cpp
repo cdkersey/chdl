@@ -7,6 +7,7 @@
 #include "gatesimpl.h"
 #include "litimpl.h"
 #include "netlist.h"
+#include "regimpl.h"
 #include "lit.h"
 #include "node.h"
 #include "memory.h"
@@ -180,6 +181,99 @@ void chdl::opt_dedup() {
 
     opt_dead_node_elimination();
   } while(changes);
+}
+
+void chdl::opt_limit_fanout(unsigned max) {
+  // Compute fanouts as outputs to gates + outputs to regs + external outputs
+  map<nodeid_t, unsigned> fanout;
+  map<nodeid_t, vector<nodeid_t> > succ;
+  for (auto p : nodes) {
+    for (auto s : p->src) {
+      succ[s].push_back(p->id);
+      ++fanout[s];
+    }
+    if (regimpl *r = dynamic_cast<regimpl*>(p)) {
+      ++fanout[r->d];
+      succ[r->d].push_back(p->id);
+    }
+  }
+
+  cout << "--- Before ---\n";
+  map<unsigned, unsigned> hist;
+  for (auto x : fanout) ++hist[x.second];
+  for (auto x : hist) cout << "fanout " << x.first << ": " << x.second << endl;
+
+  bool node_split(false);
+  do {
+    // Find all of the nodes that need to be split
+    vector<nodeid_t> nodes_to_split;
+    for (auto x : fanout)
+      if (x.second > max)
+        nodes_to_split.push_back(x.first);    
+    if (nodes_to_split.size() > 0) node_split = true;
+    else break;
+
+    vector<vector<nodeid_t> > splitnode_suc;
+    for (auto x : nodes_to_split) {
+      splitnode_suc.push_back(vector<nodeid_t>());
+      for (auto y : succ[x]) splitnode_suc.rbegin()->push_back(y);
+    }
+
+    // Split them
+    for (size_t i = 0; i < nodes_to_split.size(); ++i) {
+      nodeid_t id(nodes_to_split[i]);
+      nodeimpl *p(nodes[id]);
+      vector<nodeid_t> &s(splitnode_suc[i]);
+
+      node new_node;
+      if (nandimpl* ni = dynamic_cast<nandimpl*>(p))
+        new_node = Nand(p->src[0], p->src[1]);
+      else if (invimpl* ii = dynamic_cast<invimpl*>(p))
+        new_node = Inv(p->src[0]);
+      else if (regimpl* ri = dynamic_cast<regimpl*>(p))
+        new_node = Reg(ri->d);
+      else if (litimpl* li = dynamic_cast<litimpl*>(p))
+        new_node = Lit(p->eval());
+      else
+        new_node = Inv(Inv(id));
+
+      // Move half of the successors to the new node.
+      for (unsigned i = 0; i < s.size()/2; ++i) {
+        nodeid_t sid(s[i]);
+        nodeimpl *sp(nodes[sid]);
+
+        if (regimpl* ri = dynamic_cast<regimpl*>(sp)) {
+          ri->d.change_net(new_node);
+        } else {
+          for (auto &s : sp->src)
+            if (s == id) s.change_net(new_node);
+        }
+      }
+    }
+
+    // Clean up
+    opt_dead_node_elimination();
+
+    // Recompute fanout and successors
+    succ.clear();
+    fanout.clear();
+    for (auto p : nodes) {
+      for (auto s : p->src) {
+        succ[s].push_back(p->id);
+        ++fanout[s];
+      }
+      if (regimpl *r = dynamic_cast<regimpl*>(p)) {
+        ++fanout[r->d];
+        succ[r->d].push_back(p->id);
+      }
+    }
+
+  } while (node_split);
+
+  cout << "--- After ---\n";
+  hist.clear();
+  for (auto x : fanout) ++hist[x.second];
+  for (auto x : hist) cout << "fanout " << x.first << ": " << x.second << endl;
 }
 
 void chdl::optimize() {
