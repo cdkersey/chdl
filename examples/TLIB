@@ -1,5 +1,8 @@
-xor2  inn12ni1i2
-xnor2 nn12ni1i2
+xor2a  inni1i1n12
+xor2b  nni12n1i2
+xnor2a inni12n1i2
+xnor2b nni1i2n12
+xor3  inn1inn23ni2i3ni1iinn23ni2i3
 nor2  ini1i2
 nand2 n12
 nor3  inni1i2i3
@@ -7,4 +10,14 @@ nand3 nin123
 nor4  inni1i2ni3i4
 nand4 inn12n34
 inv   i1
-dff   r1
+and2  in12
+and3  inin123
+or2   ni1i2
+or3   nni1i2i3
+aoi22 inn12n34
+aoi21 inn12i3
+oai22 nni1i2ni3i4
+oai21 nni1i23
+mux2  nni12n13
+dffr0 r1
+dffr1 iri1

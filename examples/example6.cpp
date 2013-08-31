@@ -21,6 +21,7 @@
 #include <vis.h>
 
 #include <hierarchy.h>
+#include <techmap.h>
 
 #include "report.h"
 
@@ -523,6 +524,9 @@ int main() {
   // Print the netlist
   ofstream netlist_file("example6.nand");
   print_netlist(netlist_file);
+
+  ofstream netl_file("example6.netl");
+  techmap(netl_file);
 
   ofstream h_file("example6.hier");
   print_hierarchy(h_file, 2);

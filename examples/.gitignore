@@ -2,6 +2,7 @@
 *.ps
 *.dot
 *.nand
+*.netl
 *.hier
 example[0-9]
 text.hex
