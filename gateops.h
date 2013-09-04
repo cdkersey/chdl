@@ -1,4 +1,4 @@
-// Operator overloades for the basic gate types.
+// Operator overloads for the basic gate types.
 #ifndef __GATEOPS_H
 #define __GATEOPS_H
 
