@@ -11,6 +11,7 @@
 #include "nodeimpl.h"
 #include "regimpl.h"
 #include "gatesimpl.h"
+#include "input.h"
 
 using namespace std;
 using namespace chdl;
@@ -224,12 +225,18 @@ void chdl::techmap(ostream &out) {
     }
   }
 
+  // Print outputs and inputs
+  out << "inputs" << endl;
+  print_input_nodes(out);
+  out << "outputs" << endl;
+  print_tap_nodes(out);
+  out << "design" << endl;
+
   // Map outputs and register inputs, then their inputs, etc., until there is
   // nothing left to map.
   set<nodeid_t> nodes_to_map, nodes_mapped;
   get_reg_d_nodes(nodes_to_map);
   get_tap_nodes(nodes_to_map);
-  out << endl << endl;
   while(!nodes_to_map.empty()) {
     set<nodeid_t> next_nodes;
 
