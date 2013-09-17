@@ -33,8 +33,8 @@ namespace chdl {
       }
 
       // Indexing operators
-      T &operator[](size_t i) { return nodes[i]; }
-      const T &operator[](size_t i) const { return nodes[i]; }
+      T &operator[](size_t i) { bc(i); return nodes[i]; }
+      const T &operator[](size_t i) const { bc(i); return nodes[i]; }
       template <unsigned A, unsigned B>
         vec<B-A+1, T> operator[](range<A, B> r)
       {
@@ -48,6 +48,10 @@ namespace chdl {
 
     protected:
       T nodes[N];
+
+    private:
+      void bc(size_t i) const { if (i >= N) abort(); }
+      void bc(size_t i, size_t j) const { bc(i); bc(j); }
   };
 
   template <unsigned N> using bvec = vec<N, node>;
