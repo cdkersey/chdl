@@ -26,6 +26,8 @@ namespace chdl {
     }
 
     operator bvec<CLOG2(N)>() { return state; }
+    bvec<CLOG2(N)> getState() { return state; }
+    node inState(unsigned s) { return state1h[s]; }
 
    private:
     vec<N, bvec<N>> edges;
