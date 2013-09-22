@@ -53,6 +53,7 @@ Structure of this Document
     - TLIB File Format
   - HDL Writer
   - Technology Mapper
+  - Frequently-Asked Questions
 
 Concepts
 --------
@@ -111,3 +112,24 @@ HDL Writer
 
 Technology Mapper
 -----------------
+
+Frequently-Asked Questions
+--------------------------
+
+Q: I want to create a simple sequential circuit, like a counter, but my attempt:
+
+    bvec<4> ctr1(Reg(ctr1 + Lit<4>(1))); //, or
+    bvec<4> ctr2 = Reg(ctr2 + Lit<4>(1));
+
+   does not seem to work. In fact, it behaves very strangely. What am I doing
+   wrong?
+
+A: Use two statements instead:
+
+     bvec<4> ctr; ctr = Reg(ctr + Lit<4>(1));
+
+   Why is this unfortunate verbosity necessary? Currently, CHDL relies on the
+   bvec object "ctr" being constructed before it can be used. The reference to
+   "ctr" in "ctr + Lit<4>(1)" leads to undefined behavior in C++ because ctr
+   has not been constructed yet. So, while it is syntactically valid C++, it is
+   semantically ambiguous.
