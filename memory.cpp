@@ -17,7 +17,7 @@ using namespace std;
 unsigned long toUint(vector<node> &v) {
   unsigned long r(0);
   for (unsigned i = 0; i < v.size(); ++i)
-    if (nodes[v[i]]->eval()) r |= 1<<i;
+    if (nodes[v[i]]->eval()) r |= 1ul<<i;
   return r;
 }
 
