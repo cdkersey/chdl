@@ -12,7 +12,7 @@ namespace chdl {
   // A state machine with N states.
   template <unsigned N> class Statemachine {
    public:
-  Statemachine(): nextState(Enc(nextState1h)), state(Reg(nextState)) {
+  Statemachine(): nextStatev(Enc(nextState1h)), state(Reg(nextStatev)) {
       state1h = Zext<N>(Decoder(state));
     }
 
@@ -33,7 +33,7 @@ namespace chdl {
    private:
     vec<N, bvec<N>> edges;
     bvec<N> nextState1h, state1h;
-    bvec<CLOG2(N)> nextState, state;
+    bvec<CLOG2(N)> nextStatev, state;
   };
 };
 
