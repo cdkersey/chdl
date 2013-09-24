@@ -125,6 +125,17 @@ hierarchy &get_by_path(hpath_t path) {
   return *p;
 }
 
+string chdl::path_str(const hpath_t &path) {
+  string path_str;
+  hierarchy *p = &root; 
+  for (unsigned i = 0; i < path.size(); ++i) {
+    path_str += "/";
+    p = &(p->c[path[i]]);
+    path_str += p->name;
+  }
+  return path_str;
+}
+
 void chdl::dot_schematic(std::ostream &out, hpath_t path) {
   count_refs();
 
