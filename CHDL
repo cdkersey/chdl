@@ -44,6 +44,7 @@ Structure of this Document
     - Vector Operator Overloads
     - Higher-order Arrays
     - Memories
+    - Optimization
     - Simulator
     - HDL Writer
   - Simulation Tools
