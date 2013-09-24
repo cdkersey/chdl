@@ -5,6 +5,8 @@
 
 #include "node.h"
 
+#include <vector>
+
 namespace chdl {
   // These functions are all called by optimize()
   void opt_dead_node_elimination();
@@ -14,8 +16,11 @@ namespace chdl {
 
   void optimize();
 
-  // These are more situation-specic optimizations
+  // More situation-specic optimizations
   void opt_limit_fanout(unsigned max_fanout);
+
+  // Meta-optimizations; building blocks for domain-specific optimizations
+  void order(std::vector<nodeid_t> &o, unsigned steps=0);
 };
 
 #endif

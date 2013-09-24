@@ -4,7 +4,7 @@ LDLIBS += -pthread
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o \
-       submodule.o latch.o techmap.o
+       submodule.o latch.o techmap.o order.o
 
 all : libchdl.so
 
@@ -44,6 +44,11 @@ latch.o: latch.cpp latch.h bvec.h bvec-basic.h gates.h reg.h lit.h node.h \
          hierarchy.h
 techmap.o: techmap.cpp techmap.h gatesimpl.h gates.h regimpl.h reg.h node.h \
            nodeimpl.h tap.h
+order.o: order.cpp adder.h analysis.h bvec-basic.h bvec-basic-op.h bvec.h \
+         chdl.h divider.h enc.h gateops.h gates.h gatesimpl.h hierarchy.h \
+         input.h latch.h lit.h litimpl.h llmem.h memory.h mult.h mux.h \
+         netlist.h node.h nodeimpl.h opt.h reg.h regimpl.h shifter.h sim.h \
+         statemachine.h submodule.h tap.h techmap.h tickable.h vis.h
 
 clean:
 	rm -f libchdl.so $(OBJS) *~ *\#
