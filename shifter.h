@@ -6,17 +6,15 @@
 
 #include "hierarchy.h"
 
-#define  LOG2_INT_1(x) 0
-#define  LOG2_INT_2(x) ((x&       0x2)?LOG2_INT_1 (x>> 1)+ 1: LOG2_INT_1(x))
-#define  LOG2_INT_4(x) ((x&       0xc)?LOG2_INT_2 (x>> 2)+ 2: LOG2_INT_2(x))
-#define  LOG2_INT_8(x) ((x&      0xf0)?LOG2_INT_4 (x>> 4)+ 4: LOG2_INT_4(x))
-#define LOG2_INT_16(x) ((x&    0xff00)?LOG2_INT_8 (x>> 8)+ 8: LOG2_INT_8(x))
-#define LOG2_INT_32(x) ((x&0xffff0000)?LOG2_INT_16(x>>16)+16:LOG2_INT_16(x))
-
-#define LOG2(x) LOG2_INT_32((x))
-#define CLOG2(x) (LOG2_INT_32((x)) + (((x)&((x)-1)) != 0))
-
 namespace chdl {
+  constexpr unsigned LOG2(unsigned long x) {
+    return x == 1 ? 0 : LOG2(x >> 1) + 1;
+  }
+
+  constexpr unsigned CLOG2(unsigned long x) {
+    return x&(x-1) ? LOG2(x) + 1 : LOG2(x);
+  }
+
   // Fixed shift by B bits (positive for left, negative for right). A series of
   // these could be used to construct a barrel shifter.
   template <unsigned N>

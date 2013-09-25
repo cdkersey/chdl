@@ -184,6 +184,11 @@ void chdl::opt_dedup() {
 }
 
 void chdl::opt_limit_fanout(unsigned max) {
+  // This is currently constant, but there should maybe be a way to configure
+  // it. The idea is that we don't want to trade high-fanout registers for a
+  // ton of clock load. Both are bad.
+  bool buffers_for_regs(true);
+
   // Compute fanouts as outputs to gates + outputs to regs + external outputs
   map<nodeid_t, unsigned> fanout;
   map<nodeid_t, vector<nodeid_t> > succ;
@@ -226,16 +231,31 @@ void chdl::opt_limit_fanout(unsigned max) {
       vector<nodeid_t> &s(splitnode_suc[i]);
 
       node new_node;
+      regimpl *ri;
       if (nandimpl* ni = dynamic_cast<nandimpl*>(p))
         new_node = Nand(p->src[0], p->src[1]);
       else if (invimpl* ii = dynamic_cast<invimpl*>(p))
         new_node = Inv(p->src[0]);
-      else if (regimpl* ri = dynamic_cast<regimpl*>(p))
+      else if (!buffers_for_regs && (ri = dynamic_cast<regimpl*>(p)))
         new_node = Reg(ri->d);
       else if (litimpl* li = dynamic_cast<litimpl*>(p))
         new_node = Lit(p->eval());
-      else
-        new_node = Inv(Inv(id));
+      else {
+        node n(id);
+        node intermediate(Inv(id)), repl_node(Inv(intermediate));
+        new_node = Inv(intermediate);
+        for (unsigned i = s.size()/2; i < s.size(); ++i) {
+          nodeid_t sid(s[i]);
+          nodeimpl *sp(nodes[sid]);
+
+          if (regimpl* ri = dynamic_cast<regimpl*>(sp)) {
+            ri->d.change_net(repl_node);
+          } else {
+            for (auto &s : sp->src)
+              if (s == id) s.change_net(repl_node);
+          }
+        }
+      }
 
       // Move half of the successors to the new node.
       for (unsigned i = 0; i < s.size()/2; ++i) {

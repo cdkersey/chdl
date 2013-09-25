@@ -14,6 +14,8 @@ namespace chdl {
   void print_hierarchy(std::ostream &out, int maxlevel=-1);
   void dot_schematic(std::ostream &out, hpath_t path = hpath_t());
 
+  std::string path_str(const hpath_t &path);
+
   hpath_t get_hpath();
 };
 
