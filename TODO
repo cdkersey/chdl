@@ -7,6 +7,9 @@ _ Add tri-state support
   _ To technology mapper and .netl format (three-state buffers are just another
     2-input gate)
 
+_ Add tri-state multi-line "bus" that extends bvec and adds a
+  'connect(bvec<N> input, node enable)' function
+
 _ Add basic register optimization
   _ unused reg values are dead nodes
   _ reg(Lit(x)) = Lit(x)
