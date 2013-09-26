@@ -13,6 +13,7 @@ namespace chdl {
   void opt_contract();
   void opt_combine_literals();
   void opt_dedup();
+  void opt_tristate_merge();
 
   void optimize();
 

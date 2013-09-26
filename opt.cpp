@@ -13,6 +13,7 @@
 #include "memory.h"
 #include "submodule.h"
 #include "trisimpl.h"
+#include "tristate.h"
 
 #include <vector>
 #include <set>
@@ -51,6 +52,41 @@ void chdl::opt_dead_node_elimination() {
     if (live_nodes.find(i) != live_nodes.end()) pm[i] = dest++;
   }
   permute_nodes(pm);
+}
+
+template<typename T> node vecOrN(T begin, T end) {
+  unsigned len(end - begin);
+  T middle(begin + len/2);
+  if (len == 1)
+    return *begin;
+  else
+    return Or(vecOrN(begin, middle), vecOrN(middle, end));
+}
+
+template <typename T> node vecOrN(const T &v) {
+  return vecOrN(v.begin(), v.end());
+}
+
+void chdl::opt_tristate_merge() {
+  map<nodeid_t, map<nodeid_t, vector<nodeid_t> > > tris;
+
+  for (nodeid_t i = 0; i < nodes.size(); ++i) {
+    if (tristateimpl *t = dynamic_cast<tristateimpl*>(nodes[i])) {
+      map<nodeid_t, vector<nodeid_t> > &inputs(tris[i]); // input->enable
+      for (unsigned j = 0; j < t->src.size(); j += 2)
+        inputs[t->src[j]].push_back(t->src[j+1]);
+    }
+  }
+
+  for (auto &t : tris) {
+    tristatenode nt;
+    for (auto &x : t.second)
+      nt.connect(x.first, vecOrN(x.second));
+    node n(nodes[t.first]->id);
+    n = nt;
+  }
+
+  opt_dead_node_elimination();
 }
 
 void chdl::opt_contract() {
@@ -121,6 +157,24 @@ void chdl::opt_contract() {
         nodes[nodeid_t(n)]->path = hp;
         ++changes;
         continue;
+      }
+
+      tristateimpl *tris = dynamic_cast<tristateimpl*>(nodes[i]);
+      if (tris) {
+        for (unsigned i = 0; i < tris->src.size(); i += 2) {
+          if (litimpl *l = dynamic_cast<litimpl*>(nodes[tris->src[i+1]])) {
+            if (l->eval()) {
+              node n(tris->id);
+              n = tris->src[i];
+              ++changes;
+              continue;
+            } else {
+              tris->src.erase(tris->src.begin()+i, tris->src.begin()+i+2);
+              ++changes;
+              continue;
+            }
+          }
+        }
       }
     }
 
@@ -299,10 +353,18 @@ void chdl::optimize() {
   cerr << "Before optimization: " << nodes.size() << endl;
   opt_dead_node_elimination();
   cerr << "After dead node elimination: " << nodes.size() << endl;
+  opt_tristate_merge();
+  cerr << "After tri-state merge: " << nodes.size() << endl;
   opt_contract();
   cerr << "After contraction: " << nodes.size() << endl;
   opt_combine_literals();
   cerr << "After combining literals: " << nodes.size() << endl;
   opt_dedup();
   cerr << "After redundant expression elimination: " << nodes.size() << endl;
+
+  opt_tristate_merge();
+  opt_contract();
+  opt_dedup();
+  opt_tristate_merge();
+  cerr << "After tri-state merge #2: " << nodes.size() << endl;
 }

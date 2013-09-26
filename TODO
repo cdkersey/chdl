@@ -6,12 +6,16 @@ _ Add tri-state support
   _ To .nand format (including in/out ports)
     . Internal nodes
     _ in/out ports
-  _ To optimizer
+    _ .nand file reader
+  . To optimizer
     . fanout reducer should store position; tristate (and memory) nodes
       may have multiple fanouts from same input, so just matching node number is
       insufficient. 
-    _ tri x y x z x w q p => tri x orN({y,z,w}) q p
-    _ tri x y => x
+    . tri x y x z x w q p => tri x orN({y,z,w}) q p
+    x tri x y => x
+      - iff not attached to a terminal
+      - actually avoid this one. This should _not_ happen in real designs.
+    . tri x Lit(0) y . . . => tri y . . .
       - But not on i/o pins
   _ To technology mapper and .netl format (three-state buffers are positional
     [non-commutative] 2-input gates)
