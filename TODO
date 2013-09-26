@@ -1,23 +1,48 @@
 CHDL Near-term Roadmap
 ======================
 
-_ Technology mapping
-  - Use a truth table based approach.
-  - Each truth table is a binary vector and a set of at most 6 inputs
-  - The inputs are re-ordered to minimize the value of the truth table when
-    represented as a uint64_t. This canonical ordering is used to find identity
-    classes for binary functions.
+_ Add tri-state support
+  . To simulation
+  _ To .nand format (including in/out ports)
+  _ To technology mapper and .netl format (three-state buffers are just another
+    2-input gate)
+
+_ Add basic register optimization
+  _ unused reg values are dead nodes
+  _ reg(Lit(x)) = Lit(x)
+  _ registers with the same input expressions can be combined (during common
+    subexpn elim)
+
+_ Add "don't care" support
+  _ A "whatever" lit type; evals to 0
+  _ 'template <unsigned N> bvec<N> Whatever()' utility function in lit.h
+  _ optimizations: nand(x, whatever) = whatever, inv(whatever) = whatever,
+                   reg(whatever) = whatever
+  _ eval options for simulation?
+
 _ Create a separate header for utility functions, integer math, etc.
-  - like the int log2 macro
+  - like the int log2 functions
+
+_ Make mux use CLOG2, so input vectors don't have to involve powers of 2.
+  - this will enable better optimization.
 
 _ Fix handling of memory in vis.cpp
   - Currently the outputs are just unattached hexagons and the address nodes
     are not indicated at all.
 
+_ Add optimizations for tri-state logic
+  - A tri-state node that can only be driven by one input just becomes that
+    input. Its enable becomes a dangling node.
+  - Any pair of inputs to a tri-state node that have the same value can be
+    reduced to a single driver whose enable signal is or(e0, e1)
+
 _ Create some documentation.
+  - Make the CHDL manual more than just an imcomplete outline.
 
 Possible future features:
   _ Change nand-based IR to industry-standard AIG (and/inverter graph)
+    - This is implementation technology neutral, whereas our nand/inverter graph
+      will, once optimized, not tmap to nor gates easily.
   _ Netlist reading
   _ Pass manager
     - Is there any reason to optimize in an order other than the one used by
