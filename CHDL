@@ -38,6 +38,7 @@ Structure of this Document
       - Fundamental Gates
       - Registers
       - Special Nodes
+      - Tri-state Nodes
     - Gates
     - Operator Overloads
     - Vectors
