@@ -24,5 +24,6 @@
 #include <chdl/statemachine.h>
 #include <chdl/submodule.h>
 #include <chdl/tap.h>
+#include <chdl/tristate.h>
 #include <chdl/vis.h>
 #endif

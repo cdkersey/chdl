@@ -4,8 +4,17 @@ CHDL Near-term Roadmap
 _ Add tri-state support
   . To simulation
   _ To .nand format (including in/out ports)
-  _ To technology mapper and .netl format (three-state buffers are just another
-    2-input gate)
+    . Internal nodes
+    _ in/out ports
+  _ To optimizer
+    . fanout reducer should store position; tristate (and memory) nodes
+      may have multiple fanouts from same input, so just matching node number is
+      insufficient. 
+    _ tri x y x z x w q p => tri x orN({y,z,w}) q p
+    _ tri x y => x
+      - But not on i/o pins
+  _ To technology mapper and .netl format (three-state buffers are positional
+    [non-commutative] 2-input gates)
 
 _ Add tri-state multi-line "bus" that extends bvec and adds a
   'connect(bvec<N> input, node enable)' function
@@ -19,8 +28,9 @@ _ Add basic register optimization
 _ Add "don't care" support
   _ A "whatever" lit type; evals to 0
   _ 'template <unsigned N> bvec<N> Whatever()' utility function in lit.h
-  _ optimizations: nand(x, whatever) = whatever, inv(whatever) = whatever,
-                   reg(whatever) = whatever
+  _ optimizations: inv(whatever) = whatever, reg(whatever) = whatever
+     - Treat whatevers like constant 0 or 1, based on which will reduce
+       logic more (will propagate 0 to the most nand gates)
   _ eval options for simulation?
 
 _ Create a separate header for utility functions, integer math, etc.

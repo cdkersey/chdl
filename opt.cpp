@@ -12,6 +12,7 @@
 #include "node.h"
 #include "memory.h"
 #include "submodule.h"
+#include "trisimpl.h"
 
 #include <vector>
 #include <set>
@@ -191,15 +192,16 @@ void chdl::opt_limit_fanout(unsigned max) {
 
   // Compute fanouts as outputs to gates + outputs to regs + external outputs
   map<nodeid_t, unsigned> fanout;
-  map<nodeid_t, vector<nodeid_t> > succ;
+  map<nodeid_t, vector<pair<nodeid_t, unsigned>>> succ;
   for (auto p : nodes) {
-    for (auto s : p->src) {
-      succ[s].push_back(p->id);
+    for (unsigned i = 0; i < p->src.size(); ++i) {
+      nodeid_t s = p->src[i];
+      succ[s].push_back(pair<nodeid_t, unsigned>(p->id, i));
       ++fanout[s];
     }
     if (regimpl *r = dynamic_cast<regimpl*>(p)) {
       ++fanout[r->d];
-      succ[r->d].push_back(p->id);
+      succ[r->d].push_back(pair<nodeid_t, unsigned>(p->id, 0));
     }
   }
 
@@ -208,19 +210,17 @@ void chdl::opt_limit_fanout(unsigned max) {
   for (auto x : fanout) ++hist[x.second];
   for (auto x : hist) cout << "fanout " << x.first << ": " << x.second << endl;
 
-  bool node_split(false);
-  do {
+  for (;;) {
     // Find all of the nodes that need to be split
     vector<nodeid_t> nodes_to_split;
     for (auto x : fanout)
       if (x.second > max)
         nodes_to_split.push_back(x.first);    
-    if (nodes_to_split.size() > 0) node_split = true;
-    else break;
+    if (nodes_to_split.size() == 0) break;
 
-    vector<vector<nodeid_t> > splitnode_suc;
+    vector<vector<pair<nodeid_t, unsigned>>> splitnode_suc;
     for (auto x : nodes_to_split) {
-      splitnode_suc.push_back(vector<nodeid_t>());
+      splitnode_suc.push_back(vector<pair<nodeid_t, unsigned>>());
       for (auto y : succ[x]) splitnode_suc.rbegin()->push_back(y);
     }
 
@@ -228,7 +228,7 @@ void chdl::opt_limit_fanout(unsigned max) {
     for (size_t i = 0; i < nodes_to_split.size(); ++i) {
       nodeid_t id(nodes_to_split[i]);
       nodeimpl *p(nodes[id]);
-      vector<nodeid_t> &s(splitnode_suc[i]);
+      vector<pair<nodeid_t, unsigned>> &s(splitnode_suc[i]);
 
       node new_node;
       regimpl *ri;
@@ -245,29 +245,27 @@ void chdl::opt_limit_fanout(unsigned max) {
         node intermediate(Inv(id)), repl_node(Inv(intermediate));
         new_node = Inv(intermediate);
         for (unsigned i = s.size()/2; i < s.size(); ++i) {
-          nodeid_t sid(s[i]);
+          nodeid_t sid(s[i].first);
+          unsigned pos(s[i].second);
           nodeimpl *sp(nodes[sid]);
 
-          if (regimpl* ri = dynamic_cast<regimpl*>(sp)) {
+          if (regimpl* ri = dynamic_cast<regimpl*>(sp))
             ri->d.change_net(repl_node);
-          } else {
-            for (auto &s : sp->src)
-              if (s == id) s.change_net(repl_node);
-          }
+          else
+            sp->src[pos].change_net(repl_node);
         }
       }
 
       // Move half of the successors to the new node.
       for (unsigned i = 0; i < s.size()/2; ++i) {
-        nodeid_t sid(s[i]);
+        nodeid_t sid(s[i].first);
+        unsigned pos(s[i].second);
         nodeimpl *sp(nodes[sid]);
 
-        if (regimpl* ri = dynamic_cast<regimpl*>(sp)) {
+        if (regimpl* ri = dynamic_cast<regimpl*>(sp))
           ri->d.change_net(new_node);
-        } else {
-          for (auto &s : sp->src)
-            if (s == id) s.change_net(new_node);
-        }
+        else
+          sp->src[pos].change_net(new_node);
       }
     }
 
@@ -278,17 +276,18 @@ void chdl::opt_limit_fanout(unsigned max) {
     succ.clear();
     fanout.clear();
     for (auto p : nodes) {
-      for (auto s : p->src) {
-        succ[s].push_back(p->id);
+      for (unsigned i = 0; i < p->src.size(); ++i) {
+        nodeid_t s = p->src[i];
+        succ[s].push_back(pair<nodeid_t, unsigned>(p->id, i));
         ++fanout[s];
       }
       if (regimpl *r = dynamic_cast<regimpl*>(p)) {
         ++fanout[r->d];
-        succ[r->d].push_back(p->id);
+        succ[r->d].push_back(pair<nodeid_t, unsigned>(p->id, 0));
       }
     }
 
-  } while (node_split);
+  }
 
   cout << "--- After ---\n";
   hist.clear();
