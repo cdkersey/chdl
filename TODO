@@ -23,6 +23,9 @@ _ Add tri-state support
 _ Add tri-state multi-line "bus" that extends bvec and adds a
   'connect(bvec<N> input, node enable)' function
 
+_ Add, to complement the "examples", a directory full of simple unit tests.
+  - One for each function exposed in a header file.
+
 _ Add basic register optimization
   _ unused reg values are dead nodes
   _ reg(Lit(x)) = Lit(x)
