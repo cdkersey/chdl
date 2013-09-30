@@ -6,7 +6,7 @@ _ Add tri-state support
   _ To .nand format (including in/out ports)
     . Internal nodes
     _ in/out ports
-    _ .nand file reader
+    _ (external) .nand file reader
   . To optimizer
     . fanout reducer should store position; tristate (and memory) nodes
       may have multiple fanouts from same input, so just matching node number is
@@ -19,6 +19,8 @@ _ Add tri-state support
       - But not on i/o pins
   _ To technology mapper and .netl format (three-state buffers are positional
     [non-commutative] 2-input gates)
+    . technology mapper itself
+    _ (external) .netl file reader
 
 . Add tri-state multi-line "bus" that extends bvec and adds a
   'connect(bvec<N> input, node enable)' function

@@ -21,3 +21,5 @@ oai21 nni1i23
 mux2  nni12n13
 dffr0 r1
 dffr1 iri1
+tbuf t12
+tinv ti12

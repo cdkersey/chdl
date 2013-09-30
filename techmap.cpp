@@ -12,9 +12,19 @@
 #include "regimpl.h"
 #include "gatesimpl.h"
 #include "input.h"
+#include "trisimpl.h"
 
 using namespace std;
 using namespace chdl;
+
+// In a tri-state world a node can be driven by multiple gates. This _only_
+// happens with the tri-state node, but now it's possible to say something like
+// "node 5 gate 3".
+unsigned nGates(nodeid_t n) {
+  tristateimpl *t(dynamic_cast<tristateimpl*>(nodes[n]));
+  if (t) return t->src.size()/2;
+  else return 1;
+}
 
 struct mapping {
   int t;
@@ -33,11 +43,11 @@ struct tlibgate {
 
   int get_size() const;
 
-  bool match(nodeid_t n, mapping &m);
+  bool match(nodeid_t n, int g, mapping &m);
 
   string dump();
 
-  enum gtype { INV, REG, NAND, INPUT };
+  enum gtype { INV, REG, NAND, TRISTATE, INPUT };
   bool seq;
   gtype t;
   char c;
@@ -68,6 +78,13 @@ tlibgate::tlibgate(string s, int *idx): seq(false) {
     i0 = new tlibgate(s.substr(1), &n);
     i1 = new tlibgate(s.substr(1 + n), idx);
     if (idx) *idx += n;
+  } else if (s[0] == 't') {
+    // TRISTATE
+    int n(0);
+
+    t = TRISTATE;
+    i0 = new tlibgate(s.substr(1), &n);
+    i1 = new tlibgate(s.substr(1 + n), idx);
   } else { 
     // INPUT
     t = INPUT;
@@ -114,6 +131,8 @@ string tlibgate::dump() {
     return "r" + i0->dump();
   } else if (t == NAND) {
     return "n" + i0->dump() + i1->dump();
+  } else if (t == TRISTATE) {
+    return "t" + i0->dump() + i1->dump();
   } else if (t == INPUT) {
     string s("x");
     s[0] = c;
@@ -121,7 +140,7 @@ string tlibgate::dump() {
   }
 }
 
-bool tlibgate::match(nodeid_t n, mapping &m) {
+bool tlibgate::match(nodeid_t n, int g, mapping &m) {
   bool rval(false);
 
   map<char, nodeid_t> bak(m.input);
@@ -139,20 +158,30 @@ bool tlibgate::match(nodeid_t n, mapping &m) {
   } else if (t == INV) {
     invimpl *p(dynamic_cast<invimpl*>(nodes[n]));
     if (!p) rval = false;
-    else    rval = i0->match(p->src[0], m);
+    else    rval = i0->match(p->src[0], -1, m);
   } else if (t == REG) {
     regimpl *p(dynamic_cast<regimpl*>(nodes[n]));
     if (!p) rval = false;
-    else    rval = i0->match(p->d, m);
+    else    rval = i0->match(p->d, -1, m);
+  } else if (t == TRISTATE) {
+    if (g == -1) rval = false;
+    else {
+      tristateimpl *p(dynamic_cast<tristateimpl*>(nodes[n]));
+      if (!p)
+        rval = false;
+      else
+        rval = i0->match(p->src[2*g], -1, m)
+               && i1->match(p->src[2*g + 1], -1, m);
+    }
   } else if (t == NAND) {
     nandimpl *p(dynamic_cast<nandimpl*>(nodes[n]));
     if (!p) rval = false;
     else {
       map<char, nodeid_t> bak(m.input);
-      rval = (i0->match(p->src[0], m) && i1->match(p->src[1], m));
+      rval = (i0->match(p->src[0], -1, m) && i1->match(p->src[1], -1, m));
       if (!rval) {
         m.input = bak;
-        rval = (i0->match(p->src[1], m) && i1->match(p->src[0], m));
+        rval = (i0->match(p->src[1], -1, m) && i1->match(p->src[0], -1, m));
       }
     }
   }
@@ -211,15 +240,17 @@ void chdl::techmap(ostream &out) {
   }
 
   for (unsigned n = 0; n < nodes.size(); ++n) {
-    for (unsigned e_idx = 0; e_idx < tlib.size(); ++e_idx) {
-      auto &e(tlib[e_idx]);
-      tlibgate &t(e.first);
-      mapping m;
-      if (t.match(n, m)) {
-        if (ALLOW_REP || no_internal_outputs(m.covered, n, users)) {
-          m.t = e_idx;
-          m.output = n;
-          bestmaps[n] = m;
+    for (unsigned g = 0; g < nGates(n); ++g) {
+      for (unsigned e_idx = 0; e_idx < tlib.size(); ++e_idx) {
+        auto &e(tlib[e_idx]);
+        tlibgate &t(e.first);
+        mapping m;
+        if (t.match(n, g, m)) {
+          if (ALLOW_REP || no_internal_outputs(m.covered, n, users)) {
+            m.t = e_idx;
+            m.output = n;
+            bestmaps[n] = m;
+          }
         }
       }
     }
