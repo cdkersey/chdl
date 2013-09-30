@@ -20,10 +20,10 @@ _ Add tri-state support
   _ To technology mapper and .netl format (three-state buffers are positional
     [non-commutative] 2-input gates)
 
-_ Add tri-state multi-line "bus" that extends bvec and adds a
+. Add tri-state multi-line "bus" that extends bvec and adds a
   'connect(bvec<N> input, node enable)' function
 
-_ Add, to complement the "examples", a directory full of simple unit tests.
+_ Add, to compliment the "examples", a directory full of simple unit tests.
   - One for each function exposed in a header file.
 
 _ Add basic register optimization

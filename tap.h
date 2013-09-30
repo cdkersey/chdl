@@ -8,6 +8,7 @@
 
 #include "node.h"
 #include "bvec.h"
+#include "bus.h"
 
 #include "hierarchy.h"
 
@@ -15,6 +16,8 @@ namespace chdl {
   void tap(std::string name, node node, bool output=false);
   template <unsigned N>
     void tap(std::string name, const bvec<N> &vec, bool output=false);
+  template <unsigned N>
+    void tap(std::string name, const bus<N> &vec, bool output=false);
 
   void print_taps_vl_head(std::ostream &out);
   void print_taps_vl_body(std::ostream &out, bool print_non_out=true);
@@ -30,6 +33,12 @@ template <unsigned N>
   void chdl::tap(std::string name, const bvec<N> &vec, bool output)
 {
   for (unsigned i = 0; i < N; ++i) tap(name, vec[i], output);
+}
+
+template <unsigned N>
+  void chdl::tap(std::string name, const bus<N> &vec, bool output)
+{
+  for (unsigned i = 0; i < N; ++i) tap(name, chdl::node(vec[i]), output);
 }
 
 #define TAP(x) do { tap(#x, x); } while(0)

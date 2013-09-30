@@ -17,13 +17,13 @@ void tristateimpl::connect(node in, node enable) {
 
 bool tristateimpl::eval() {
   unsigned nDriven(0);
-  bool rval;
+  bool rval(true);
   for (unsigned i = 0; i < src.size(); i += 2) {
     nodeimpl *pi(nodes[src[i]]), *pe(nodes[src[i+1]]);
     if (pe->eval()) { ++nDriven; rval = pi->eval(); }
   }
-  // assert(nDriven == 1);
-  if (nDriven != 1) abort(); // A tri-state node must have exactly 1 driver
+  // assert(nDriven <= 1);
+  if (nDriven > 1) abort(); // A tri-state node must have exactly 1 driver
   return rval;
 }
 
