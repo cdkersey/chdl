@@ -28,6 +28,13 @@ _ Add tri-state support
 _ Add, to compliment the "examples", a directory full of simple unit tests.
   - One for each function exposed in a header file.
 
+_ Add some sort of context management.
+  . As a start, add a global state reset function. chdl::reset(). This will
+    enable unit tests.
+  - CHDL is a stateful library. In some cases (like unit tests) it is nice to
+    have multiple states which can be swapped in and out, preferably (using
+    TLS) in a threadsafe manner.
+
 _ Add basic register optimization
   _ unused reg values are dead nodes
   _ reg(Lit(x)) = Lit(x)
