@@ -47,6 +47,7 @@ Structure of this Document
     - Memories
     - Optimization
     - Simulator
+      - C++ Interoperability (Ingress/Egress)
     - HDL Writer
   - Simulation Tools
   - File Formats
@@ -63,28 +64,55 @@ Concepts
 API
 ---
 
-Nodes
------
+ Nodes
+ -----
+
+ Gates
+ -----
+
+ Operator Overloads
+ ------------------
+
+ Vectors
+ -------
+
+ Vector Operator Overloads
+ -------------------------
+
+ Higher-order Arrays
+ -------------------
+
+ Memories
+ --------
+
+ Optimization
+ ------------
+
+ Simulator
+ ---------
+
+  C++ Interoperability (Ingress/Egress)
+  -------------------------------------
 
 File Formats
 ------------
 
-NAND File Format
-----------------
+ NAND File Format
+ ----------------
 
 A very basic netlist format has been developed for storing CHDL designs for use
 by other utilities. This file is called a "nand" file because all logic is
-represented (currently) as a network of nand gates and inverters.
+represented (currently) as a network of nand gates and inverters. Each node is
 
-NETL File Format
-----------------
+ NETL File Format
+ ----------------
 
 The NETL file format produced by the technology mapper follows the same basic
 netlist structure as the NAND file format but allows a richer set of primitives
 instead of the basic NAND-inverter graph of the NAND format.
 
-TLIB File Format
-----------------
+ TLIB File Format
+ ----------------
 
 The TLIB format is used to define a technology library as a set of gates to be
 matched. Each line contains the name of a gate, followed by whitespace,

@@ -22,6 +22,11 @@ _ Add tri-state support
     . technology mapper itself
     _ (external) .netl file reader
 
+_ Add reasonable handling of Lits to fanout reduction and technology mapper
+  _ Splitting lit0 and lit1 creates a new lit0 or lit1
+  _ H and L become logic high and low ties in tlibs
+    _ tHi1 and tL1 become nmos and pmos transistors in the standard tech lib
+
 . Tri-state multi-line "bus" that extends bvec and adds a
   'connect(bvec<N> input, node enable)' function
 
