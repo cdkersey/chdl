@@ -22,26 +22,26 @@ _ Add tri-state support
     . technology mapper itself
     _ (external) .netl file reader
 
-. Add tri-state multi-line "bus" that extends bvec and adds a
+. Tri-state multi-line "bus" that extends bvec and adds a
   'connect(bvec<N> input, node enable)' function
 
-_ Add, to compliment the "examples", a directory full of simple unit tests.
+_ A directory full of simple unit tests.
   - One for each function exposed in a header file.
 
-_ Add some sort of context management.
+_ Some sort of context management.
   . As a start, add a global state reset function. chdl::reset(). This will
     enable unit tests.
   - CHDL is a stateful library. In some cases (like unit tests) it is nice to
     have multiple states which can be swapped in and out, preferably (using
     TLS) in a threadsafe manner.
 
-_ Add basic register optimization
+_ Basic register optimization
   _ unused reg values are dead nodes
   _ reg(Lit(x)) = Lit(x)
   _ registers with the same input expressions can be combined (during common
     subexpn elim)
 
-_ Add "don't care" support
+_ "don't care" support
   _ A "whatever" lit type; evals to 0
   _ 'template <unsigned N> bvec<N> Whatever()' utility function in lit.h
   _ optimizations: inv(whatever) = whatever, reg(whatever) = whatever
@@ -59,7 +59,7 @@ _ Fix handling of memory in vis.cpp
   - Currently the outputs are just unattached hexagons and the address nodes
     are not indicated at all.
 
-_ Add optimizations for tri-state logic
+_ Optimizations for tri-state logic
   - A tri-state node that can only be driven by one input just becomes that
     input. Its enable becomes a dangling node.
   - Any pair of inputs to a tri-state node that have the same value can be
