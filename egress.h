@@ -9,7 +9,7 @@
 namespace chdl {
   template <typename T> void EgressFunc(const T& f, node n);
   static void Egress(bool &b, node n);
-  template <typename T, unsigned N> void EgressInt(T &i, bvec<N> &bv);
+  template <typename T, unsigned N> void EgressInt(T &i, bvec<N> bv);
 
   template <typename T> class egress : public tickable {
   public:
@@ -31,7 +31,7 @@ static void chdl::Egress(bool &b, chdl::node n) {
   chdl::EgressFunc([&b](bool val){ b = val; }, n);
 }
 
-template <typename T, unsigned N> void chdl::EgressInt(T &x, chdl::bvec<N> &bv)
+template <typename T, unsigned N> void chdl::EgressInt(T &x, chdl::bvec<N> bv)
 {
   using namespace chdl;
   using namespace std;
