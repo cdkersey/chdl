@@ -1,34 +1,16 @@
-CHDL Near-term Roadmap
+gCHDL Near-term Roadmap
 ======================
 
 _ Add tri-state support
-  . To simulation
   _ To .nand format (including in/out ports)
     . Internal nodes
     _ in/out ports
     _ (external) .nand file reader
-  . To optimizer
-    . fanout reducer should store position; tristate (and memory) nodes
-      may have multiple fanouts from same input, so just matching node number is
-      insufficient. 
-    . tri x y x z x w q p => tri x orN({y,z,w}) q p
-    x tri x y => x
-      - iff not attached to a terminal
-      - actually avoid this one. This should _not_ happen in real designs.
-    . tri x Lit(0) y . . . => tri y . . .
-      - But not on i/o pins
   _ To technology mapper and .netl format (three-state buffers are positional
     [non-commutative] 2-input gates)
+    _ in/out ports for technology mapper
     . technology mapper itself
-    _ (external) .netl file reader
-
-_ Add reasonable handling of Lits to fanout reduction and technology mapper
-  _ Splitting lit0 and lit1 creates a new lit0 or lit1
-  _ H and L become logic high and low ties in tlibs
-    _ tHi1 and tL1 become nmos and pmos transistors in the standard tech lib
-
-. Tri-state multi-line "bus" that extends bvec and adds a
-  'connect(bvec<N> input, node enable)' function
+    . (external) .netl file reader
 
 _ A directory full of simple unit tests.
   - One for each function exposed in a header file.

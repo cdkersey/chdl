@@ -43,6 +43,8 @@ Structure of this Document
     - Operator Overloads
     - Vectors
     - Vector Operator Overloads
+    - Buses
+    - Arithmetic
     - Higher-order Arrays
     - Memories
     - Optimization
@@ -82,6 +84,12 @@ API
  Higher-order Arrays
  -------------------
 
+ Buses
+ -----
+
+ Arithmetic
+ ----------
+
  Memories
  --------
 
@@ -116,9 +124,9 @@ instead of the basic NAND-inverter graph of the NAND format.
 
 The TLIB format is used to define a technology library as a set of gates to be
 matched. Each line contains the name of a gate, followed by whitespace,
-followed by a description of the NAND-inverter structure that matches that
-gate. This structure must be a tree in form, but leaf nodes (inputs) can be
-connected.
+followed by a polish expression for the NAND-inverter tree that matches that
+gate. This structure must be a tree in form, but leaf nodes (inputs) can
+represent the same input.
 
 As an example, let's write a 2-input XOR gate in TLIB format:
 
