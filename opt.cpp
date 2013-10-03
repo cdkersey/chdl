@@ -353,8 +353,6 @@ void chdl::optimize() {
   cerr << "Before optimization: " << nodes.size() << endl;
   opt_dead_node_elimination();
   cerr << "After dead node elimination: " << nodes.size() << endl;
-  opt_tristate_merge();
-  cerr << "After tri-state merge: " << nodes.size() << endl;
   opt_contract();
   cerr << "After contraction: " << nodes.size() << endl;
   opt_combine_literals();
@@ -366,5 +364,5 @@ void chdl::optimize() {
   opt_contract();
   opt_dedup();
   opt_tristate_merge();
-  cerr << "After tri-state merge #2: " << nodes.size() << endl;
+  cerr << "After tri-state merge: " << nodes.size() << endl;
 }
