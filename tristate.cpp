@@ -10,6 +10,8 @@ using namespace std;
 
 tristatenode::tristatenode(): node((new tristateimpl())->id) {}
 
+tristatenode::tristatenode(nodeid_t id): node(id) {}
+
 void tristatenode::connect(node in, node enable) {
   tristateimpl *t(dynamic_cast<tristateimpl*>(nodes[idx]));
   if (!t) abort(); // assert(t);

@@ -23,3 +23,8 @@ dffr0 r1
 dffr1 iri1
 tbuf t12
 tinv ti12
+vddtie H
+gndtie L
+nmos tL1
+pmos tHi1
+ipmos tH1
