@@ -21,7 +21,7 @@ namespace chdl {
     return out;
   }
 
-  void HalfAdder(node &sum, node &carry, node a, node b) {
+  static void HalfAdder(node &sum, node &carry, node a, node b) {
     HIERARCHY_ENTER();
     using namespace std;
     sum = Xor(a, b);
@@ -29,7 +29,7 @@ namespace chdl {
     HIERARCHY_EXIT();
   }
 
-  void FullAdder(node &sum, node &carry, node a, node b, node c) {
+  static void FullAdder(node &sum, node &carry, node a, node b, node c) {
     HIERARCHY_ENTER();
     using namespace std;
     node p1 = Xor(a, b);
