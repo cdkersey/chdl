@@ -3,8 +3,8 @@
 #include "trisimpl.h"
 
 #include <vector>
-
 #include <iostream>
+#include <cstdlib>
 
 using namespace chdl;
 using namespace std;
@@ -23,7 +23,7 @@ bool tristateimpl::eval() {
     if (pe->eval()) { ++nDriven; rval = pi->eval(); }
   }
   // assert(nDriven <= 1);
-  if (nDriven > 1) abort(); // A tri-state node must have exactly 1 driver
+  if (nDriven > 1) std::abort(); // A tri-state node must have exactly 1 driver
   return rval;
 }
 

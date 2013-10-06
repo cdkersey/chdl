@@ -1,7 +1,13 @@
 #include <iostream>
 #include <fstream>
 
-#include <chdl.h>
+#include <adder.h>
+#include <bvec-basic-op.h>
+#include <latch.h>
+#include <opt.h>
+#include <sim.h>
+#include <tap.h>
+#include <netlist.h>
 
 using namespace std;
 using namespace chdl;
