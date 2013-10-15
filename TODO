@@ -22,6 +22,12 @@ _ Some sort of context management.
     have multiple states which can be swapped in and out, preferably (using
     TLS) in a threadsafe manner.
 
+_ Rebalancing optimization
+  _ Normalize to chains [And(And(And(And(a), b), c), d)]. These are easier to
+    route(probably; check), but O(n) in both time and space.
+  _ Rebalance to trees [And(And(a, b), And(c, d))] where necessary. These are
+    O(n) in space but O(log(n)) in time.
+
 _ Basic register optimization
   _ unused reg values are dead nodes
   _ reg(Lit(x)) = Lit(x)
@@ -54,6 +60,8 @@ _ Optimizations for tri-state logic
 
 _ Create some documentation.
   - Make the CHDL manual more than just an imcomplete outline.
+  - Write an introductory tutorial in digital design using CHDL, Verilog, and
+    VHDL to provide examples.
 
 Possible future features:
   _ Change nand-based IR to industry-standard AIG (and/inverter graph)
