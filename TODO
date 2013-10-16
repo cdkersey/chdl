@@ -12,6 +12,8 @@ _ Add tri-state support
     . technology mapper itself
     . (external) .netl file reader
 
+_ Add nested conditionals to cassign.
+
 _ A directory full of simple unit tests.
   - One for each function exposed in a header file.
 
