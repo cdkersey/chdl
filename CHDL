@@ -40,12 +40,14 @@ Structure of this Document
       - Special Nodes
       - Tri-state Nodes
     - Gates
-    - Operator Overloads
+    - Operator Overloads (&&, ||, !)
     - Vectors
-    - Vector Operator Overloads
+    - Vector Operator Overloads (&, |, ^, <<, >>, +, -, *, /, -, ~, ==, !=)
+    - Higher-order Arrays
+    - Multiplexers
+    - Conditional Assignment (Cassign)
     - Buses
     - Arithmetic
-    - Higher-order Arrays
     - Memories
     - Optimization
     - Simulator
@@ -83,6 +85,74 @@ API
 
  Higher-order Arrays
  -------------------
+
+ Multiplexers
+ ------------
+
+ Conditional Assignment
+ ----------------------
+
+The hierarchies of multiplexers needed to perform even the most basic tasks can
+create opaque, difficult-to-understand code. Consider the task of implementing
+an up/down counter with reset. The next value, in pseudocode would be:
+
+  if (reset)
+    ctr = 0;
+  else if (count_up && !count_down)
+    ctr = ctr + 1;
+  else if (count_down && !count_up)
+    ctr = ctr - 1;
+  else
+    ctr = ctr;
+
+In the portion of CHDL covered so far, this could be implemented with multi-
+plexers:
+
+  bvec<N> ctr_next, ctr(Reg(ctr_next));
+  
+  ctr_next = Mux(reset,
+               Mux(count_up && !count_down,
+                 Mux(count_down && !count_up, ctr, ctr - Lit<N>(1)),
+               ctr + Lit<N>(1)),
+             Lit<N>(0));
+
+Even with the best organization, this statement is rather hard to grok. For
+these kinds of conditionals, a muliplexer with its inputs reversed would lead to
+slightly easier-to-understand code:
+
+  ctr_next = If(reset,
+               Lit<N>(0),
+               If(count_up && !count_down,
+                 ctr + Lit<N>(1),
+                 If(count_down && !count_up,
+                    ctr - Lit<N>(1),
+                    ctr)));
+
+but this is only about as readable as the typical conditonal statement in LISP.
+This reversed-input multiplexer is not a part of CHDL. Instead, CHDL provides
+Cassign(), a conditional assignment framework. Using Cassign, this statement be-
+comes:
+
+  Cassign(ctr_next).
+    IF(reset, Lit<N>(0)).
+    IF(count_up && !count_down, ctr + Lit<N>(1)).
+    IF(count_down && !count_up, ctr - Lit<N>(1)).
+    ELSE(ctr);
+
+One of the more powerful aspects of Cassign() is its support for nested con-
+ditionals. If, say, you wanted to, in the event of a reset with one of the count
+lines held high, reset to a value of +1 or -1 accordingly, this could be done
+with a nested conditional:
+
+  Cassign(ctr_next).
+    IF(reset).
+      IF(count_up && !count_down, Lit<N>(1)).
+      IF(count_down && !count_up, Lit<N>(-1)).
+      ELSE(Lit<N>(0)).
+    END().
+    IF(count_up && !count_down, ctr + Lit<N>(1)).
+    IF(count_down && !count_up, ctr - Lit<N>(1)).
+    ELSE(ctr);
 
  Buses
  -----

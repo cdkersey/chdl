@@ -1,4 +1,4 @@
-gCHDL Near-term Roadmap
+CHDL Near-term Roadmap
 ======================
 
 _ Add tri-state support
@@ -11,8 +11,6 @@ _ Add tri-state support
     _ in/out ports for technology mapper
     . technology mapper itself
     . (external) .netl file reader
-
-_ Add nested conditionals to cassign.
 
 _ A directory full of simple unit tests.
   - One for each function exposed in a header file.
