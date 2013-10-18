@@ -52,12 +52,6 @@ _ Fix handling of memory in vis.cpp
   - Currently the outputs are just unattached hexagons and the address nodes
     are not indicated at all.
 
-_ Optimizations for tri-state logic
-  - A tri-state node that can only be driven by one input just becomes that
-    input. Its enable becomes a dangling node.
-  - Any pair of inputs to a tri-state node that have the same value can be
-    reduced to a single driver whose enable signal is or(e0, e1)
-
 _ Create some documentation.
   - Make the CHDL manual more than just an imcomplete outline.
   - Write an introductory tutorial in digital design using CHDL, Verilog, and
@@ -72,3 +66,7 @@ Possible future features:
     - Is there any reason to optimize in an order other than the one used by
       the optimize function?
     - Could technology mapping be handled by this same pass manager?
+  _ Command-line/scripting support
+    - Even instantiate gates through some sort of readline-based interface.
+  _ Verilog or VHDL input
+    - It comes full-circle.
