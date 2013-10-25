@@ -10,17 +10,8 @@ run : $(TEST_RUNS)
 test_adder: test_adder.cpp test_common.h
 test_mult: test_mult.cpp test_common.h
 
-%.run : %
-	./$< 1 > $@ 2>> opt.log
-	./$< 2 >> $@ 2>> opt.log
-	./$< 3 >> $@ 2>> opt.log
-	./$< 4 >> $@ 2>> opt.log
-	./$< 5 >> $@ 2>> opt.log
-	./$< 6 >> $@ 2>> opt.log
-	./$< 7 >> $@ 2>> opt.log
-	./$< 8 >> $@ 2>> opt.log
-	./$< 9 >> $@ 2>> opt.log
-	./$< 10 > $@ 2>> opt.log
+%.run %.opt : %
+	./$< > $@ 2> $<.opt
 
 clean:
-	rm -f $(TESTS) *~ *.run opt.log
+	rm -f $(TESTS) *~ *.run *.opt

@@ -1,6 +1,7 @@
 #include <random>
 
 #include "../chdl.h"
+#include "../reset.h"
 #include "../ingress.h"
 #include "../egress.h"
 
