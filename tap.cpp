@@ -10,6 +10,8 @@
 
 #include "hierarchy.h"
 
+#include "reset.h"
+
 using namespace chdl;
 using namespace std;
 
@@ -18,6 +20,12 @@ typedef taps_t::iterator taps_it;
 
 taps_t taps;
 set<string> output_taps;
+
+static void reset_taps() {
+  taps.clear();
+  output_taps.clear();
+}
+CHDL_REGISTER_RESET(reset_taps);
 
 void chdl::tap(string name, node node, bool output) {
   taps[name].push_back(node);

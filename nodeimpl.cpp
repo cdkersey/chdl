@@ -4,6 +4,7 @@
 #include "nodeimpl.h"
 #include "litimpl.h"
 #include "lit.h"
+#include "reset.h"
 
 using namespace std;
 using namespace chdl;
@@ -16,6 +17,12 @@ map<nodeid_t, set<node*>> &node_dir() {
   static auto nd = new map<nodeid_t, set<node*>>();
   return *nd;
 }
+
+static void clear_nodes() {
+  node_dir().clear();
+  nodes.clear();
+}
+CHDL_REGISTER_RESET(clear_nodes);
 
 bool litimpl::eval() { return val; }
 

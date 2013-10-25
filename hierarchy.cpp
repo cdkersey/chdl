@@ -12,6 +12,7 @@
 #include "hierarchy.h"
 #include "nodeimpl.h"
 #include "regimpl.h"
+#include "reset.h"
 
 using namespace std;
 using namespace chdl;
@@ -57,6 +58,12 @@ struct hierarchy {
 
 static hierarchy root("chdl_root");
 static stack<hierarchy*> hstack;
+
+static void reset_hierarchy() {
+  while (!hstack.empty()) hstack.pop();
+  root = hierarchy("chdl_root");
+}
+CHDL_REGISTER_RESET(reset_hierarchy);
 
 void number_instances(hierarchy &r) {
   map<string, unsigned> count;

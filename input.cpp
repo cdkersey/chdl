@@ -6,11 +6,15 @@
 
 #include "input.h"
 #include "nodeimpl.h"
+#include "reset.h"
 
 using namespace std;
 using namespace chdl;
 
 map <string, vector<node>> inputs;
+
+static void clear_inputs() { inputs.clear(); }
+CHDL_REGISTER_RESET(clear_inputs);
 
 class inputimpl : public nodeimpl {
   public:

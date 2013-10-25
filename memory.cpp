@@ -10,6 +10,7 @@
 #include "nodeimpl.h"
 #include "regimpl.h"
 #include "analysis.h"
+#include "reset.h"
 
 using namespace chdl;
 using namespace std;
@@ -245,3 +246,10 @@ size_t chdl::num_sram_bits() {
     count += m->contents.size();
   return count;
 }
+
+static void reset_memories() {
+  for (auto m : memories) delete m;
+  memories.clear();
+}
+
+CHDL_REGISTER_RESET(reset_memories);

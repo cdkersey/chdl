@@ -1,10 +1,14 @@
 // Tickable.
 #include "tickable.h"
+#include "reset.h"
 
 using namespace std;
 using namespace chdl;
 
 vector<tickable*> chdl::tickables;
+
+static void reset_tickables() { tickables.clear(); }
+CHDL_REGISTER_RESET(reset_tickables);
 
 template <typename T> void remove_from_vector(vector<T> &v, const T &val) {
   vector<T> new_v;
