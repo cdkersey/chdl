@@ -4,11 +4,14 @@
 #include "sim.h"
 #include "tickable.h"
 #include "tap.h"
+#include "reset.h"
 
 using namespace chdl;
 using namespace std;
 
 static cycle_t now = 0;
+static void reset_now() { now = 0; }
+CHDL_REGISTER_RESET(reset_now);
 
 cycle_t chdl::sim_time() { return now; }
 
