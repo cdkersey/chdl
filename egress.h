@@ -35,6 +35,9 @@ template <typename T, unsigned N> void chdl::EgressInt(T &x, chdl::bvec<N> bv)
 {
   using namespace chdl;
   using namespace std;
+
+  x = 0;
+
   for (unsigned i = 0; i < N; ++i)
     chdl::EgressFunc(
       [i, &x](bool val){ if (val) x |= (1ul<<i); else x &= ~(1ul<<i); }, bv[i]
