@@ -82,6 +82,7 @@ tlibgate::tlibgate(string s, int *idx): seq(false) {
     if (idx) *idx += n;
   } else if (s[0] == 't') {
     // TRISTATE
+
     int n(0);
 
     t = TRISTATE;
@@ -227,7 +228,7 @@ bool no_internal_outputs(const set<nodeid_t> &nodes, nodeid_t output,
   return true;
 }
 
-void chdl::techmap(ostream &out) {
+void chdl::techmap(ostream &out, const char* tlibFile) {
   using namespace std;
   using namespace chdl;
 
@@ -236,7 +237,7 @@ void chdl::techmap(ostream &out) {
   vector<pair<tlibgate, string>> tlib;
 
   // Read technology library
-  ifstream tf("TLIB");
+  ifstream tf(tlibFile);
   for (;;) {
     string name, desc;
     tf >> name >> desc;

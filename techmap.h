@@ -6,7 +6,7 @@
 #include <iostream>
 
 namespace chdl {
-  void techmap(std::ostream &out);
+  void techmap(std::ostream &out, const char* tlibFile="TLIB");
 }
 
 #endif
