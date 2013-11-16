@@ -242,16 +242,20 @@ void chdl::opt_limit_fanout(unsigned max) {
   // This is currently constant, but there should maybe be a way to configure
   // it. The idea is that we don't want to trade high-fanout registers for a
   // ton of clock load. Both are bad.
-  bool buffers_for_regs(true);
+  bool buffers_for_regs(true), buffers_for_all(true);
 
   // Compute fanouts as outputs to gates + outputs to regs + external outputs
   map<nodeid_t, unsigned> fanout;
   map<nodeid_t, vector<pair<nodeid_t, unsigned>>> succ;
   for (auto p : nodes) {
     for (unsigned i = 0; i < p->src.size(); ++i) {
-      nodeid_t s = p->src[i];
-      succ[s].push_back(pair<nodeid_t, unsigned>(p->id, i));
-      ++fanout[s];
+      if (tristateimpl *ti = dynamic_cast<tristateimpl*>(p)) {
+        // Don't count buses.
+      } else {
+        nodeid_t s = p->src[i];
+        succ[s].push_back(pair<nodeid_t, unsigned>(p->id, i));
+        ++fanout[s];
+      }
     }
     if (regimpl *r = dynamic_cast<regimpl*>(p)) {
       ++fanout[r->d];
@@ -286,15 +290,19 @@ void chdl::opt_limit_fanout(unsigned max) {
 
       node new_node;
       regimpl *ri;
-      if (nandimpl* ni = dynamic_cast<nandimpl*>(p))
+      nandimpl *ni;
+      invimpl *ii;
+      if (!buffers_for_all && (ni = dynamic_cast<nandimpl*>(p)))
         new_node = Nand(p->src[0], p->src[1]);
-      else if (invimpl* ii = dynamic_cast<invimpl*>(p))
+      else if (!buffers_for_all && (ii = dynamic_cast<invimpl*>(p)))
         new_node = Inv(p->src[0]);
       else if (!buffers_for_regs && (ri = dynamic_cast<regimpl*>(p)))
         new_node = Reg(ri->d);
-      else if (litimpl* li = dynamic_cast<litimpl*>(p))
+      else if (litimpl *li = dynamic_cast<litimpl*>(p))
         new_node = Lit(p->eval());
-      else {
+      else if (tristateimpl *ti = dynamic_cast<tristateimpl*>(p)) {
+        // It's silly to add buffers exiting a bus.
+      } else {
         node n(id);
         node intermediate(Inv(id)), repl_node(Inv(intermediate));
         new_node = Inv(intermediate);
@@ -327,13 +335,18 @@ void chdl::opt_limit_fanout(unsigned max) {
     opt_dead_node_elimination();
 
     // Recompute fanout and successors
+    // TODO: remove this copypaste
     succ.clear();
     fanout.clear();
     for (auto p : nodes) {
       for (unsigned i = 0; i < p->src.size(); ++i) {
-        nodeid_t s = p->src[i];
-        succ[s].push_back(pair<nodeid_t, unsigned>(p->id, i));
-        ++fanout[s];
+        if (tristateimpl *ti = dynamic_cast<tristateimpl*>(p)) {
+          // Don't count buses
+        } else {
+          nodeid_t s = p->src[i];
+          succ[s].push_back(pair<nodeid_t, unsigned>(p->id, i));
+          ++fanout[s];
+        }
       }
       if (regimpl *r = dynamic_cast<regimpl*>(p)) {
         ++fanout[r->d];
