@@ -7,6 +7,7 @@
 
 #include "techmap.h"
 
+#include "gates.h"
 #include "reg.h"
 #include "tap.h"
 #include "nodeimpl.h"
@@ -14,7 +15,9 @@
 #include "gatesimpl.h"
 #include "input.h"
 #include "trisimpl.h"
+#include "tristate.h"
 #include "litimpl.h"
+#include "opt.h"
 
 using namespace std;
 using namespace chdl;
@@ -216,8 +219,6 @@ bool operator<(const tlibgate &l, const tlibgate &r) {
   return l.get_size() < r.get_size();
 }
 
-
-
 bool no_internal_outputs(const set<nodeid_t> &nodes, nodeid_t output,
                          map<nodeid_t, set<nodeid_t>> &users)
 {
@@ -226,6 +227,199 @@ bool no_internal_outputs(const set<nodeid_t> &nodes, nodeid_t output,
       if (n != output && nodes.find(u) == nodes.end()) return false;
 
   return true;
+}
+
+
+
+
+// Creates a map mapping nodes n to their successor set sm[n], including those
+// successors which are registers.
+void get_successors(map<nodeid_t, set<nodeid_t>> &sm) {
+  sm.clear();
+
+  for (nodeid_t n = 0; n < nodes.size(); ++n) {
+    nodeimpl *p(nodes[n]);
+
+    if (regimpl *r = dynamic_cast<regimpl*>(p)) sm[r->d].insert(n);
+    else for (auto s : p->src) sm[s].insert(n);
+  }
+}
+
+void insert_reg_inverters(set<int> inv, map<nodeid_t, set<nodeid_t>> &sm) {
+  if (inv.empty()) return;
+
+  nodeid_t nsize(nodes.size());
+  for (nodeid_t n = 0; n < nsize; ++n) {
+    nodeid_t id(n);
+    if (!dynamic_cast<regimpl*>(nodes[n])) continue;
+
+    // First, replace registers themselves with Inv(Inv(reg))
+    if (inv.count(-1)) {
+      regimpl *r = dynamic_cast<regimpl*>(nodes[n]);
+      // Don't do this if all the successors to our register are inverters.
+      bool invSucc(true);
+      for (auto s : sm[n]) {
+        invimpl *ii(dynamic_cast<invimpl*>(nodes[s]));
+        if (!ii) invSucc = false;
+      }
+      if (!invSucc) {
+        node rn(id);
+        node new_reg(Reg(r->d));
+        id = nodes.size() - 1;
+        rn = Inv(Inv(new_reg));
+        // BUG/TODO: We should annihilate the original register, because it
+        // will otherwise remain in the design post techmapping.
+      }
+    }
+
+    // Next, replace inputs x with Inv(Inv(x))
+    if (inv.count(0)) {
+      regimpl *r = dynamic_cast<regimpl*>(nodes[id]);
+      // If the predecessor node is already an inverter, ignore it.
+      invimpl *ii(dynamic_cast<invimpl*>(nodes[r->d]));
+      if (ii) continue;
+
+      node rn(id);
+      rn = Reg(Inv(Inv(r->d)));
+      // BUG/TODO: (see prev.)
+    }
+  }
+}
+
+void insert_tris_inverters(set<int> inv, map<nodeid_t, set<nodeid_t>> &sm) {
+  if (inv.empty()) return;
+
+  // Replace inputs x with Inv(Inv(x))
+  if (inv.count(0) || inv.count(1)) {
+    nodeid_t nsize(nodes.size());
+    for (nodeid_t n = 0; n < nsize; ++n) {
+      if (tristateimpl *ti = dynamic_cast<tristateimpl*>(nodes[n])) {
+        tristatenode tn(n), new_tn;
+        for (unsigned i = 0; i < ti->src.size(); i += 2) {
+          // If the predecessor node is already an inverter, don't add any.
+          bool inv0(inv.count(0)), inv1(inv.count(1));
+          invimpl *ii(dynamic_cast<invimpl*>(nodes[ti->src[i]]));
+          if (ii) inv0 = false;
+          ii = dynamic_cast<invimpl*>(nodes[ti->src[i + 1]]);
+          if (ii) inv1 = false;
+
+          new_tn.connect(
+	    (inv0 ? Inv(Inv(ti->src[i])) : ti->src[i]),
+            (inv1 ? Inv(Inv(ti->src[i + 1])) : ti->src[i + 1]) 
+	  );          
+        }
+        tn = new_tn;
+      }
+    }
+  }
+}
+
+void insert_nand_inverters(set<int> inv, map<nodeid_t, set<nodeid_t>> &sm) {
+  if (inv.empty()) return;
+
+  nodeid_t nsize(nodes.size());
+  for (nodeid_t n = 0; n < nsize; ++n) {
+    nodeid_t id(n);
+    if (!dynamic_cast<nandimpl*>(nodes[id])) continue;
+
+    // First, replace nands themselves with Inv(Inv(nand))
+    if (inv.count(-1)) {
+      // Don't do this if all the successors to our gate are inverters.
+      bool invSucc(true);
+      for (auto s : sm[n]) {
+        invimpl *ii(dynamic_cast<invimpl*>(nodes[s]));
+        if (!ii) invSucc = false;
+      }
+      if (!invSucc) {
+        node nn(id);
+        node newnand(Nand(nodes[id]->src[0], nodes[id]->src[1]));
+        id = nodes.size() - 1;
+        nn = Inv(Inv(newnand));
+      }
+    }
+
+    // Next, replace inputs x with Inv(Inv(x))
+    if (inv.count(0) || inv.count(1)) {
+      // If the predecessor node is already an inverter, ignore it.
+      //invimpl *ii(dynamic_cast<invimpl*>(nodes[nodes[id]->src[0]]));
+      //if (ii || !inv.count(0)) {
+      //  ii = dynamic_cast<invimpl*>(nodes[nodes[id]->src[1]]);
+      //  if (ii || !inv.count(1)) continue;
+      //}
+
+      node nn(id);
+      nn = Nand(
+        (inv.count(0) ? Inv(Inv(nodes[id]->src[0])) : nodes[id]->src[0]),
+        (inv.count(1) ? Inv(Inv(nodes[id]->src[1])) : nodes[id]->src[1])
+      );
+    }
+  }
+}
+
+// Sometimes there are node types that do not map directly to anything in the
+// tech library, and logic must be added so that a technology mapping solution
+// can be found. As an example, the tri-state buffer in FreePDK45 is inverting,
+// and with SPST relays, and gates are a fundamental type but nand gates are
+// not.
+void addInverters(vector<pair<tlibgate, string>> &tlib) {
+  // These are the types that we must be able to cover. We assume the tech
+  // library contains an inverter or there's no guarantee technology mapping
+  // will work.
+  set<tlibgate::gtype> gt{tlibgate::NAND, tlibgate::TRISTATE, tlibgate::REG};
+
+  // If a gate type appears in "bare" form in tlib, remove it from the list
+  for (auto g : gt) {
+    for (auto &x : tlib) {
+      tlibgate *tg(&x.first);
+      if (tg->t == g && tg->i0->t == tlibgate::INPUT && 
+           (tg->t == tlibgate::REG || tg->i1->t == tlibgate::INPUT))
+      {
+        cout << "Type " << g << " bare. Removing from invgates.\n";
+        gt.erase(g);
+      } 
+    }
+  }
+
+  // Where should inverters be added?
+  map<tlibgate::gtype, set<int> > inv; // -1 for output, 1, 2 for inputs
+  for (auto g : gt) {
+    for (auto &x : tlib) {
+      bool inv_input(false);
+      tlibgate *tg(&x.first);
+      if (tg->t == tlibgate::INV) { inv_input = true; tg = tg->i0; }
+      if (tg->t != g) continue;
+      if (tg->i0->t != tlibgate::INV && tg->i0->t != tlibgate::INPUT) continue; 
+      if (tg->i0->t==tlibgate::INV && tg->i0->i0->t!=tlibgate::INPUT) continue;
+      if (tg->t != tlibgate::REG) {
+	if (tg->i1->t!=tlibgate::INV && tg->i1->t!=tlibgate::INPUT) continue;
+        if (tg->i1->t==tlibgate::INV&&tg->i1->i0->t!=tlibgate::INPUT) continue;
+      }
+
+      if (inv_input) inv[g].insert(-1);
+      if (tg->i0->t == tlibgate::INV) inv[g].insert(0);
+      if (tg->t != tlibgate::REG && tg->i1->t==tlibgate::INV) inv[g].insert(1);
+
+      for (auto x : inv[g]) cout << "inv " << x << ' ';
+      cout << endl;
+      break;
+    }
+
+    map<nodeid_t, set<nodeid_t>> sm;
+    get_successors(sm);
+
+    if (!inv[g].empty()) {
+      cout << "Inserting inverters on " << g << endl;
+      if (g == tlibgate::REG)
+        insert_reg_inverters(inv[tlibgate::REG], sm);
+      else if (g == tlibgate::NAND)
+        insert_nand_inverters(inv[tlibgate::NAND], sm);
+      else if (g == tlibgate::TRISTATE)
+        insert_tris_inverters(inv[tlibgate::TRISTATE], sm);
+    }
+
+    opt_dead_node_elimination();
+  }
+
 }
 
 void chdl::techmap(ostream &out, const char* tlibFile) {
@@ -250,6 +444,8 @@ void chdl::techmap(ostream &out, const char* tlibFile) {
 
   for (auto &t : tlib) cout << t.second << ": " << t.first.dump() << endl;
 
+  addInverters(tlib);
+
   vector<list<mapping>> bestmaps(nodes.size());
 
   map<nodeid_t, set<nodeid_t>> users;
@@ -260,6 +456,7 @@ void chdl::techmap(ostream &out, const char* tlibFile) {
 
   for (unsigned n = 0; n < nodes.size(); ++n) {
     mapping bestmap;
+    bool mapping_found(false);
     for (unsigned g = 0; g < nGates(n); ++g) {
       for (unsigned e_idx = 0; e_idx < tlib.size(); ++e_idx) {
         auto &e(tlib[e_idx]);
@@ -270,10 +467,11 @@ void chdl::techmap(ostream &out, const char* tlibFile) {
             m.t = e_idx;
             m.output = n;
             bestmap = m;
+            mapping_found = true;
           }
         }
       }
-      bestmaps[n].push_back(bestmap);
+      if (mapping_found) bestmaps[n].push_back(bestmap);
     }
   }
 
