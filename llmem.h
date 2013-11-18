@@ -46,9 +46,9 @@ namespace chdl {
     return r;
   }
 
-  // For now, RAM has no initialization.
-  template <unsigned M, unsigned N>
-    bvec<N> LLRam(bvec<M> qa, bvec<N> d, bvec<M> da, node w)
+  // For now, LLRam has no initialization.
+  template <unsigned M, unsigned N, unsigned R>
+    vec<R, bvec<N>> LLRam(vec<R, bvec<M>> qa, bvec<N> d, bvec<M> da, node w)
   {
     HIERARCHY_ENTER();
 
@@ -58,11 +58,20 @@ namespace chdl {
     for (unsigned i = 0; i < 1<<M; ++i)
       bits[i] = Wreg(wrsig[i], d);
     
-    bvec<N> r(Mux(qa, bits));
+    vec<R, bvec<N>> r;
+    for (unsigned i = 0; i < R; ++i) r[i] = Mux(qa[i], bits);
 
     HIERARCHY_EXIT();
 
     return r;
+  }
+
+  // Single-read-port LLRam
+  template <unsigned M, unsigned N>
+    bvec<N> LLRam(bvec<M> qa, bvec<N> d, bvec<M> da, node w)
+  {
+    vec<1, bvec<M>> qav(qa);
+    return LLRam(qav, d, da, w)[0];
   }
 
   template <unsigned M, unsigned N>
