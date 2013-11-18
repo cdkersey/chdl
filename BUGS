@@ -11,4 +11,8 @@ Must Fix
   techniques. Ideally, it should be considered a bug in CHDL if optimization,
   simulation or netlist writing crashes after validation has been performed.
 
+  techmap.cpp: insert_reg_inverters() -- this creates duplicate registers that
+  will not be successfully techmapped but still remain in the design with no
+  successors.
+
 Nuisance
