@@ -67,6 +67,21 @@ template <typename T> node vecOrN(const T &v) {
   return vecOrN(v.begin(), v.end());
 }
 
+void safeErase(vector<node> &v, unsigned begin, unsigned end) {
+  // vector<T>::resize() apparently also uses T::operator=
+  //for (unsigned i = 0; i < end - begin; ++i)
+  //  v[begin + i].change_net(v[end + i]);
+  //v.resize(v.size() - (end - begin));
+
+  // This one seems to work, but yuck.
+  vector<node> w;
+  for (unsigned i = 0; i < v.size(); ++i)
+    if (i < begin || i >= end)
+      w.push_back(v[i]);
+  v.clear();
+  v = w;
+}
+
 void chdl::opt_tristate_merge() {
   map<nodeid_t, map<nodeid_t, vector<nodeid_t> > > tris;
 
@@ -112,6 +127,7 @@ void chdl::opt_contract() {
       if (inv && (inv2 = dynamic_cast<invimpl*>(nodes[inv->src[0]]))) {
         node n(inv->id), m(inv2->src[0]);
         n = m;
+        ++changes;
         continue; 
       }
 
@@ -167,11 +183,16 @@ void chdl::opt_contract() {
               node n(tris->id);
               n = tris->src[i];
               ++changes;
-              continue;
+              break;
             } else {
-              tris->src.erase(tris->src.begin()+i, tris->src.begin()+i+2);
+              safeErase(tris->src, i, i+2);
+
+              if (tris->src.size() == 0) {
+                node n(tris->id);
+                n = Lit(1);
+              }
               ++changes;
-              continue;
+              break;
             }
           }
         }

@@ -15,4 +15,9 @@ Must Fix
   will not be successfully techmapped but still remain in the design with no
   successors.
 
+  Overload of operator= for nodes breaks STL stuff that uses it. Consider
+  vector::erase. A "safeErase" is in opt.cpp now, and there isn't really an
+  easy permanent fix since retroactive assignment and node-as-reference are
+  really powerful things.
+
 Nuisance
