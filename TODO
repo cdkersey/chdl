@@ -5,7 +5,10 @@ _ Add tri-state support
   _ To .nand format (including in/out ports)
     . Internal nodes
     _ in/out ports
-    _ (external) .nand file reader
+    . (external) .nand file reader
+      - It's supported in the extant ldnetls, which with the appropriate TLIB
+        gain support for .nand files (and are the only CHDL-compatible netlist
+        readers
   _ To technology mapper and .netl format (three-state buffers are positional
     [non-commutative] 2-input gates)
     _ in/out ports for technology mapper
@@ -56,6 +59,9 @@ _ Create some documentation.
   - Make the CHDL manual more than just an imcomplete outline.
   - Write an introductory tutorial in digital design using CHDL, Verilog, and
     VHDL to provide examples.
+
+_ Custom literal type overload with universal literal type class
+  - Allows us to say "1_cl" instead of "Lit<N>(1)". A little more terse.
 
 Possible future features:
   _ Change nand-based IR to industry-standard AIG (and/inverter graph)
