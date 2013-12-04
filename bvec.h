@@ -36,7 +36,7 @@ namespace chdl {
       T &operator[](size_t i) { bc(i); return nodes[i]; }
       const T &operator[](size_t i) const { bc(i); return nodes[i]; }
       template <unsigned A, unsigned B>
-        vec<B-A+1, T> operator[](range<A, B> r)
+        vec<B-A+1, T> operator[](range<A, B> r) const
       {
         vec<B-A+1, T> out;
 
