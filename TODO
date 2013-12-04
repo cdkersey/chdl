@@ -63,6 +63,25 @@ _ Create some documentation.
 _ Custom literal type overload with universal literal type class
   - Allows us to say "1_cl" instead of "Lit<N>(1)". A little more terse.
 
+_ Split off CHDL standard library as its own project.
+  - This includes all non-hardware-mappable objects, tests, and examples:
+    - LLRom, LLRam
+    - State machines
+
+    - Possibly including:
+      - Non-elementary gates
+      - vec, bvec, and bitwise operations
+      - Arithmetic and comparison
+
+    - Definitely not including
+      - Fundamental logic types:
+        - Nand (or and if we make the switch to AIG), Inverter
+        - Register
+        - Memory (synchronous and asynchronous SRAM and ROM)
+      - Basic optimizations
+      - Technology mapping
+      - Simulation interfaces (eval, tickable, nodeimpl)
+
 Possible future features:
   _ Change nand-based IR to industry-standard AIG (and/inverter graph)
     - This is implementation technology neutral, whereas our nand/inverter graph
