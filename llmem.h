@@ -14,19 +14,17 @@
 #include "hierarchy.h"
 
 namespace chdl {
-  template <unsigned M, unsigned N>
-    bvec<N> LLRom(bvec<M> a, std::string filename)
+  template <unsigned M, unsigned N, typename T>
+    bvec<N> LLRom(bvec<M> a, const std::vector<T> &init)
   {
     HIERARCHY_ENTER();
 
     using namespace std;
     vector<bool> contents(N<<M);
 
-    ifstream in(filename.c_str());
     size_t i = 0;
-    while (i < (1ull<<M) && in) {
-      unsigned long long val;
-      in >> hex >> val;
+    while (i < init.size() && i < (1ull<<M)) {
+      unsigned long long val(init[i]);
       for (unsigned j = 0; j < N; ++j) {
         contents[i*N + j] = val & 1;
         val >>= 1;
@@ -44,6 +42,23 @@ namespace chdl {
     HIERARCHY_EXIT();
 
     return r;
+  }
+
+  template <unsigned M, unsigned N>
+    bvec<N> LLRom(bvec<M> a, std::string filename)
+  {
+    using namespace std;
+
+    vector<unsigned long long> init;
+    ifstream in(filename.c_str());
+    while (!!in) {
+      unsigned long long val;
+      in >> hex >> val;
+      if (!in) break;
+      init.push_back(val);
+    }
+
+    return LLRom<M,N>(a, init);
   }
 
   // For now, LLRam has no initialization.
