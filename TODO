@@ -1,6 +1,8 @@
 CHDL Near-term Roadmap
 ======================
 
+_ Add gate transition matrices for power modeling.
+  - N inputs -> 2^N x 2^N transition matrix
 _ Add tri-state support
   _ To .nand format (including in/out ports)
     . Internal nodes
