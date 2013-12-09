@@ -35,7 +35,7 @@ namespace chdl {
     HIERARCHY_ENTER();
     bvec<N> r;
     for (unsigned i = 0; i < N; ++i)
-      r[i] = Reg(d[i], val & (1ul<<i));
+      r[i] = Reg(d[i], val & (1ull<<i));
     HIERARCHY_EXIT();
     return r;
   }
@@ -46,7 +46,7 @@ namespace chdl {
   {
     HIERARCHY_ENTER();
     for (unsigned i = 0; i < N; ++i)
-      q[i] = Reg(Mux(w, q[i], d[i]), val & (1ul<<i));
+      q[i] = Reg(Mux(w, q[i], d[i]), val & (1ull<<i));
     HIERARCHY_EXIT();
   }
 

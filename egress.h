@@ -13,7 +13,7 @@ namespace chdl {
 
   template <typename T> class egress : public tickable {
   public:
-    egress(const T& x, node n): n(n), x(x) { tap("egress", n); }
+    egress(const T& x, node n): n(n), x(x) { gtap(n); }
 
     void tick() { x(nodes[n]->eval()); }
     void tock() {}
@@ -40,7 +40,10 @@ template <typename T, unsigned N> void chdl::EgressInt(T &x, chdl::bvec<N> bv)
 
   for (unsigned i = 0; i < N; ++i)
     chdl::EgressFunc(
-      [i, &x](bool val){ if (val) x |= (1ul<<i); else x &= ~(1ul<<i); }, bv[i]
+      [i, &x](bool val){
+        if (val) x |= (1ull<<i); else x &= ~(1ull<<i);
+      },
+      bv[i]
     );
 }
 #endif

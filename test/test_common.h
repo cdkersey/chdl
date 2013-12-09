@@ -12,7 +12,7 @@ using namespace chdl;
 
 template<unsigned N> uint64_t RandInt() {
   static default_random_engine e(0);
-  uniform_int_distribution<uint64_t> d(0,(1ul<<N)-1);
+  uniform_int_distribution<uint64_t> d(0,(1ull<<N)-1);
   return d(e);
 }
 
@@ -23,7 +23,7 @@ template<> uint64_t RandInt<64>() {
 }
 
 template <unsigned N> uint64_t Trunc(uint64_t x) {
-  uint64_t mask((1ul<<N)-1);
+  uint64_t mask((1ull<<N)-1);
   return x & mask;
 }
 
