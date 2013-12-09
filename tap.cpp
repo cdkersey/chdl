@@ -20,8 +20,10 @@ typedef taps_t::iterator taps_it;
 
 taps_t taps;
 set<string> output_taps;
+vector<node> ghost_taps;
 
 static void reset_taps() {
+  ghost_taps.clear();
   taps.clear();
   output_taps.clear();
 }
@@ -30,6 +32,10 @@ CHDL_REGISTER_RESET(reset_taps);
 void chdl::tap(string name, node node, bool output) {
   taps[name].push_back(node);
   if (output) output_taps.insert(name);
+}
+
+void chdl::gtap(node n) {
+  ghost_taps.push_back(n);
 }
 
 void chdl::print_taps_vl_head(std::ostream &out) {
@@ -96,4 +102,6 @@ void chdl::get_tap_nodes(set<nodeid_t> &s) {
   for (auto t : taps)
     for (unsigned j = 0; j < t.second.size(); ++j)
       s.insert(t.second[j]);
+  for (auto t : ghost_taps)
+    s.insert(t);
 }

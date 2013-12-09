@@ -14,10 +14,13 @@
 
 namespace chdl {
   void tap(std::string name, node node, bool output=false);
+  void gtap(node node);
   template <unsigned N>
     void tap(std::string name, const bvec<N> &vec, bool output=false);
   template <unsigned N>
     void tap(std::string name, const bus<N> &vec, bool output=false);
+  template <unsigned N> void gtap(const bvec<N> &vec);
+  template <unsigned N> void gtap(const bus<N> &vec);
 
   void print_taps_vl_head(std::ostream &out);
   void print_taps_vl_body(std::ostream &out, bool print_non_out=true);
@@ -39,6 +42,14 @@ template <unsigned N>
   void chdl::tap(std::string name, const bus<N> &vec, bool output)
 {
   for (unsigned i = 0; i < N; ++i) tap(name, chdl::node(vec[i]), output);
+}
+
+template <unsigned N> void gtap(const chdl::bvec<N> &vec) {
+  for (unsigned i = 0; i < N; ++i) gtap(vec[i]);
+}
+
+template <unsigned N> void gtap(const chdl::bus<N> &vec) {
+  for (unsigned i = 0; i < N; ++i) gtap(chdl::node(vec[i]));
 }
 
 #define TAP(x) do { tap(#x, x); } while(0)
