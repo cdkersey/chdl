@@ -20,8 +20,8 @@ following:
 Adders are already provided in the CHDL library, so a device of this nature
 would not be completely necessary.
 
-Structure of this Document
---------------------------
+Contents
+--------
 
   - Concepts
     - Register Transfer Level
@@ -40,7 +40,7 @@ Structure of this Document
       - Special Nodes
       - Tri-state Nodes
     - Gates
-    - Operator Overloads (&&, ||, !)
+    - Basic Operator Overloads (&&, ||, !)
     - Vectors
     - Vector Operator Overloads (&, |, ^, <<, >>, +, -, *, /, -, ~, ==, !=)
     - Higher-order Arrays
@@ -65,17 +65,72 @@ Structure of this Document
 Concepts
 --------
 
+  Register Transfer Level
+  -----------------------
+
+  Node
+  ----
+
+  Register
+  --------
+
+  Vector
+  ------
+
 API
 ---
 
  Nodes
  -----
 
+A CHDL node can be thought of as a node (also known as a net) in a digital
+circuit. The chdl::node object itself is a referential type, representing an
+index of a node implementation in CHDL's internal state. Using this approach,
+it is ensured that assignment to a chdl::node will not only affect its sub-
+sequent uses, but all prior uses as well:
+
+  node next_x, x(Reg(next_x)),
+       next_y, y(Reg(next_y)),
+       next_z, z(Reg(next_z));
+
+  next_x = Inv(x);
+  next_y = Xor(x, y);
+  next_z = Xor(And(x, y), z);
+
+The downside to this is that copies performed by container objects, formerly
+benign, now have the capacity to unwittingly overwrite nodes.
+
+ Literals
+ --------
+
+A literal in CHDL is a node with a time-constant value:
+
+  node x = Inv(Lit(0)),
+       y = And(x, Lit(1));
+
+Literals are typically used as arguments to functions:
+
+  node val = Mux(a, Mux(b, Lit(0), Lit(1)), Lit(1));
+
+The CHDL optimization system ensures that these are efficiently compacted, often
+disappearing altogether. For example, Or(And(Lit(1), x), y).
+
  Gates
  -----
 
- Operator Overloads
- ------------------
+Internally, CHDL represents designs as a set of fundamental logic gates and
+registers. The CHDL API hides the details (e.g. which gates these are) from the
+user and provides the usual complement of basic logic gates:
+
+  node x_and_y = And(x, y),
+       x_nand_y = Nand(x, y),
+       x_or_y = Or(x, y),
+       x_nor_y = Nor(x, y),
+       x_xor_y = Xor(x, y),
+       x_2mux_y = Mux(z, x, y);
+
+ Basic Operator Overloads
+ ------------------------
 
  Vectors
  -------
