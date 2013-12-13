@@ -9,6 +9,7 @@ run : $(TEST_RUNS)
 
 test_adder: test_adder.cpp test_common.h
 test_mult: test_mult.cpp test_common.h
+test_logic: test_logic.cpp test_common.h
 
 %.run %.opt : %
 	./$< > $@ 2> $<.opt
