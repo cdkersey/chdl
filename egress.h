@@ -1,8 +1,8 @@
 #ifndef __CHDL_EGRESS_H
 #define __CHDL_EGRESS_H
-#include <chdl/chdl.h>
-#include <chdl/nodeimpl.h>
-#include <chdl/tickable.h>
+#include "nodeimpl.h"
+#include "tickable.h"
+#include "tap.h"
 
 #include <functional>
 
