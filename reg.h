@@ -8,7 +8,7 @@
 namespace chdl {
   node Reg(node d, bool val=0);
   
-  node Wreg(node w, node d);
+  node Wreg(node w, node d, bool val=0);
 
   void get_reg_nodes(std::set<nodeid_t> &s);
   void get_reg_d_nodes(std::set<nodeid_t> &s);

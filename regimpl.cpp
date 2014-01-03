@@ -45,10 +45,10 @@ node chdl::Reg(node d, bool val) {
   }
 }
 
-node chdl::Wreg(node w, node d) {
+node chdl::Wreg(node w, node d, bool initial) {
   HIERARCHY_ENTER();
   node q;
-  q = Reg(Mux(w, q, d));
+  q = Reg(Mux(w, q, d), initial);
   HIERARCHY_EXIT();
   return q;
 }
