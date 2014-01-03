@@ -46,32 +46,18 @@ namespace chdl {
     static std::stack<cassign> cstack;
   };
 
-  struct node_cassign {
-    node_cassign(const node &n): n(n) {}
-
-    node_cassign IF(node x, const node &a) {
-      node y;
-      n = Mux(x, y, a);
-      return node_cassign(y);
-    }
-
-    node_cassign ELSE(const node &a) { n = a; }
-
-    node n;
-  };
-
   template <unsigned N> std::stack<cassign<N>> cassign<N>::cstack;
 
   template <unsigned N> cassign<N> Cassign(const bvec<N> &v);
-  static node_cassign Cassign(const node &n);
+  static cassign<1> Cassign(const node &n);
 };
 
 template <unsigned N> chdl::cassign<N> chdl::Cassign(const chdl::bvec<N> &v) {
   return chdl::cassign<N>(v);
 }
 
-static chdl::node_cassign chdl::Cassign(const node &n) {
-  return chdl::node_cassign(n);
+static chdl::cassign<1> chdl::Cassign(const node &n) {
+  return chdl::cassign<1>(bvec<1>(n));
 }
 
 #endif
