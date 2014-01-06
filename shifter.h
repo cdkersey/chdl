@@ -7,14 +7,6 @@
 #include "hierarchy.h"
 
 namespace chdl {
-  constexpr unsigned LOG2(unsigned long x) {
-    return x == 1 ? 0 : LOG2(x >> 1) + 1;
-  }
-
-  constexpr unsigned CLOG2(unsigned long x) {
-    return x&(x-1) ? LOG2(x) + 1 : LOG2(x);
-  }
-
   // Fixed shift by B bits (positive for left, negative for right). A series of
   // these could be used to construct a barrel shifter.
   template <unsigned N>

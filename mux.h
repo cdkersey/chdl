@@ -9,6 +9,14 @@
 #include "hierarchy.h"
 
 namespace chdl {
+  constexpr unsigned LOG2(unsigned long x) {
+    return x == 1 ? 0 : LOG2(x >> 1) + 1;
+  }
+
+  constexpr unsigned CLOG2(unsigned long x) {
+    return x&(x-1) ? LOG2(x) + 1 : LOG2(x);
+  }
+
   // 2-input N-bit mux
   template <unsigned N> bvec<N> Mux(node sel, bvec<N> i0, bvec<N> i1) {
     HIERARCHY_ENTER();
@@ -32,21 +40,18 @@ namespace chdl {
     return nodes[1];
   }
 
-  // 2^M-input N-bit mux
-  template <unsigned N, unsigned M>
-    bvec<N> Mux(bvec<M> sel, vec<1<<M, bvec<N>> inputs)
+  // 2^M-input recursive mux
+  template <unsigned N, unsigned M, typename T>
+    vec<M, T> Mux(bvec<CLOG2(N)> sel, const vec<N, vec<M, T> > &in)
   {
-    HIERARCHY_ENTER();
-    bvec<N> o;
-
-    for (unsigned i = 0; i < N; ++i) {
-      bvec<1<<M> inputslice;
-      for (unsigned j = 0; j < 1<<M; ++j) inputslice[j] = inputs[j][i];
-      o[i] = Mux(sel, inputslice);
+    vec<M, T> out;
+    for (unsigned i = 0; i < M; ++i) {
+      vec<N, T> inx;
+      for (unsigned j = 0; j < N; ++j) inx[j] = in[j][i];
+      out[i] = Mux(sel, inx);
     }
-    HIERARCHY_EXIT();
-
-    return o;
+ 
+    return out;
   }
 
   // 1-2 decoder/demux
