@@ -43,6 +43,7 @@ Contents
     - Basic Operator Overloads (&&, ||, !)
     - Vectors
     - Vector Operator Overloads (&, |, ^, <<, >>, +, -, *, /, -, ~, ==, !=)
+    - Vector Concatenation (Cat(vec, vec) Cat(vec, node) Cat(vec).Cat(vec)...)
     - Higher-order Arrays
     - Multiplexers
     - Conditional Assignment (Cassign)
