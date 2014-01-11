@@ -33,14 +33,20 @@ namespace chdl {
   template <unsigned N> struct concatenator : public bvec<N> {
     concatenator(const bvec<N> &x): bvec<N>(x) {}
 
-    template <unsigned M> concatenator<N + M> Cat(bvec<M> x) {
+    template <unsigned M> concatenator<N + M> Cat(const bvec<M> &x) {
       return concatenator<N + M>(chdl::Cat(*(bvec<N>*)this, x));
+    }
+
+    concatenator <N + 1> Cat(node x) {
+      return concatenator<N + 1>(chdl::Cat(*(bvec<N>*)this, x));
     }
   };
 
   template <unsigned N> concatenator<N> Cat(const bvec<N> &x) {
     return concatenator<N>(x);
   }
+
+  static concatenator<1> Cat(const node &x) { return concatenator<1>(x); }
 
   // Create an array of registers.
   template <unsigned N> bvec<N> Reg(bvec<N> d, unsigned long val=0) {
