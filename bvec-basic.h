@@ -26,7 +26,19 @@ namespace chdl {
     return Cat(bvec<1>(a), b);
   }
 
-  static inline bvec<2> Cat(node a, node b) {
+  template <unsigned N, unsigned M>
+    bvec<N*M> Flatten(const vec<N, bvec<M> > &x)
+  {
+    bvec<N*M> out;
+
+    for (unsigned i = 0; i < N; ++i)
+      for (unsigned j = 0; j < M; ++j)
+        out[i*M + j] = x[i][j];
+
+    return out; 
+  }
+
+  static inline bvec<2> Cat(const node &a, const node &b) {
     return Cat(bvec<1>(a), bvec<1>(b));
   }
 
@@ -49,13 +61,19 @@ namespace chdl {
   static concatenator<1> Cat(const node &x) { return concatenator<1>(x); }
 
   // Create an array of registers.
-  template <unsigned N> bvec<N> Reg(bvec<N> d, unsigned long val=0) {
+  template <unsigned N> bvec<N> Reg(bvec<N> d, vec<N, bool> val) {
     HIERARCHY_ENTER();
     bvec<N> r;
     for (unsigned i = 0; i < N; ++i)
-      r[i] = Reg(d[i], val & (1ull<<i));
+      r[i] = Reg(d[i], val[i]);
     HIERARCHY_EXIT();
     return r;
+  }
+
+  template <unsigned N> bvec<N> Reg(bvec<N> d, unsigned long val=0) {
+    vec<N, bool> x;
+    for (unsigned i = 0; i < N; ++i) x[N-i-1] = (val>>i)&1;
+    return Reg(d, x); 
   }
 
   // Add a write signal to an existing array of registers
@@ -68,9 +86,26 @@ namespace chdl {
     HIERARCHY_EXIT();
   }
 
+  template <unsigned N>
+    void Wreg(bvec<N> q, bvec<N> d, node w, vec<N, bool> val)
+  {
+    HIERARCHY_ENTER();
+    for (unsigned i = 0; i < N; ++i)
+      q[i] = Reg(Mux(w, q[i], d[i]), val[i]);
+    HIERARCHY_EXIT();
+  }
+
   // Create an array of registers with a "write" signal
   template <unsigned N>
     bvec<N> Wreg(node w, bvec<N> d, unsigned long val=0)
+  {
+    bvec<N> r;
+    Wreg(r, d, w, val);
+    return r;
+  }
+
+  template <unsigned N>
+    bvec<N> Wreg(node w, bvec<N> d, vec<N, bool> val)
   {
     bvec<N> r;
     Wreg(r, d, w, val);
