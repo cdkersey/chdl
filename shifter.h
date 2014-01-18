@@ -55,7 +55,7 @@ namespace chdl {
     return Shifter(in, shamt, Lit(0), Lit(0));
   }
 
-  template <unsigned M>
+  template <unsigned N>
     bvec<N> operator>>(bvec<N> in, bvec<CLOG2(N)> shamt)
   {
     return Shifter(in, shamt, Lit(0), Lit(1));
