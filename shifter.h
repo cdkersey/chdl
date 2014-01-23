@@ -49,14 +49,14 @@ namespace chdl {
     return r;
   }
 
-  template <unsigned M>
-    bvec<1<<M> operator<<(bvec<1<<M> in, bvec<M> shamt)
+  template <unsigned N>
+    bvec<N> operator<<(bvec<N> in, bvec<CLOG2(N)> shamt)
   {
     return Shifter(in, shamt, Lit(0), Lit(0));
   }
 
-  template <unsigned M>
-    bvec<1<<M> operator>>(bvec<1<<M> in, bvec<M> shamt)
+  template <unsigned N>
+    bvec<N> operator>>(bvec<N> in, bvec<CLOG2(N)> shamt)
   {
     return Shifter(in, shamt, Lit(0), Lit(1));
   }
