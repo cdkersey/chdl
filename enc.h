@@ -9,6 +9,37 @@
 #include "hierarchy.h"
 
 namespace chdl {
+  static bvec<1> PriEnc(node &valid, const bvec<2> &in) {
+    valid = in[0] || in[1];
+    return in[1];
+  }
+
+  template <unsigned N> bvec<CLOG2(N)> PriEnc(node &valid, const bvec<N> &in) {
+    const unsigned A(N/2), B(N - A);
+
+    bvec<A> rin(in[range<0, A-1>()]);
+    node rvalid;
+    bvec<CLOG2(A)> r(PriEnc(rvalid, rin));
+
+    bvec<B> lin(in[range<A, N-1>()]);
+    node lvalid;
+    bvec<CLOG2(A)> l(Zext<CLOG2(A)>(PriEnc(lvalid, lin)));
+
+    valid = lvalid || rvalid;
+
+    return Cat(lvalid, Mux(lvalid, r, l));
+  }
+
+  template <unsigned N> bvec<CLOG2(N)> Log2(bvec<N> x) {
+    HIERARCHY_ENTER();
+
+    node valid;
+    return PriEnc(valid, x);
+
+    HIERARCHY_EXIT();
+  }
+
+  #if 0
   // Integer logarithm unit (find index of highest set bit); priority encoder
   template <unsigned N> bvec<CLOG2(N)> Log2(bvec<N> x) {
     HIERARCHY_ENTER();
@@ -31,6 +62,7 @@ namespace chdl {
 
     return out;
   }
+  #endif
 
   // Find index of lowest set bit; reverse of the Log2 priority encoder
   template <unsigned N> bvec<CLOG2(N)> Lsb(bvec<N> x) {
