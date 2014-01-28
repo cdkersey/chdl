@@ -44,6 +44,7 @@ Contents
     - Vectors
     - Vector Operator Overloads (&, |, ^, <<, >>, +, -, *, /, -, ~, ==, !=)
     - Vector Concatenation (Cat(vec, vec) Cat(vec, node) Cat(vec).Cat(vec)...)
+    - Encoders and Decoders
     - Higher-order Arrays
     - Multiplexers
     - Conditional Assignment (Cassign)
@@ -138,6 +139,12 @@ user and provides the usual complement of basic logic gates:
 
  Vector Operator Overloads
  -------------------------
+
+ Vector Concatenation
+ --------------------
+
+ Encoders and Decoders
+ ---------------------
 
  Higher-order Arrays
  -------------------
