@@ -14,7 +14,7 @@ EXAMPLES = example0 example1 example2 example3 example4 example5 example6 \
 all: $(EXAMPLES) $(EXAMPLE_OUTPUT) $(GRAPHS)
 
 example8.vcd example8.dot : example8 text.hex
-	./example8
+	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):../ ./example8
 
 text.hex : text.txt
 	hexdump -v -e '1/1 "%02x\n"' < $< > $@
