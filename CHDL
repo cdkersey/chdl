@@ -54,6 +54,10 @@ Contents
     - Optimization
     - Simulator
       - C++ Interoperability (Ingress/Egress)
+    - Analysis
+      - Cycle Detection
+      - Critical Path Length
+      - Critical Path Report
     - HDL Writer
   - Simulation Tools
   - File Formats
@@ -234,6 +238,18 @@ with a nested conditional:
 
   C++ Interoperability (Ingress/Egress)
   -------------------------------------
+
+ Analysis
+ --------
+
+  Cycle Detection
+  ---------------
+
+  Critical Path Length
+  --------------------
+
+  Critical Path Report
+  --------------------
 
 File Formats
 ------------

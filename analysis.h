@@ -4,6 +4,7 @@
 #define __ANALYSIS_H
 
 #include <set>
+#include <iostream>
 
 #include "bvec-basic-op.h"
 #include "nodeimpl.h"
@@ -20,6 +21,8 @@ namespace chdl {
 
   unsigned critpath();
   bool cycdet();
+
+  void critpath_report(std::ostream &);
 };
 
 template <unsigned A, unsigned B>

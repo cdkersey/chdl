@@ -516,6 +516,7 @@ int main() {
   optimize();
 
   cerr << "Critical path: " << critpath() << endl;
+  critpath_report(cout);
 
   // Do the simulation
   ofstream wave_file("example6.vcd");
