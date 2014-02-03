@@ -37,41 +37,62 @@ bool is_or(nodeid_t n, nodeid_t &in0, nodeid_t &in1) {
   return false;
 }
 
-void gen_or_blob(nodeid_t out, const vector<nodeid_t> &in) {
+bool is_and(nodeid_t n, nodeid_t &in0, nodeid_t &in1) {
+  if (dynamic_cast<invimpl*>(nodes[n]) &&
+      dynamic_cast<nandimpl*>(nodes[nodes[n]->src[0]]))
+  {
+    in0 = nodes[nodes[n]->src[0]]->src[0];
+    in1 = nodes[nodes[n]->src[0]]->src[1];
+
+    return true;
+  }
+}
+
+node gen_or_blob_v(const vector<nodeid_t> &in) {
   if (in.size() == 0) abort(); // assert(in.size() != 0);
-  if (in.size() == 1) { node n(out); n = node(in[0]); return; }
+  if (in.size() == 1) return node(in[0]);
 
   vector<nodeid_t> a, b;
 
-  cout << "a:";
-  for (unsigned i = 0; i < in.size(); i += 2) { cout << ' ' << in[i]; a.push_back(in[i]); }
-  cout << endl;
+  for (unsigned i = 0; i < in.size(); i += 2) a.push_back(in[i]);
+  for (unsigned i = 1; i < in.size(); i += 2) b.push_back(in[i]);
 
-  cout << "b:";
-  for (unsigned i = 1; i < in.size(); i += 2) { cout << ' ' << in[i]; b.push_back(in[i]); }
-  cout << endl;
-
-  node aout, bout;
-  gen_or_blob(nodeid_t(aout), a);
-  gen_or_blob(nodeid_t(bout), b);
-
-  node n(out);
-  n = aout || bout;
+  return Or(gen_or_blob_v(a), gen_or_blob_v(b));
 }
 
-void gen_or_blob(nodeid_t out, const set<nodeid_t> &in) {
+node gen_and_blob_v(const vector<nodeid_t> &in) {
+  if (in.size() == 0) abort(); // assert(in.size() != 0);
+  if (in.size() == 1) return node(in[0]);
+
+  vector<nodeid_t> a, b;
+
+  for (unsigned i = 0; i < in.size(); i += 2) a.push_back(in[i]);
+  for (unsigned i = 1; i < in.size(); i += 2) b.push_back(in[i]);
+
+  return And(gen_and_blob_v(a), gen_and_blob_v(b));
+}
+
+node gen_or_blob(const set<nodeid_t> &in) {
   vector<nodeid_t> in_v;
   for (auto n : in) in_v.push_back(n);
-  gen_or_blob(out, in_v);
+  return gen_or_blob_v(in_v);
 }
 
-void chdl::opt_assoc_balance() {
+node gen_and_blob(const set<nodeid_t> &in) {
+  vector<nodeid_t> in_v;
+  for (auto n : in) in_v.push_back(n);
+  return gen_and_blob_v(in_v);
+}
+
+template <typename T, typename U>
+  void assoc_balance_internal(T &is_x, U &gen)
+{
   map<nodeid_t, set<nodeid_t> > blobs;
 
   // Find initial set of 2-input gates
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
     nodeid_t a, b;
-    if (is_or(i, a, b)) {
+    if (is_x(i, a, b)) {
       blobs[i].insert(a);
       blobs[i].insert(b);
     }
@@ -88,7 +109,7 @@ void chdl::opt_assoc_balance() {
           b.second.erase(i);
           blobs.erase(i);
           merge = true;
-          goto next; // Hah.
+          goto next;
         }
       }
     }
@@ -103,7 +124,17 @@ void chdl::opt_assoc_balance() {
   }
 
   // Replace existing or-blobs with new, balanced or-blobs
-  for (auto &x : blobs) gen_or_blob(x.first, x.second);
+  for (auto &x : blobs) {
+    node n(x.first);
+    n = gen(x.second);
+  }
+}
+
+void chdl::opt_assoc_balance() {
+  cout << "And" << endl;
+  assoc_balance_internal(is_and, gen_and_blob);
+  cout << "Or" << endl;
+  assoc_balance_internal(is_or, gen_or_blob);
 }
 
 void chdl::opt_dead_node_elimination() {
