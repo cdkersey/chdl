@@ -44,7 +44,7 @@ unsigned chdl::critpath() {
 
 // Emit a report showing the location (in hierarchy) of top 10 longest paths
 void chdl::critpath_report(ostream &out) {
-  cout << "CHDL Critical Path Report" << endl;
+  out << "CHDL Critical Path Report" << endl;
 
   // For each node, find the longest path to it.
   set<nodeid_t> frontier;
