@@ -22,6 +22,90 @@
 using namespace chdl;
 using namespace std;
 
+
+bool is_or(nodeid_t n, nodeid_t &in0, nodeid_t &in1) {
+  if (dynamic_cast<nandimpl*>(nodes[n]) &&
+      dynamic_cast<invimpl*>(nodes[nodes[n]->src[0]]) &&
+      dynamic_cast<invimpl*>(nodes[nodes[n]->src[1]]))
+  {
+    in0 = nodes[nodes[n]->src[0]]->src[0];
+    in1 = nodes[nodes[n]->src[1]]->src[0];
+    // for xor we need to make sure the inputs are not equivalent
+    return true;
+  }
+
+  return false;
+}
+
+void gen_or_blob(nodeid_t out, const vector<nodeid_t> &in) {
+  if (in.size() == 0) abort(); // assert(in.size() != 0);
+  if (in.size() == 1) { node n(out); n = node(in[0]); return; }
+
+  vector<nodeid_t> a, b;
+
+  cout << "a:";
+  for (unsigned i = 0; i < in.size(); i += 2) { cout << ' ' << in[i]; a.push_back(in[i]); }
+  cout << endl;
+
+  cout << "b:";
+  for (unsigned i = 1; i < in.size(); i += 2) { cout << ' ' << in[i]; b.push_back(in[i]); }
+  cout << endl;
+
+  node aout, bout;
+  gen_or_blob(nodeid_t(aout), a);
+  gen_or_blob(nodeid_t(bout), b);
+
+  node n(out);
+  n = aout || bout;
+}
+
+void gen_or_blob(nodeid_t out, const set<nodeid_t> &in) {
+  vector<nodeid_t> in_v;
+  for (auto n : in) in_v.push_back(n);
+  gen_or_blob(out, in_v);
+}
+
+void chdl::opt_assoc_balance() {
+  map<nodeid_t, set<nodeid_t> > blobs;
+
+  // Find initial set of 2-input gates
+  for (nodeid_t i = 0; i < nodes.size(); ++i) {
+    nodeid_t a, b;
+    if (is_or(i, a, b)) {
+      blobs[i].insert(a);
+      blobs[i].insert(b);
+    }
+  }
+
+  // Merge new gates into existing blobs until there are none left to merge.
+  bool merge;
+  do {
+    merge = false;
+    for (auto &b : blobs) {
+      for (auto i : b.second) {
+        if (blobs.count(i)) {
+          for (auto j : blobs[i]) b.second.insert(j);
+          b.second.erase(i);
+          blobs.erase(i);
+          merge = true;
+          goto next; // Hah.
+        }
+      }
+    }
+    next:;
+  } while(merge);
+
+  // Debug: print blobs
+  for (auto &b : blobs) {
+    cout << b.first << " <=";
+    for (auto y : b.second) cout << ' ' << y;
+    cout << endl;
+  }
+
+  // Replace existing or-blobs with new, balanced or-blobs
+  for (auto &x : blobs) gen_or_blob(x.first, x.second);
+}
+
 void chdl::opt_dead_node_elimination() {
   set<nodeid_t> live_nodes;
 

@@ -14,6 +14,7 @@ namespace chdl {
   void opt_combine_literals();
   void opt_dedup();
   void opt_tristate_merge();
+  void opt_assoc_balance();
 
   void optimize();
 
