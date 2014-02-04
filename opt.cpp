@@ -1,5 +1,4 @@
-// This is the CHDL programmer facing side of the optimization layer. It is used
-// solely for the purpose of invoking the optimization layer.
+#include "analysis.h"
 #include "opt.h"
 #include "tap.h"
 #include "gates.h"
@@ -30,7 +29,7 @@ bool is_or(nodeid_t n, nodeid_t &in0, nodeid_t &in1) {
   {
     in0 = nodes[nodes[n]->src[0]]->src[0];
     in1 = nodes[nodes[n]->src[1]]->src[0];
-    // for xor we need to make sure the inputs are not equivalent
+
     return true;
   }
 
@@ -48,7 +47,7 @@ bool is_and(nodeid_t n, nodeid_t &in0, nodeid_t &in1) {
   }
 }
 
-node gen_or_blob_v(const vector<nodeid_t> &in) {
+node gen_or_blob_v(const vector<nodeid_t> &in, const hpath_t &path) {
   if (in.size() == 0) abort(); // assert(in.size() != 0);
   if (in.size() == 1) return node(in[0]);
 
@@ -57,10 +56,14 @@ node gen_or_blob_v(const vector<nodeid_t> &in) {
   for (unsigned i = 0; i < in.size(); i += 2) a.push_back(in[i]);
   for (unsigned i = 1; i < in.size(); i += 2) b.push_back(in[i]);
 
-  return Or(gen_or_blob_v(a), gen_or_blob_v(b));
+  node out = Or(gen_or_blob_v(a, path), gen_or_blob_v(b, path));
+
+  nodes[nodes.size() - 1]->path = path;
+
+  return out;
 }
 
-node gen_and_blob_v(const vector<nodeid_t> &in) {
+node gen_and_blob_v(const vector<nodeid_t> &in, const hpath_t &path) {
   if (in.size() == 0) abort(); // assert(in.size() != 0);
   if (in.size() == 1) return node(in[0]);
 
@@ -69,25 +72,35 @@ node gen_and_blob_v(const vector<nodeid_t> &in) {
   for (unsigned i = 0; i < in.size(); i += 2) a.push_back(in[i]);
   for (unsigned i = 1; i < in.size(); i += 2) b.push_back(in[i]);
 
-  return And(gen_and_blob_v(a), gen_and_blob_v(b));
+  node out = And(gen_and_blob_v(a, path), gen_and_blob_v(b, path));
+
+  nodes[nodes.size() - 1]->path = path;
+
+  return out;
 }
 
-node gen_or_blob(const set<nodeid_t> &in) {
+node gen_or_blob(const set<nodeid_t> &in, const hpath_t &path) {
   vector<nodeid_t> in_v;
   for (auto n : in) in_v.push_back(n);
-  return gen_or_blob_v(in_v);
+  return gen_or_blob_v(in_v, path);
 }
 
-node gen_and_blob(const set<nodeid_t> &in) {
+node gen_and_blob(const set<nodeid_t> &in, const hpath_t &path) {
   vector<nodeid_t> in_v;
   for (auto n : in) in_v.push_back(n);
-  return gen_and_blob_v(in_v);
+  return gen_and_blob_v(in_v, path);
 }
 
 template <typename T, typename U>
   void assoc_balance_internal(T &is_x, U &gen)
 {
-  map<nodeid_t, set<nodeid_t> > blobs;
+  map<nodeid_t, set<nodeid_t> > blobs, blobgates, succ;
+  set<nodeid_t> tapnodes, regnodes;
+  get_tap_nodes(tapnodes);
+  get_reg_nodes(regnodes);
+  for (nodeid_t n = 0; n < nodes.size(); ++n)
+    for (auto s : nodes[n]->src)
+      succ[s].insert(n);
 
   // Find initial set of 2-input gates
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
@@ -95,6 +108,7 @@ template <typename T, typename U>
     if (is_x(i, a, b)) {
       blobs[i].insert(a);
       blobs[i].insert(b);
+      blobgates[i].insert(i);
     }
   }
 
@@ -105,6 +119,15 @@ template <typename T, typename U>
     for (auto &b : blobs) {
       for (auto i : b.second) {
         if (blobs.count(i)) {
+          bool externalSuccessors(false);
+          if (tapnodes.count(i) || regnodes.count(i)) externalSuccessors = true;
+          if (succ[i].size() > 1) {
+            externalSuccessors = true;
+          }
+          if (externalSuccessors) continue;
+          
+          blobgates.erase(i);
+          blobgates[b.first].insert(i);
           for (auto j : blobs[i]) b.second.insert(j);
           b.second.erase(i);
           blobs.erase(i);
@@ -116,24 +139,17 @@ template <typename T, typename U>
     next:;
   } while(merge);
 
-  // Debug: print blobs
-  for (auto &b : blobs) {
-    cout << b.first << " <=";
-    for (auto y : b.second) cout << ' ' << y;
-    cout << endl;
-  }
-
   // Replace existing or-blobs with new, balanced or-blobs
   for (auto &x : blobs) {
+    if (x.second.size() < 4) continue;
     node n(x.first);
-    n = gen(x.second);
+    hpath_t path = nodes[x.first]->path;
+    n = gen(x.second, path);
   }
 }
 
 void chdl::opt_assoc_balance() {
-  cout << "And" << endl;
   assoc_balance_internal(is_and, gen_and_blob);
-  cout << "Or" << endl;
   assoc_balance_internal(is_or, gen_or_blob);
 }
 
