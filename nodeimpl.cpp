@@ -27,7 +27,8 @@ CHDL_REGISTER_RESET(clear_nodes);
 bool litimpl::eval() { return val; }
 
 void litimpl::print(ostream &out) {
-  out << "  lit" << val << ' ' << id << endl;
+  if (undef)  out << "  litX " << id << endl;
+  else        out << "  lit" << val << ' ' << id << endl;
 }
 
 void litimpl::print_vl(ostream &out) {

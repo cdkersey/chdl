@@ -40,8 +40,10 @@ _ Basic register optimization
     subexpn elim)
 
 _ "don't care" support
-  _ A "whatever" lit type; evals to 0
-  _ 'template <unsigned N> bvec<N> Whatever()' utility function in lit.h
+  . A "whatever" lit type; evals to 0
+    - Lit('x');
+    - Lit('0') and Lit('1') also work now too.
+  _ 'template <unsigned N> bvec<N> Whatever()' utility function
   _ optimizations: inv(whatever) = whatever, reg(whatever) = whatever
      - Treat whatevers like constant 0 or 1, based on which will reduce
        logic more (will propagate 0 to the most nand gates)

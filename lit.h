@@ -4,7 +4,7 @@
 #include "node.h"
 
 namespace chdl {
-  node Lit(bool val);
+  node Lit(char val);
 };
 
 #endif

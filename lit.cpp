@@ -6,9 +6,21 @@
 using namespace chdl;
 using namespace std;
 
-node chdl::Lit(bool val) {
-  HIERARCHY_ENTER();
-  node r((new litimpl(val))->id);
-  HIERARCHY_EXIT();
-  return r;
+node chdl::Lit(char val) {
+  if (val == 0 || val == 1) {
+    HIERARCHY_ENTER();
+    node r((new litimpl(val))->id);
+    HIERARCHY_EXIT();
+    return r;
+  } else if (val == '0' || val == '1') {
+    HIERARCHY_ENTER();
+    node r((new litimpl(val == '1'))->id);
+    HIERARCHY_EXIT();
+    return r;
+  } else if (val == 'x' || val == 'X') {
+    HIERARCHY_ENTER();
+    node r((new litimpl())->id);
+    HIERARCHY_EXIT();
+    return r;
+  }    
 }
