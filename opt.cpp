@@ -56,8 +56,11 @@ node gen_or_blob_v(const vector<nodeid_t> &in, const hpath_t &path) {
   for (unsigned i = 0; i < in.size(); i += 2) a.push_back(in[i]);
   for (unsigned i = 1; i < in.size(); i += 2) b.push_back(in[i]);
 
-  node out = Or(gen_or_blob_v(a, path), gen_or_blob_v(b, path));
-
+  node x = Inv(gen_or_blob_v(a, path));
+  nodes[nodes.size() - 1]->path = path;
+  node y = Inv(gen_or_blob_v(b, path));
+  nodes[nodes.size() - 1]->path = path;
+  node out = Nand(x, y);
   nodes[nodes.size() - 1]->path = path;
 
   return out;
@@ -72,8 +75,9 @@ node gen_and_blob_v(const vector<nodeid_t> &in, const hpath_t &path) {
   for (unsigned i = 0; i < in.size(); i += 2) a.push_back(in[i]);
   for (unsigned i = 1; i < in.size(); i += 2) b.push_back(in[i]);
 
-  node out = And(gen_and_blob_v(a, path), gen_and_blob_v(b, path));
-
+  node x = Nand(gen_and_blob_v(a, path), gen_and_blob_v(b, path));
+  nodes[nodes.size() - 1]->path = path;
+  node out = Inv(x);
   nodes[nodes.size() - 1]->path = path;
 
   return out;
