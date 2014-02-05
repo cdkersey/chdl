@@ -46,6 +46,7 @@ Contents
     - Vector Concatenation (Cat(vec, vec) Cat(vec, node) Cat(vec).Cat(vec)...)
     - Encoders and Decoders
     - Higher-order Arrays
+      - Flatten
     - Multiplexers
     - Conditional Assignment (Cassign)
     - Buses
@@ -152,6 +153,9 @@ user and provides the usual complement of basic logic gates:
 
  Higher-order Arrays
  -------------------
+
+  Flatten
+  -------
 
  Multiplexers
  ------------
