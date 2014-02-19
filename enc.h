@@ -61,6 +61,10 @@ namespace chdl {
     return ret;
   }
 
+  template <unsigned N> bvec<CLOG2(N)> Lsb(bvec<N> x) {
+    return PriEnc(valid, x, true);
+  }
+
   // Cheap encoder, results valid only when exactly one input set
   template <unsigned N> bvec<CLOG2(N)> Enc(bvec<N> x) {
     HIERARCHY_ENTER();
