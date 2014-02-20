@@ -62,6 +62,7 @@ namespace chdl {
   }
 
   template <unsigned N> bvec<CLOG2(N)> Lsb(bvec<N> x) {
+    node valid;
     return PriEnc(valid, x, true);
   }
 
