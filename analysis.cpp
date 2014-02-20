@@ -111,16 +111,20 @@ void chdl::critpath_report(ostream &out) {
   }
 }
 
-static bool cycdet_internal
-  (unsigned lvl, nodeid_t node, set<nodeid_t> &v, set<nodeid_t> &c)
+static bool cycdet_internal(unsigned lvl, nodeid_t node,
+                            set<nodeid_t> &v, set<nodeid_t> &c,
+                            vector<nodeid_t> &path)
 {
-  if (c.find(node) != c.end()) return false;
+  if (c.count(node)) return false;
   for (unsigned i = 0; i < nodes[node]->src.size(); ++i) {
     nodeid_t s(nodes[node]->src[i]);
     set<nodeid_t> v2(v);
     v2.insert(s);
-    if (v.find(s) != v.end()) return true;
-    if (cycdet_internal(lvl+1, s, v2, c)) return true;
+    if (v.count(s)) { path.push_back(s); return true; }
+    if (cycdet_internal(lvl+1, s, v2, c, path)) {
+      path.push_back(s);
+      return true;
+    }
   }
   c.insert(node);
   return false;
@@ -128,13 +132,20 @@ static bool cycdet_internal
 
 bool chdl::cycdet() {
   set<nodeid_t> s, c;
+  vector<nodeid_t> path;
   get_tap_nodes(s);
   get_reg_nodes(s);
   get_mem_nodes(s);
 
   for (auto n : s) {
     set<nodeid_t> v;
-    if (cycdet_internal(0, n, v, c)) return true;
+    if (cycdet_internal(0, n, v, c, path)) {
+      cout << "Cycle detected. Path:" << endl;
+      for (auto n : path) {
+        cout << "  " << path_str(nodes[n]->path) << endl;
+      }
+      return true;
+    }
   }
   
   return false;
