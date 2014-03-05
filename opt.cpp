@@ -21,6 +21,55 @@
 using namespace chdl;
 using namespace std;
 
+void chdl::opt_set_dontcare() {
+  // Find dontcare nodes
+  set<nodeid_t> d;
+  for (nodeid_t n = 0; n < nodes.size(); ++n)
+    if (litimpl *l = dynamic_cast<litimpl*>(nodes[n]))
+      if (l->is_undef()) d.insert(n); 
+
+  // Find successors of all nodes.
+  map<nodeid_t, set<nodeid_t> > succ;
+  for (auto n : nodes) for (auto s : n->src) succ[s].insert(n->id);
+
+  // +1 for each nand after even number of inverters, -1 for each nand after odd
+  // number of inverters.
+  map<nodeid_t, int> score;
+
+  // Assuming there is a tree of inverters from each dontcare literal, this is
+  // used to follow the tree in a breadth-first manner.
+  map<nodeid_t, set<nodeid_t> > invs;
+  for (auto n : d) invs[n].insert(n); // To bootstrap the process.
+  
+  // TODO: This needs to be tested.
+  bool descended;
+  int layer(0);
+  do {
+    descended = false;
+    for (auto n : d) {
+      set<nodeid_t> next_invs;
+      for (auto x : invs[n]) {
+        for (auto s : succ[x]) {
+          if (dynamic_cast<nandimpl*>(nodes[s])) {
+            if (layer%2) ++score[n];
+            else --score[n];
+          } else if (dynamic_cast<invimpl*>(nodes[s])) {
+            next_invs.insert(s);
+            descended = true;
+          }
+        }
+      }
+      invs[n] = next_invs;
+    }
+
+    ++layer;
+  } while(descended);
+
+  for (auto s : score) cout << s.first << ": " << s.second << endl;
+
+  for (auto n : d) static_cast<litimpl*>(nodes[n])->resolve(score[n] > 0);
+ 
+}
 
 bool is_or(nodeid_t n, nodeid_t &in0, nodeid_t &in1) {
   if (dynamic_cast<nandimpl*>(nodes[n]) &&
