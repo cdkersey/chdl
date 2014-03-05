@@ -9,13 +9,10 @@
 #include "node.h"
 
 namespace chdl {
-  // Utility function.
-  // TODO: put this in (or get this from) a utility library of some sort.
-  static unsigned log2(unsigned long n) {
-    unsigned i;
-    for (i = 0; (1<<i) <= n; ++i);
-    return i-1;
-  }
+  // TODO: Find a better way to solve this problem, up to banning bools or
+  //       separating out non-basic-typable vecs.
+  template <typename T> constexpr unsigned SZ() { return T::SZ(); }
+  template <> constexpr unsigned SZ<bool>() { return 0; }
 
   // range is used to index a fixed-width subset of a vec
   template <unsigned A, unsigned B> struct range{};
@@ -47,6 +44,14 @@ namespace chdl {
       }
 
       static constexpr unsigned SZ() { return N * T::SZ(); }
+
+      operator vec<N*chdl::SZ<T>(), node>() const {
+        vec<N*chdl::SZ<T>(), node> out;
+        for (unsigned i = 0; i < N; ++i)
+          for (unsigned j = 0; j < N; ++j)
+            out[chdl::SZ<T>()*i + j] = vec<chdl::SZ<T>(), node>(nodes[i])[j];
+        return out;
+      }
 
     protected:
       T nodes[N];

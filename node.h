@@ -27,7 +27,7 @@ namespace chdl {
     node &operator=(const node &r);
     void change_net(nodeid_t i);
 
-    static constexpr unsigned SZ() { return 1; } 
+    static constexpr unsigned SZ() { return 1; }
 
   protected:
     nodeid_t idx;

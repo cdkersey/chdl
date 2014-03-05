@@ -35,7 +35,7 @@ namespace chdl {
     bvec<2<<M> nodes;
     nodes[range<(1<<M),2*(1<<M)-1>()] = inputs;
     for (int i = (1<<M)-1; i >= 1; --i)
-      nodes[i] = Mux(sel[M - log2(i) - 1], nodes[i*2], nodes[i*2 + 1]);
+      nodes[i] = Mux(sel[M - LOG2(i) - 1], nodes[i*2], nodes[i*2 + 1]);
     HIERARCHY_EXIT();
     return nodes[1];
   }
@@ -71,7 +71,7 @@ namespace chdl {
     bvec<2*(1<<M)> nodes;
     nodes[1] = e;
     for (unsigned i = 1; i < (1<<M); ++i) {
-      bvec<2> r = Decoder(sel[M - log2(i) - 1], nodes[i]);
+      bvec<2> r = Decoder(sel[M - LOG2(i) - 1], nodes[i]);
       nodes[2*i] = r[0];
       nodes[2*i+1] = r[1];
     }

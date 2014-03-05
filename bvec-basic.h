@@ -29,13 +29,7 @@ namespace chdl {
   template <unsigned N, unsigned M>
     bvec<N*M> Flatten(const vec<N, bvec<M> > &x)
   {
-    bvec<N*M> out;
-
-    for (unsigned i = 0; i < N; ++i)
-      for (unsigned j = 0; j < M; ++j)
-        out[i*M + j] = x[i][j];
-
-    return out; 
+    return bvec<N*M>(x);
   }
 
   static inline bvec<2> Cat(const node &a, const node &b) {

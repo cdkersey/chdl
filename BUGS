@@ -1,8 +1,13 @@
 Critical
 
+  Global SZ<T>() function in bvec.h is a kludge to allow vec<bool>. The problem
+  is that SZ() and related serialization stuff hurt vec/bvec and should maybe
+  be moved around.
+
   Arithmetic/logic have not been tested with non power-of-two widths.
     - Except Enc(), required by Statemachine. This one is guaranteed to work.
     - Log2 has been shown not to work.
+    - Now part of standard testing, but this doesn't have full coverage.
 
 Must Fix
 
