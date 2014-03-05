@@ -3,6 +3,7 @@
 #ifndef __TAP_H
 #define __TAP_H
 #include <string>
+#include <sstream>
 #include <iostream>
 #include <set>
 
@@ -15,6 +16,8 @@
 namespace chdl {
   void tap(std::string name, node node, bool output=false);
   void gtap(node node);
+  template <typename T, unsigned N>
+    void tap(std::string name, const vec<N, T> &vec, bool output=false);
   template <unsigned N>
     void tap(std::string name, const bvec<N> &vec, bool output=false);
   template <unsigned N>
@@ -31,6 +34,15 @@ namespace chdl {
   // Append the set of tap nodes to s. Do not clear s.
   void get_tap_nodes(std::set<nodeid_t> &s);
 };
+
+template <typename T, unsigned N>
+  void chdl::tap(std::string prefix, const vec<N, T> &v, bool output)
+{
+  for (unsigned i = 0; i < N; ++i) {
+    std::ostringstream oss; oss << i;
+    tap(prefix + '_' + oss.str(), v[i], output);
+  }
+}
 
 template <unsigned N>
   void chdl::tap(std::string name, const bvec<N> &vec, bool output)

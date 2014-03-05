@@ -30,7 +30,7 @@ _ Some sort of context management.
 _ Rebalancing optimization
   _ Normalize to chains [And(And(And(And(a), b), c), d)]. These are easier to
     route(probably; check), but O(n) in both time and space.
-  _ Rebalance to trees [And(And(a, b), And(c, d))] where necessary. These are
+  . Rebalance to trees [And(And(a, b), And(c, d))] where necessary. These are
     O(n) in space but O(log(n)) in time.
 
 _ Basic register optimization
@@ -44,7 +44,7 @@ _ "don't care" support
     - Lit('x');
     - Lit('0') and Lit('1') also work now too.
   _ 'template <unsigned N> bvec<N> Whatever()' utility function
-  _ optimizations: inv(whatever) = whatever, reg(whatever) = whatever
+  _ optimizations:
      - Treat whatevers like constant 0 or 1, based on which will reduce
        logic more (will propagate 0 to the most nand gates)
   _ eval options for simulation?
@@ -94,6 +94,8 @@ Possible future features:
   _ Pass manager
     - Is there any reason to optimize in an order other than the one used by
       the optimize function?
+      - Yes. Dependence on analyses. It would be nice to, say, only have to find
+        the successor map once.
     - Could technology mapping be handled by this same pass manager?
   _ Command-line/scripting support
     - Even instantiate gates through some sort of readline-based interface.

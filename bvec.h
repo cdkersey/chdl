@@ -46,6 +46,8 @@ namespace chdl {
         return out;
       }
 
+      static constexpr unsigned SZ() { return N * T::SZ(); }
+
     protected:
       T nodes[N];
 

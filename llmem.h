@@ -33,7 +33,7 @@ namespace chdl {
     }
 
     vec<1ull<<M, bvec<N>> bits;
-    for (size_t i = 0; i < 1ull<<M; ++i)
+    for (size_t i = 0; i < init.size() && i < 1ull<<M; ++i)
       for (unsigned j = 0; j < N; ++j)
         bits[i][j] = Lit(contents[i*N + j]);
 
