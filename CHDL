@@ -47,6 +47,7 @@ Contents
     - Encoders and Decoders
     - Higher-order Arrays
       - Flatten
+    - chdl::sz<T> Template
     - Multiplexers
     - Conditional Assignment (Cassign)
     - Buses
@@ -156,6 +157,24 @@ user and provides the usual complement of basic logic gates:
 
   Flatten
   -------
+
+ chdl::sz<T> Template
+ -----------------
+
+ A convenient tempalate interface is provided to obtain the (compile-time
+ static) number of nodes contained in any object, including arrays of any
+ number of dimensions. For instance, when flattening a multi-dimensional array,
+ the size of the containing bvec can be determined using sz<T>:
+
+   typedef vec<N, vec<M, bvec<8> > > v_t;
+     
+   v_t v;
+
+   . . .
+
+   bvec<sz<v_t>::value> flat = Flatten(v);
+
+This is, in fact, how the size of the Flatten template's return type is defined.
 
  Multiplexers
  ------------

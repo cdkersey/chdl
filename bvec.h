@@ -9,11 +9,6 @@
 #include "node.h"
 
 namespace chdl {
-  // TODO: Find a better way to solve this problem, up to banning bools or
-  //       separating out non-basic-typable vecs.
-  template <typename T> constexpr unsigned SZ() { return T::SZ(); }
-  template <> constexpr unsigned SZ<bool>() { return 0; }
-
   // range is used to index a fixed-width subset of a vec
   template <unsigned A, unsigned B> struct range{};
 
@@ -43,16 +38,6 @@ namespace chdl {
         return out;
       }
 
-      static constexpr unsigned SZ() { return N * T::SZ(); }
-
-      operator vec<N*chdl::SZ<T>(), node>() const {
-        vec<N*chdl::SZ<T>(), node> out;
-        for (unsigned i = 0; i < N; ++i)
-          for (unsigned j = 0; j < N; ++j)
-            out[chdl::SZ<T>()*i + j] = vec<chdl::SZ<T>(), node>(nodes[i])[j];
-        return out;
-      }
-
     protected:
       T nodes[N];
 
@@ -62,6 +47,14 @@ namespace chdl {
   };
 
   template <unsigned N> using bvec = vec<N, node>;
+
+  // TODO: Standardize this
+  template <typename T> struct sz { const static unsigned value = 0; };
+  template <> struct sz<node> { const static unsigned value = 1; };
+
+  template <unsigned N, typename T> struct sz<vec<N, T> > {
+    const static unsigned value = sz<T>::value * N;
+  };
 };
 
 #endif

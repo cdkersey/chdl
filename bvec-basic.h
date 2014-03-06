@@ -26,10 +26,16 @@ namespace chdl {
     return Cat(bvec<1>(a), b);
   }
 
-  template <unsigned N, unsigned M>
-    bvec<N*M> Flatten(const vec<N, bvec<M> > &x)
+  static bvec<1> Flatten(const node &n) { return bvec<1>(n); }
+
+  template <unsigned N, typename T>
+    bvec<N * sz<T>::value> Flatten(const vec<N, T> &x)
   {
-    return bvec<N*M>(x);
+    vec<N*sz<T>::value, node> out;
+    for (unsigned i = 0; i < N; ++i)
+      for (unsigned j = 0; j < sz<T>::value; ++j)
+        out[sz<T>::value*i + j] = Flatten(x[i])[j];
+    return out;
   }
 
   static inline bvec<2> Cat(const node &a, const node &b) {
