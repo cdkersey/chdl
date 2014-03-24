@@ -334,7 +334,7 @@ template <unsigned M> bvec<1<<M> Alu(bvec<4> opsel, bvec<1<<M> a, bvec<1<<M> b)
   vec<4, bvec<1<<M> > aluResult;
   bvec<M> shamt = a[range<0,M-1>()];
   aluResult[0] = ToUpper(b);
-  aluResult[1] = Shifter(b, shamt, opsel[0], opsel[1]);
+  aluResult[1] = Shifter(b, shamt, opsel[0], opsel[1], Lit(0));
   aluResult[2] = Adder(a, (b ^ subbit), opsel[1]);
   aluResult[3] = logic;
 
