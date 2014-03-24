@@ -3,6 +3,7 @@
 #define __BVEC_H
 
 #include <cstdlib>
+#include <initializer_list>
 
 #include "reg.h"
 #include "lit.h"
@@ -18,6 +19,10 @@ namespace chdl {
     public:
       vec() {}
       vec(const T &r) { for (unsigned i = 0; i < N; ++i) nodes[i] = r; }
+      vec(std::initializer_list<T> l) {
+        unsigned i(0);
+        for (auto &x : l) nodes[i++] = x;
+      }
 
       vec &operator=(const vec& r) {
         for (unsigned i = 0; i < N; ++i) nodes[i] = r[i];
