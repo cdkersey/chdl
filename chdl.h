@@ -2,6 +2,7 @@
 #define CHDL_H
 #include <chdl/adder.h>
 #include <chdl/analysis.h>
+#include <chdl/assert.h>
 #include <chdl/bus.h>
 #include <chdl/bvec-basic.h>
 #include <chdl/bvec-basic-op.h>

@@ -4,7 +4,8 @@ LDLIBS += -pthread
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o \
-       submodule.o latch.o techmap.o order.o tristate.o trisimpl.o reset.o
+       submodule.o latch.o techmap.o order.o tristate.o trisimpl.o reset.o \
+       assert.o
 
 all : libchdl.so
 
@@ -19,6 +20,8 @@ install: libchdl.so
 uninstall:
 	rm -rf $(PREFIX)/lib/libchdl.so $(PREFIX)/include/chdl
 
+assert.o: assert.cpp assert.h nodeimpl.h tickable.h node.h bvec.h bus.h tap.h \
+          sim.h reset.h
 reset.o: reset.cpp reset.h
 gates.o: gates.cpp node.h gates.h nodeimpl.h gatesimpl.h sim.h hierarchy.h
 gatesimpl.o: gatesimpl.cpp gatesimpl.h sim.h nodeimpl.h node.h hierarchy.h

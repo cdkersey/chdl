@@ -56,12 +56,14 @@ Contents
     - Optimization
     - Simulator
       - C++ Interoperability (Ingress/Egress)
+      - Assertions
     - Analysis
       - Cycle Detection
       - Critical Path Length
       - Critical Path Report
     - HDL Writer
   - Simulation Tools
+
   - File Formats
     - NAND File Format
     - NETL File Format
@@ -261,6 +263,21 @@ with a nested conditional:
 
   C++ Interoperability (Ingress/Egress)
   -------------------------------------
+
+  Assertions
+  ----------
+
+  CHDL provides a system for error detection using assertions. The ASSERT()
+  macro provides an easy interface for creating simulation-time assertions.
+  If the node passed to the ASSERT() macro is ever false during simulation, the
+  simulation is stopped and an error message is printed. In the following
+  example, if the simulation runs for more than 128 cycles, an error message is
+  printed:
+
+    bvec<8> counter;
+    counter = Reg(counter + Lit<8>(1));
+  
+    ASSERT(!counter[7]);
 
  Analysis
  --------
