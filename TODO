@@ -86,6 +86,10 @@ _ Split off CHDL standard library as its own project.
       - Technology mapping
       - Simulation interfaces (eval, tickable, nodeimpl)
 
+_ Make dead node elimination use the criterion that node objects exist for a
+  given node id/nodeimpl. Make this give us things like taps and gtaps for
+  free.
+
 Possible future features:
   _ Change nand-based IR to industry-standard AIG (and/inverter graph)
     - This is implementation technology neutral, whereas our nand/inverter graph
