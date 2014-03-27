@@ -61,53 +61,59 @@ namespace chdl {
   static concatenator<1> Cat(const node &x) { return concatenator<1>(x); }
 
   // Create an array of registers.
-  template <unsigned N> bvec<N> Reg(bvec<N> d, vec<N, bool> val) {
+  template <typename T> T Reg(T d, vec<sz<T>::value, bool> val) {
     HIERARCHY_ENTER();
-    bvec<N> r;
-    for (unsigned i = 0; i < N; ++i)
+    T rt;
+    bvec<sz<T>::value> r(rt);
+    for (unsigned i = 0; i < sz<T>::value; ++i)
       r[i] = Reg(d[i], val[i]);
     HIERARCHY_EXIT();
     return r;
   }
 
-  template <unsigned N> bvec<N> Reg(bvec<N> d, unsigned long val=0) {
-    vec<N, bool> x;
+  template <typename T> T Reg(T d, unsigned long val=0) {
+    const unsigned N(sz<T>::value);
+    vec<sz<T>::value, bool> x;
     for (unsigned i = 0; i < N; ++i) x[N-i-1] = (val>>i)&1;
     return Reg(d, x); 
   }
 
   // Add a write signal to an existing array of registers
-  template <unsigned N>
-    void Wreg(bvec<N> q, bvec<N> d, node w, unsigned long val=0)
+  template <typename T>
+    void Wreg(T qt, T dt, node w, unsigned long val=0)
   {
     HIERARCHY_ENTER();
-    for (unsigned i = 0; i < N; ++i)
+    bvec<sz<T>::value> q(qt), d(dt);
+
+    for (unsigned i = 0; i < sz<T>::value; ++i)
       q[i] = Reg(Mux(w, q[i], d[i]), val & (1ull<<i));
     HIERARCHY_EXIT();
   }
 
-  template <unsigned N>
-    void Wreg(bvec<N> q, bvec<N> d, node w, vec<N, bool> val)
+  template <typename T>
+    void Wreg(T qt, T dt, node w, vec<sz<T>::value, bool> val)
   {
     HIERARCHY_ENTER();
-    for (unsigned i = 0; i < N; ++i)
+    bvec<sz<T>::value> q(qt), d(dt);
+
+    for (unsigned i = 0; i < sz<T>::value; ++i)
       q[i] = Reg(Mux(w, q[i], d[i]), val[i]);
     HIERARCHY_EXIT();
   }
 
   // Create an array of registers with a "write" signal
-  template <unsigned N>
-    bvec<N> Wreg(node w, bvec<N> d, unsigned long val=0)
+  template <typename T>
+    T Wreg(node w, T d, unsigned long val=0)
   {
-    bvec<N> r;
+    T r;
     Wreg(r, d, w, val);
     return r;
   }
 
-  template <unsigned N>
-    bvec<N> Wreg(node w, bvec<N> d, vec<N, bool> val)
+  template <typename T>
+    T Wreg(node w, T d, vec<sz<T>::value, bool> val)
   {
-    bvec<N> r;
+    T r;
     Wreg(r, d, w, val);
     return r;
   }
