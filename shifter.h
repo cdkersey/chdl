@@ -16,10 +16,10 @@ namespace chdl {
 
     bvec<N> shifted;
     for (int i = 0; i < N; ++i) {
-      if (i+B < 0)             shifted[i] = And(in[(i+B)%N], rot);
-      if (i+B >= 0 && i+B < N) shifted[i] = in[i+B];
-      else if (B > 0)          shifted[i] = And(in[N-1], arith);
-      else                     shifted[i] = Lit(0);
+      if ((i+B)%N < 0)             shifted[i] = And(in[(i+B)%N], rot);
+      if ((i+B)%N >= 0 && i+B < N) shifted[i] = in[i+B];
+      else                         shifted[i] = Or(And(in[N-1], arith),
+                                                   And(in[(i+B)%N], rot));
     }
 
     bvec<N> r(Mux(enable, in, shifted));
