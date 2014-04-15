@@ -29,7 +29,7 @@ template <unsigned N> uint64_t Trunc(uint64_t x) {
 
 template<> uint64_t Trunc<64>(uint64_t x) { return x; }
 
-// Test an N-bit adder across t trials, where N is <= 64
+// Test an N-bit function across t trials, where N is <= 64
 template <unsigned N, typename F, typename H>
   void TestFunc(const F &f, const H &h)
 {
