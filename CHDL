@@ -33,6 +33,7 @@ Contents
     - Register
     - Vector
   - API
+    - CLOG2() and Log2() Utility Functions
     - Nodes
       - Literals
       - Fundamental Gates
@@ -42,7 +43,12 @@ Contents
     - Gates
     - Basic Operator Overloads (&&, ||, !)
     - Vectors
-    - Vector Operator Overloads (&, |, ^, <<, >>, +, -, *, /, -, ~, ==, !=)
+    - Vector Operator Overloads ([], &, |, ^, <<, >>, +, -, *, /, -, ~, ==, !=)
+      - Indexing
+      - Logic
+      - Arithmetic
+      - Equality
+      - Shift
     - Vector Concatenation (Cat(vec, vec) Cat(vec, node) Cat(vec).Cat(vec)...)
     - Encoders and Decoders
     - Higher-order Arrays
@@ -134,8 +140,29 @@ then set up as a simple shift register:
 API
 ---
 
- Nodes
- -----
+  Capitalization and Style Conventions
+  ------------------------------------
+
+TODO
+
+  CLOG2() and LOG2() Utility Functions
+  ------------------------------------
+
+Frequently in digital logic it is necessary to find the number of bits needed to
+hold a certain number of states. This is the ceiling of the logarithm base two
+of the number of states. We have provided a function, CLOG2, that can be used
+anywhere a constant value can be used (it is evaluated at compile time) which
+provides the ceiling of the logarithm base two. This is especially useful in the
+function prototypes of generic components like encoders and decoders. For
+instance:
+
+  template<unsigned N> bvec<LOG2(N) + 1> PopCount(bvec<N> x);
+
+Specifies a population count function. Its output will be in the range [0, N]
+and so must have at least floor(log2(N)) + 1 bits of storage.
+
+  Nodes
+  -----
 
 A CHDL node can be thought of as a node (also known as a net) in a digital
 circuit. The chdl::node object itself is a referential type, representing an
@@ -154,8 +181,8 @@ sequent uses, but all prior uses as well:
 The downside to this is that copies performed by container objects, formerly
 benign, now have the capacity to unwittingly overwrite nodes.
 
- Literals
- --------
+  Literals
+  --------
 
 A literal in CHDL is a node with a time-constant value:
 
@@ -169,8 +196,8 @@ Literals are typically used as arguments to functions:
 The CHDL optimization system ensures that these are efficiently compacted, often
 disappearing altogether. For example, Or(And(Lit(1), x), y).
 
- Gates
- -----
+  Gates
+  -----
 
 Internally, CHDL represents designs as a set of fundamental logic gates and
 registers. The CHDL API hides the details (e.g. which gates these are) from the
@@ -203,10 +230,50 @@ limitation of C++.
  Vectors
  -------
 
+CHDL provides its own fixed-length vector class, vec<N, T>, and an alias
+template for vec<N, node>, bvec<N>. Multi-dimensional vectors are simple vecs of
+vecs, e.g. vec<M, vec<N, node> >, vec<M, vec<N, bvec<8> > >, etc.
+
  Vector Operator Overloads
  -------------------------
 
-  TODO: [range<>()]
+ Indexing
+ --------
+
+The most important operation provided by vec is the indexing operator []. The
+input can be either an integer or a range<A, B> object. Examples of valid uses
+of the indexing operator:
+
+  bvec<8> x, y;
+
+  for (unsigned i = 0; i < 8; ++i)
+    x[i] = y[7 - i];
+
+
+  bvec<32> a, b;
+  bvec<16> c, d;
+
+  c = a[range<0, 15>()];
+  d = a[range<8, 23>()];
+
+ Logic
+ -----
+
+Bitwise logic operations, equivalent to their C/C++ counterparts, are provided
+for convenience, including &, |, ^, and ~.
+
+ Arithmetic
+ ----------
+
+A full set of arithmetic operators are provided as well, but these must be used
+with caution. While adders are cheap and multipliers only somewhat expensive,
+frequent use of dividers can easily lead to intractable designs.
+
+ Equality
+ --------
+
+ Shift
+ -----
 
  Vector Concatenation
  --------------------
