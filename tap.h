@@ -56,11 +56,11 @@ template <unsigned N>
   for (unsigned i = 0; i < N; ++i) tap(name, chdl::node(vec[i]), output);
 }
 
-template <unsigned N> void gtap(const chdl::bvec<N> &vec) {
+template <unsigned N> void chdl::gtap(const chdl::bvec<N> &vec) {
   for (unsigned i = 0; i < N; ++i) gtap(vec[i]);
 }
 
-template <unsigned N> void gtap(const chdl::bus<N> &vec) {
+template <unsigned N> void chdl::gtap(const chdl::bus<N> &vec) {
   for (unsigned i = 0; i < N; ++i) gtap(chdl::node(vec[i]));
 }
 
