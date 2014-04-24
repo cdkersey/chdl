@@ -24,7 +24,7 @@ Contents
 --------
 
   - Concepts
-    - Register Transfer Level
+    - Gate-Level Design
     - Node
       - The node class
       - nodeType enumeration
@@ -33,6 +33,7 @@ Contents
     - Register
     - Vector
   - API
+    - CLOG2() and Log2() Utility Functions
     - Nodes
       - Literals
       - Fundamental Gates
@@ -42,7 +43,12 @@ Contents
     - Gates
     - Basic Operator Overloads (&&, ||, !)
     - Vectors
-    - Vector Operator Overloads (&, |, ^, <<, >>, +, -, *, /, -, ~, ==, !=)
+    - Vector Operator Overloads ([], &, |, ^, <<, >>, +, -, *, /, -, ~, ==, !=)
+      - Indexing
+      - Logic
+      - Arithmetic
+      - Equality
+      - Shift
     - Vector Concatenation (Cat(vec, vec) Cat(vec, node) Cat(vec).Cat(vec)...)
     - Encoders and Decoders
     - Higher-order Arrays
@@ -75,23 +81,88 @@ Contents
 Concepts
 --------
 
-  Register Transfer Level
-  -----------------------
+  Gate-Level Design
+  -----------------
+
+Designs expressed using CHDL are ultimately expressed at the gate level. While
+many layers of abstraction may separate the design of a complex hardware device
+from the level of gates, a program using CHDL is ultimately a C++ program
+describing a set of fundamental logic units, or gates, the connections between
+them, and the organization of their inputs and outputs.
+
+A very simple gate-level design is the following 1-bit adder. It adds two 1-bit
+numbers together, producing a 2-bit result. This device is often referred to as
+a "half adder":
+
+  sum[1] = And(a, b);
+  sum[0] = Inv(Nand(Nand(Inv(a), Inv(b)), Nand(a, b)));
+
+Note that it is represented with only two kinds of gates, nand gates and
+inverters. For the sake of simplicity, all gate-level designs in CHDL are
+represented internally as a combination of only two kinds of basic gates. (In
+addition to special nodes for sequential logic and things like memory and
+tri-state objects that are not easy to represent as combinations of gates.)
 
   Node
   ----
 
+A "node" in a gate-level design can be thought of as a net in a circuit. Each
+node in a design is an independent entity that may take on a logic value during
+the simulation of the design. Because each node represents the output of a gate
+or an input to a circuit, the nodes themselves are considered synonymous with
+the objects of which they are outputs.
+
   Register
   --------
+
+In the context of CHDL design, registers can be thought of as simple delay
+elements. There is an implicit global clock signal making periodic transitions
+from low to high, and registers all take output generated during one clock cycle
+and delay it until the next low-to-high transition of the clock signal.
 
   Vector
   ------
 
+Signals in CHDL are often grouped together into bundles. The most basic way to
+bundle signals is as vectors of nodes. These fixed-length addressible structures
+provide a simple method for accessing individual elements from C++ code,
+including loops. In the following example, a 4-element vector is created and
+then set up as a simple shift register:
+
+  node input, output;
+  bvec<4> shreg;
+
+  for (unsigned i = 0; i < 4; ++i)
+    shreg[i] = Reg(i == 0 ? input : shreg[i - 1]); 
+
+  output = shreg[3];
+
 API
 ---
 
- Nodes
- -----
+  Capitalization and Style Conventions
+  ------------------------------------
+
+TODO
+
+  CLOG2() and LOG2() Utility Functions
+  ------------------------------------
+
+Frequently in digital logic it is necessary to find the number of bits needed to
+hold a certain number of states. This is the ceiling of the logarithm base two
+of the number of states. We have provided a function, CLOG2, that can be used
+anywhere a constant value can be used (it is evaluated at compile time) which
+provides the ceiling of the logarithm base two. This is especially useful in the
+function prototypes of generic components like encoders and decoders. For
+instance:
+
+  template<unsigned N> bvec<LOG2(N) + 1> PopCount(bvec<N> x);
+
+Specifies a population count function. Its output will be in the range [0, N]
+and so must have at least floor(log2(N)) + 1 bits of storage.
+
+  Nodes
+  -----
 
 A CHDL node can be thought of as a node (also known as a net) in a digital
 circuit. The chdl::node object itself is a referential type, representing an
@@ -110,8 +181,8 @@ sequent uses, but all prior uses as well:
 The downside to this is that copies performed by container objects, formerly
 benign, now have the capacity to unwittingly overwrite nodes.
 
- Literals
- --------
+  Literals
+  --------
 
 A literal in CHDL is a node with a time-constant value:
 
@@ -125,8 +196,8 @@ Literals are typically used as arguments to functions:
 The CHDL optimization system ensures that these are efficiently compacted, often
 disappearing altogether. For example, Or(And(Lit(1), x), y).
 
- Gates
- -----
+  Gates
+  -----
 
 Internally, CHDL represents designs as a set of fundamental logic gates and
 registers. The CHDL API hides the details (e.g. which gates these are) from the
@@ -142,11 +213,67 @@ user and provides the usual complement of basic logic gates:
  Basic Operator Overloads
  ------------------------
 
+C++ logical operators have been overloaded to provide an infix notation for
+common logical operations:
+
+  node x_and_y = x && y,
+       x_nand_y = !(x && y),
+       x_or_y = x || y,
+       x_nor_y = !(x || y),
+       x_xor_y = x != y,
+       x_xnor_y = x == y;
+
+Conspicuously absent is the use of the ternary (? :) operator to provide a
+basic multiplexor function. This cannot be provided due to a fundamental
+limitation of C++.
+
  Vectors
  -------
 
+CHDL provides its own fixed-length vector class, vec<N, T>, and an alias
+template for vec<N, node>, bvec<N>. Multi-dimensional vectors are simple vecs of
+vecs, e.g. vec<M, vec<N, node> >, vec<M, vec<N, bvec<8> > >, etc.
+
  Vector Operator Overloads
  -------------------------
+
+ Indexing
+ --------
+
+The most important operation provided by vec is the indexing operator []. The
+input can be either an integer or a range<A, B> object. Examples of valid uses
+of the indexing operator:
+
+  bvec<8> x, y;
+
+  for (unsigned i = 0; i < 8; ++i)
+    x[i] = y[7 - i];
+
+
+  bvec<32> a, b;
+  bvec<16> c, d;
+
+  c = a[range<0, 15>()];
+  d = a[range<8, 23>()];
+
+ Logic
+ -----
+
+Bitwise logic operations, equivalent to their C/C++ counterparts, are provided
+for convenience, including &, |, ^, and ~.
+
+ Arithmetic
+ ----------
+
+A full set of arithmetic operators are provided as well, but these must be used
+with caution. While adders are cheap and multipliers only somewhat expensive,
+frequent use of dividers can easily lead to intractable designs.
+
+ Equality
+ --------
+
+ Shift
+ -----
 
  Vector Concatenation
  --------------------
