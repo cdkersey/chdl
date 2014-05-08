@@ -313,7 +313,7 @@ This is, in fact, how the size of the Flatten template's return type is defined.
 
 The hierarchies of multiplexers needed to perform even the most basic tasks can
 create opaque, difficult-to-understand code. Consider the task of implementing
-an up/down counter with reset. The next value, in pseudocode would be:
+an up/down counter with reset. The next value, in pseudocode, would be:
 
   if (reset)
     ctr = 0;
