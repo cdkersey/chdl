@@ -18,30 +18,28 @@
 using namespace std;
 using namespace chdl;
 
-template <unsigned N> node Lfsr() {
-  bvec<N> sr;
+node Lfsr16(const unsigned seed = 0x5eed) {
+  bvec<16> sr;
   TAP(sr);
-  for (unsigned i = 1; i < N; ++i) sr[i] = Reg(sr[i-1]);
+  for (unsigned i = 1; i < 16; ++i) sr[i] = Reg(sr[i-1], (seed>>i)&1);
 
-  // I have no idea if a fibbonaci LFSR has to do with the fibbonaci sequence,
-  // but I'll pretend it does and use that to select my taps.
-  bvec<4> taps;
-  taps[0] = sr[N-1];
-  taps[1] = sr[N-3];
-  taps[2] = sr[N-4];
-  taps[3] = sr[N-6];
+  // This is a max-period LFSR for 16 bits
+  bvec<3> taps;
+  taps[0] = sr[0];
+  taps[1] = sr[1];
+  taps[2] = sr[15];
 
   TAP(taps);
   node next = XorN(taps);
   TAP(next);
 
-  sr[0] = Reg(!next);
+  sr[0] = Reg(!next, seed&1);
 
   return next;
 }
 
 int main(int argc, char **argv) {
-  node out = Lfsr<64>();
+  node out = Lfsr16();
   TAP(out);
 
   // The simulation (generate .vcd file)
