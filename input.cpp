@@ -30,10 +30,8 @@ class inputimpl : public nodeimpl {
     void print_vl(ostream &out) {}
 
   private:
-    // Name of input in input map
-    string name;
-    // Position in vector in input map. -1 for no name
-    int pos;
+    string name;         // Name of input in input map
+    int pos;             // Position in vector in input map. -1 for no name
 };
 
 node chdl::Input(std::string name) {

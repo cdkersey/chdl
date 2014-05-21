@@ -40,6 +40,7 @@ Contents
       - Registers
       - Special Nodes
       - Tri-state Nodes
+      - Module Inputs
     - Gates
     - Basic Operator Overloads (&&, ||, !)
     - Vectors
@@ -57,6 +58,7 @@ Contents
     - Multiplexers
     - Conditional Assignment (Cassign)
     - Buses
+    - Inputs and Ouputs
     - Arithmetic
     - Memories
     - Optimization
@@ -209,6 +211,20 @@ user and provides the usual complement of basic logic gates:
        x_nor_y = Nor(x, y),
        x_xor_y = Xor(x, y),
        x_2mux_y = Mux(z, x, y);
+
+  Module Inputs
+  -------------
+
+Input nodes cannot be simulated, but do participate in synthesis and will
+become, in netlist outputs, ports of the design. In a typical design, input
+nodes will be part of the top level design used for synthesis, and these will
+be replaced by other logic in a different top level design used for simulation.
+
+The following code generates a simple synthesizeable design with one input port
+called "in" and one output port called "out":
+
+  node in = Input("in"), out = Inv(in);
+  OUTPUT(out);
 
  Basic Operator Overloads
  ------------------------
@@ -375,6 +391,9 @@ with a nested conditional:
 
  Buses
  -----
+
+ Inputs and Outputs
+ ------------------
 
  Arithmetic
  ----------

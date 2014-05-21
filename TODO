@@ -3,14 +3,10 @@ CHDL Near-term Roadmap
 
 _ Add gate transition matrices for power modeling.
   - N inputs -> 2^N x 2^N transition matrix
+
 _ Add tri-state support
   _ To .nand format (including in/out ports)
-    . Internal nodes
     _ in/out ports
-    . (external) .nand file reader
-      - It's supported in the extant ldnetls, which with the appropriate TLIB
-        gain support for .nand files (and are the only CHDL-compatible netlist
-        readers
   _ To technology mapper and .netl format (three-state buffers are positional
     [non-commutative] 2-input gates)
     _ in/out ports for technology mapper
@@ -25,7 +21,21 @@ _ Some sort of context management.
     enable unit tests.
   - CHDL is a stateful library. In some cases (like unit tests) it is nice to
     have multiple states which can be swapped in and out, preferably (using
-    TLS) in a threadsafe manner.
+    TLS) in a threadsafe manner. The idea:
+
+      - Replace all global state variables with funcs that return references.
+      - Add a global state function to 
+      - Use a macro to define these variables.
+
+_ Testing
+  - In additon to the current "correctness" tests and examples, performance
+    regressions and more complicated module synthesis and correctness tests are
+    necessary. Some possibilities:
+      - Multi-module examples with verilog top-level files to test inputs and
+        outputs
+      - Tests of optimization including number of gates and critical path.
+      - Records of improvements to optimization (with nontrivial designs) over
+        time.
 
 _ Rebalancing optimization
   _ Normalize to chains [And(And(And(And(a), b), c), d)]. These are easier to

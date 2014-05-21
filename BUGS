@@ -19,6 +19,8 @@ Must Fix
   Overload of operator= for nodes breaks STL stuff that uses it. Consider
   vector::erase. A "safeErase" is in opt.cpp now, and there isn't really an
   easy permanent fix since retroactive assignment and node-as-reference are
-  really powerful things.
+  really powerful things. One option may be to (ugh) have a global flag that
+  toggles "magic" (our current model) vs "normal" (the type expected by the C++
+  STL) assignment.
 
 Nuisance
