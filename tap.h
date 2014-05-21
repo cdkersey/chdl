@@ -10,10 +10,12 @@
 #include "node.h"
 #include "bvec.h"
 #include "bus.h"
+#include "tristate.h"
 
 #include "hierarchy.h"
 
 namespace chdl {
+  void tap(std::string name, tristatenode t, bool output=false);
   void tap(std::string name, node node, bool output=false);
   void gtap(node node);
   template <typename T, unsigned N>
@@ -28,6 +30,7 @@ namespace chdl {
   void print_taps_vl_head(std::ostream &out);
   void print_taps_vl_body(std::ostream &out, bool print_non_out=true);
   void print_tap_nodes(std::ostream &out);
+  void print_io_tap_nodes(std::ostream &out);
   void print_taps(std::ostream &out);
   void print_vcd_header(std::ostream &out);
 

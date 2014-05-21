@@ -5,13 +5,14 @@ _ Add gate transition matrices for power modeling.
   - N inputs -> 2^N x 2^N transition matrix
 
 _ Add tri-state support
-  _ To .nand format (including in/out ports)
-    _ in/out ports
-  _ To technology mapper and .netl format (three-state buffers are positional
+  . To .nand format (including in/out ports)
+    . in/out ports (called "inout")
+  . To technology mapper and .netl format (three-state buffers are positional
     [non-commutative] 2-input gates)
-    _ in/out ports for technology mapper
+    . in/out ports for technology mapper
     . technology mapper itself
     . (external) .netl file reader
+  _ To verilog output (FPGA verified)
 
 _ A directory full of simple unit tests.
   - One for each function exposed in a header file.

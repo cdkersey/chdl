@@ -16,6 +16,8 @@ void chdl::print_netlist(ostream &out) {
   print_input_nodes(out);
   out << "outputs" << endl;
   print_tap_nodes(out);
+  out << "inout" << endl;
+  print_io_tap_nodes(out);
   out << "design" << endl;
   for (nodeid_t i = 0; i < nodes.size(); ++i) nodes[i]->print(out);
 }

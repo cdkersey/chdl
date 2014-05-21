@@ -480,6 +480,8 @@ void chdl::techmap(ostream &out, const char* tlibFile) {
   print_input_nodes(out);
   out << "outputs" << endl;
   print_tap_nodes(out);
+  out << "inout" << endl;
+  print_io_tap_nodes(out);
   out << "design" << endl;
 
   // Map outputs and register inputs, then their inputs, etc., until there is

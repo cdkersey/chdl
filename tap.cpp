@@ -19,15 +19,21 @@ typedef map<string, vector<node> > taps_t;
 typedef taps_t::iterator taps_it;
 
 taps_t taps;
-set<string> output_taps;
+set<string> output_taps, io_taps;
 vector<node> ghost_taps;
 
 static void reset_taps() {
   ghost_taps.clear();
   taps.clear();
   output_taps.clear();
+  io_taps.clear();
 }
 CHDL_REGISTER_RESET(reset_taps);
+
+void chdl::tap(std::string name, tristatenode t, bool output) {
+  taps[name].push_back(t);
+  if (output) io_taps.insert(name);
+}
 
 void chdl::tap(string name, node node, bool output) {
   taps[name].push_back(node);
@@ -48,6 +54,8 @@ void chdl::print_taps_vl_body(std::ostream &out, bool print_non_output) {
   for (auto t : taps) {
     if (output_taps.find(t.first) != output_taps.end())
       out << "  output ";
+    else if (io_taps.find(t.first) != io_taps.end())
+      out << "  inout ";
     else if (print_non_output)
       out << "  wire ";
     else
@@ -71,10 +79,26 @@ void chdl::print_taps_vl_body(std::ostream &out, bool print_non_output) {
 
 void chdl::print_tap_nodes(ostream &out) {
   for (auto t : taps) {
+    // TODO: io taps, output taps, and just plain taps need to get more clearly
+    //       distinguished in the netlist format. I hate the following line
+    if (io_taps.count(t.first)) continue;
+
     out << "  " << t.first;
     for (size_t i = 0; i < t.second.size(); ++i)
       out << ' ' << t.second[i];
     out << endl;
+  }
+}
+
+// TODO: see comment in print_tap_nodes
+void chdl::print_io_tap_nodes(ostream &out) {
+  for (auto t : taps) {
+    if (io_taps.count(t.first)) {
+      out << "  " << t.first;
+      for (size_t i = 0; i < t.second.size(); ++i)
+        out << ' ' << t.second[i];
+      out << endl;
+    }
   }
 }
 
