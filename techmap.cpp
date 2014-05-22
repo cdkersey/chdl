@@ -18,6 +18,7 @@
 #include "tristate.h"
 #include "litimpl.h"
 #include "opt.h"
+#include "memory.h"
 
 using namespace std;
 using namespace chdl;
@@ -509,4 +510,9 @@ void chdl::techmap(ostream &out, const char* tlibFile) {
 
     nodes_to_map = next_nodes;
   }
+
+  // Print SRAM arrays
+  set<nodeid_t> m;
+  get_mem_q_nodes(m);
+  for (auto i : m) nodes[i]->print(out);
 }

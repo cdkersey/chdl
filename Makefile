@@ -48,7 +48,7 @@ submodule.o: submodule.cpp submodule.h bvec.h node.h
 latch.o: latch.cpp latch.h bvec.h bvec-basic.h gates.h reg.h lit.h node.h \
          hierarchy.h
 techmap.o: techmap.cpp techmap.h gatesimpl.h gates.h regimpl.h reg.h node.h \
-           nodeimpl.h tap.h trisimpl.h litimpl.h
+           nodeimpl.h tap.h trisimpl.h litimpl.h memory.h
 tristate.o: tristate.cpp node.h tristate.h trisimpl.h hierarchy.h
 trisimpl.o: trisimpl.cpp tristate.h trisimpl.h node.h nodeimpl.h
 order.o: order.cpp adder.h analysis.h bvec-basic.h bvec-basic-op.h bvec.h \

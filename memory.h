@@ -13,6 +13,7 @@
 
 namespace chdl {
   void get_mem_nodes(std::set<nodeid_t> &s);
+  void get_mem_q_nodes(std::set<nodeid_t> &s);
 
   template <unsigned M, unsigned N, unsigned P>
     vec<P, bvec<N>> Memory(
