@@ -24,10 +24,9 @@ node Lfsr16(const unsigned seed = 0x5eed) {
   for (unsigned i = 1; i < 16; ++i) sr[i] = Reg(sr[i-1], (seed>>i)&1);
 
   // This is a max-period LFSR for 16 bits
-  bvec<3> taps;
+  bvec<2> taps;
   taps[0] = sr[0];
-  taps[1] = sr[1];
-  taps[2] = sr[15];
+  taps[1] = sr[14];
 
   TAP(taps);
   node next = XorN(taps);
@@ -46,7 +45,7 @@ int main(int argc, char **argv) {
   optimize();
 
   ofstream wave_file("example5.vcd");
-  run(wave_file, 1000);
+  run(wave_file, 32768);
 
   ofstream netlist_file("example5.nand");
   print_netlist(netlist_file);
