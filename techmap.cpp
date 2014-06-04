@@ -305,9 +305,9 @@ void insert_tris_inverters(set<int> inv, map<nodeid_t, set<nodeid_t>> &sm) {
           if (ii) inv1 = false;
 
           new_tn.connect(
-	    (inv0 ? Inv(Inv(ti->src[i])) : ti->src[i]),
+            (inv0 ? Inv(Inv(ti->src[i])) : ti->src[i]),
             (inv1 ? Inv(Inv(ti->src[i + 1])) : ti->src[i + 1]) 
-	  );          
+          );          
         }
         tn = new_tn;
       }
@@ -392,7 +392,7 @@ void addInverters(vector<pair<tlibgate, string>> &tlib) {
       if (tg->i0->t != tlibgate::INV && tg->i0->t != tlibgate::INPUT) continue; 
       if (tg->i0->t==tlibgate::INV && tg->i0->i0->t!=tlibgate::INPUT) continue;
       if (tg->t != tlibgate::REG) {
-	if (tg->i1->t!=tlibgate::INV && tg->i1->t!=tlibgate::INPUT) continue;
+        if (tg->i1->t!=tlibgate::INV && tg->i1->t!=tlibgate::INPUT) continue;
         if (tg->i1->t==tlibgate::INV&&tg->i1->i0->t!=tlibgate::INPUT) continue;
       }
 
