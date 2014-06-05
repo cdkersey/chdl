@@ -1,6 +1,9 @@
 CHDL Near-term Roadmap
 ======================
 
+_ Remove statemachine and use cassign instead. It's no longer useful.
+_ Add cassign to the standard things in chdl.h
+
 _ Add gate transition matrices for power modeling.
   - N inputs -> 2^N x 2^N transition matrix
 
