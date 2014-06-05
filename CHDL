@@ -145,7 +145,30 @@ API
   Capitalization and Style Conventions
   ------------------------------------
 
-TODO
+Compile-time constants are rendered in ALL_CAPS with underscores representing
+word separation. This is true for both variables and constexpr functions like
+chdl::CLOG2. Within CHDL, class names and variables are all rendered in lower
+case with underscore_separators or camelCase. Functions representing ordinary
+computation are in lowerCaseCamelCase() and functions representing hardware
+modules of any type are rendered in CapitalCamelCase().
+
+      Type of Identifier | Capitalization Example
+    ---------------------+------------------------
+      Constant value     | ALL_CAPS
+      Constexpr function | ALL_CAPS()
+      Variable           | lower_case, lowerCase
+      Function           | log2(my_int)
+      Function (hardware)| Log2(my_bvec)
+
+With respect to the dimensions of code, the Linux kernel style guide
+recommendation of eighty columns and no more than a couple of hundred lines per
+function apply. Long lines are a curse to be dealt with by creative indentation.
+Indentation should be done, of course, only with ' ' characters, never with
+'\t'. Unlike Linux, the preference is for two-space indentations. This conceit
+is mainly in place to compensate for the compact line size in header files.
+
+For the sake of uniformity, projects implemented primarily with CHDL should
+attempt to follow these style guidelines as well.
 
   CLOG2() and LOG2() Utility Functions
   ------------------------------------

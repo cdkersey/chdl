@@ -240,6 +240,13 @@ void chdl::get_mem_nodes(set<nodeid_t> &s) {
   }
 }
 
+void chdl::get_mem_q_nodes(set<nodeid_t> &s) {
+  for (auto m : memories)
+    for (unsigned i = 0; i < m->q.size(); ++i)
+      for (unsigned j = 0; j < m->q[i].size(); ++j)
+        s.insert(m->q[i][j]);
+}
+
 size_t chdl::num_sram_bits() {
   size_t count(0);
   for (auto m : memories)
