@@ -30,7 +30,7 @@ memory.o: memory.cpp memory.h node.h bvec.h bvec-basic.h lit.h gates.h \
           hierarchy.h analysis.h reset.h
 nodeimpl.o: nodeimpl.cpp nodeimpl.h node.h litimpl.h lit.h reset.h
 opt.o: opt.cpp opt.h nodeimpl.h gatesimpl.h sim.h litimpl.h lit.h node.h \
-       gates.h memory.h hierarchy.h submodule.h regimpl.h
+       gates.h memory.h hierarchy.h submodule.h regimpl.h input.h
 vis.o: vis.cpp vis.h nodeimpl.h gatesimpl.h litimpl.h lit.h node.h gates.h \
        memory.h hierarchy.h
 regimpl.o: regimpl.cpp reg.h regimpl.h nodeimpl.h tickable.h node.h gates.h \

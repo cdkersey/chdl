@@ -1,6 +1,7 @@
 #include "analysis.h"
 #include "opt.h"
 #include "tap.h"
+#include "input.h"
 #include "gates.h"
 #include "nodeimpl.h"
 #include "gatesimpl.h"
@@ -214,6 +215,7 @@ void chdl::opt_dead_node_elimination() {
   get_mem_nodes(live_nodes);
   get_tap_nodes(live_nodes);
   get_reg_nodes(live_nodes);
+  get_input_nodes(live_nodes);
   get_module_inputs(live_nodes);
   get_module_outputs(live_nodes); // TODO: fix this; not necessarily live.
   
