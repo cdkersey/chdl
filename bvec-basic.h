@@ -74,7 +74,7 @@ namespace chdl {
   template <typename T> T Reg(T d, unsigned long val=0) {
     const unsigned N(sz<T>::value);
     vec<sz<T>::value, bool> x;
-    for (unsigned i = 0; i < N; ++i) x[N-i-1] = (val>>i)&1;
+    for (unsigned i = 0; i < N; ++i) x[i] = (val>>i)&1;
     return Reg(d, x); 
   }
 
