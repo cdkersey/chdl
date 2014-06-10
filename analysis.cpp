@@ -55,13 +55,9 @@ void chdl::critpath_report(ostream &out) {
   map<nodeid_t, int> longestpath;
 
   map<nodeid_t, set<nodeid_t> > succ;
-  for (nodeid_t n = 0; n < nodes.size(); ++n) {
+  for (nodeid_t n = 0; n < nodes.size(); ++n)
     for (auto s : nodes[n]->src)
       succ[s].insert(n);
-
-    regimpl *ri(dynamic_cast<regimpl*>(nodes[n]));
-    if (ri) succ[ri->d].insert(n);
-  }
 
   while (!frontier.empty()) {
     set<nodeid_t> next_frontier;

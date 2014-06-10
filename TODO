@@ -109,6 +109,10 @@ Possible future features:
     - This is implementation technology neutral, whereas our nand/inverter graph
       will, once optimized, not tmap to nor gates easily.
   _ Netlist reading
+    - This is already well-handled externally. Should this be merged into CHDL?
+  _ Instantiation file/line number trace in hierarchy.
+    - This would be difficult to do and may even require external processing,
+      but will make critical path debugging much easier.
   _ Pass manager
     - Is there any reason to optimize in an order other than the one used by
       the optimize function?
