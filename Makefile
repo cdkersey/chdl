@@ -5,7 +5,7 @@ LDLIBS += -pthread
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o \
        submodule.o latch.o techmap.o order.o tristate.o trisimpl.o reset.o \
-       assert.o chdl_present.o
+       assert.o cdomain.o chdl_present.o
 
 all : libchdl.so
 
@@ -45,7 +45,7 @@ vis.o: vis.cpp vis.h nodeimpl.h gatesimpl.h litimpl.h lit.h node.h gates.h \
 regimpl.o: regimpl.cpp reg.h regimpl.h nodeimpl.h tickable.h node.h gates.h \
            hierarchy.h
 
-tickable.o: tickable.cpp tickable.h reset.h
+tickable.o: tickable.cpp tickable.h reset.h cdomain.h
 
 sim.o: sim.cpp sim.h tickable.h tap.h reset.h
 
@@ -78,6 +78,8 @@ order.o: order.cpp adder.h analysis.h bvec-basic.h bvec-basic-op.h bvec.h \
          input.h latch.h lit.h litimpl.h llmem.h memory.h netlist.h node.h \
          nodeimpl.h opt.h reg.h regimpl.h shifter.h sim.h tap.h techmap.h \
          tickable.h vis.h
+
+cdomain.o: cdomain.cpp cdomain.h tickable.h
 
 chdl_present.o: chdl_present.cpp
 

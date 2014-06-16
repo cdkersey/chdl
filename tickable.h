@@ -1,17 +1,20 @@
 // Tickable.
-#ifndef __TICKABLE_H
-#define __TICKABLE_H
+#ifndef CHDL_TICKABLE_H
+#define CHDL_TICKABLE_H
+
+#include "cdomain.h"
 
 #include <vector>
+#include <set>
 
 namespace chdl {
   struct tickable;
 
-  extern std::vector<tickable*> tickables;
+  std::vector<std::vector<tickable*> > &tickables();
 
   class tickable {
   public:
-    tickable() { tickables.push_back(this); }
+    tickable() { tickables()[cur_clock_domain()].push_back(this); }
     ~tickable();
 
     virtual void tick() = 0;
