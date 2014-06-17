@@ -1,4 +1,5 @@
 #include <iostream>
+#include <functional>
 
 #include "sim.h"
 #include "tickable.h"
@@ -31,14 +32,5 @@ void chdl::print_time(ostream &out) {
 }
 
 void chdl::run(ostream &vcdout, cycle_t time, unsigned threads) {
-  std::vector<unsigned> &ti(tick_intervals());
-
-  print_vcd_header(vcdout);
-  print_time(vcdout);
-  for (unsigned i = now; i < time; ++i) {
-    print_taps(vcdout);
-    for (unsigned j = 0; j < ti.size(); ++j)
-      if (i%ti[j] == 0) advance(threads, j);
-    print_time(vcdout);
-  }
+  run(vcdout, [time](){ return now != time; }, threads);
 }
