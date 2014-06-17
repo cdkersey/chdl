@@ -32,5 +32,13 @@ void chdl::print_time(ostream &out) {
 }
 
 void chdl::run(ostream &vcdout, cycle_t time, unsigned threads) {
-  run(vcdout, [time](){ return now != time; }, threads);
+  run(vcdout, [time](){ return now == time; }, threads);
+}
+
+void chdl::run(ostream &vcdout, bool &stop, unsigned threads) {
+  run(vcdout, [&stop](){ return stop; }, threads);
+}
+
+void chdl::run(ostream &vcdout, bool &stop, cycle_t tmax, unsigned threads) {
+  run(vcdout, [&stop, tmax](){ return now == tmax || stop; }, threads);
 }

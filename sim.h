@@ -17,6 +17,8 @@ namespace chdl {
   template <typename T>
     void run(std::ostream &vcdout, T end_conditon, unsigned threads = 1);
 
+  void run(std::ostream &vcdout, bool &stop, unsigned threads = 1);
+  void run(std::ostream &vcdout, bool &stop, cycle_t max, unsigned threads = 1);
   void run(std::ostream &vcdout, cycle_t time, unsigned threads = 1);
 };
 
