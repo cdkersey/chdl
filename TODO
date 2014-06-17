@@ -23,12 +23,13 @@ _ A directory full of simple unit tests.
 _ Some sort of context management.
   . As a start, add a global state reset function. chdl::reset(). This will
     enable unit tests.
+  - Clock domains may be "good enough" for this.
   - CHDL is a stateful library. In some cases (like unit tests) it is nice to
     have multiple states which can be swapped in and out, preferably (using
     TLS) in a threadsafe manner. The idea:
 
       - Replace all global state variables with funcs that return references.
-      - Add a global state function to 
+      - Add a global state function
       - Use a macro to define these variables.
 
 _ Testing

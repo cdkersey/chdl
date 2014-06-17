@@ -62,7 +62,9 @@ Contents
     - Arithmetic
     - Memories
     - Optimization
+    - Clock Domains
     - Simulator
+      - Tickables, pre_tick, tick, tock, post_tock
       - C++ Interoperability (Ingress/Egress)
       - Assertions
     - Analysis
@@ -427,6 +429,12 @@ with a nested conditional:
  Optimization
  ------------
 
+ Clock Domains
+ -------------
+
+In many real-world designs, multiple clock signals are present. CHDL provides
+limited support for this, in <chdl/cdomain.h>. 
+
  Simulator
  ---------
 
@@ -436,12 +444,11 @@ with a nested conditional:
   Assertions
   ----------
 
-  CHDL provides a system for error detection using assertions. The ASSERT()
-  macro provides an easy interface for creating simulation-time assertions.
-  If the node passed to the ASSERT() macro is ever false during simulation, the
-  simulation is stopped and an error message is printed. In the following
-  example, if the simulation runs for more than 128 cycles, an error message is
-  printed:
+CHDL provides a system for error detection using assertions. The ASSERT() macro
+provides an easy interface for creating simulation-time assertions. If the node
+passed to the ASSERT() macro is ever false during simulation, the simulation is
+stopped and an error message is printed. In the following example, if the
+simulation runs for more than 128 cycles, an error message is printed:
 
     bvec<8> counter;
     counter = Reg(counter + Lit<8>(1));
