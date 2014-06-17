@@ -21,13 +21,15 @@ uninstall:
 	rm -rf $(PREFIX)/lib/libchdl.so $(PREFIX)/include/chdl
 
 assert.o: assert.cpp assert.h nodeimpl.h tickable.h node.h bvec.h bus.h tap.h \
-          sim.h reset.h
+          sim.h reset.h cdomain.h
 
 reset.o: reset.cpp reset.h
 
-gates.o: gates.cpp node.h gates.h nodeimpl.h gatesimpl.h sim.h hierarchy.h
+gates.o: gates.cpp node.h gates.h nodeimpl.h gatesimpl.h sim.h cdomain.h \
+         hierarchy.h cdomain.h
 
-gatesimpl.o: gatesimpl.cpp gatesimpl.h sim.h nodeimpl.h node.h hierarchy.h
+gatesimpl.o: gatesimpl.cpp gatesimpl.h sim.h nodeimpl.h node.h hierarchy.h \
+             cdomain.h
 
 lit.o: lit.cpp lit.h litimpl.h nodeimpl.h node.h hierarchy.h
 
@@ -37,17 +39,17 @@ memory.o: memory.cpp memory.h node.h bvec.h bvec-basic.h lit.h gates.h \
 nodeimpl.o: nodeimpl.cpp nodeimpl.h node.h litimpl.h lit.h reset.h
 
 opt.o: opt.cpp opt.h nodeimpl.h gatesimpl.h sim.h litimpl.h lit.h node.h \
-       gates.h memory.h hierarchy.h submodule.h regimpl.h input.h
+       gates.h memory.h hierarchy.h submodule.h regimpl.h input.h cdomain.h
 
 vis.o: vis.cpp vis.h nodeimpl.h gatesimpl.h litimpl.h lit.h node.h gates.h \
        memory.h hierarchy.h
 
 regimpl.o: regimpl.cpp reg.h regimpl.h nodeimpl.h tickable.h node.h gates.h \
-           hierarchy.h
+           hierarchy.h cdomain.h
 
 tickable.o: tickable.cpp tickable.h reset.h cdomain.h
 
-sim.o: sim.cpp sim.h tickable.h tap.h reset.h
+sim.o: sim.cpp sim.h tickable.h tap.h reset.h cdomain.h
 
 tap.o: tap.cpp tap.h nodeimpl.h node.h bvec.h gates.h hierarchy.h reset.h
 
@@ -77,7 +79,7 @@ order.o: order.cpp adder.h analysis.h bvec-basic.h bvec-basic-op.h bvec.h \
          chdl.h divider.h enc.h gateops.h gates.h gatesimpl.h hierarchy.h \
          input.h latch.h lit.h litimpl.h llmem.h memory.h netlist.h node.h \
          nodeimpl.h opt.h reg.h regimpl.h shifter.h sim.h tap.h techmap.h \
-         tickable.h vis.h
+         tickable.h vis.h cdomain.h
 
 cdomain.o: cdomain.cpp cdomain.h tickable.h
 
