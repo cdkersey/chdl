@@ -26,19 +26,16 @@ cdomain_handle_t chdl::new_clock_domain(unsigned interval) {
 }
 
 void chdl::set_clock_domain(cdomain_handle_t cd) {
-  cout << "Setting clock domain to " << cd << ", from "
-       << cur_clock_domain() << endl;
-
   cur_clock_domain() = cd;
 }
 
 static vector<cdomain_handle_t> &cdomainstack() {
-  static vector<cdomain_handle_t> ti{0};
-  return ti;
+  static vector<cdomain_handle_t> s{0};
+  return s;
 }
 
 cdomain_handle_t chdl::push_clock_domain(unsigned interval) {
-  set_clock_domain(new_clock_domain());
+  set_clock_domain(new_clock_domain(interval));
   cdomainstack().push_back(cur_clock_domain());
 }
 

@@ -8,7 +8,7 @@
 #include <set>
 
 namespace chdl {
-  struct tickable;
+  class tickable;
 
   std::vector<std::vector<tickable*> > &tickables();
 
@@ -17,8 +17,10 @@ namespace chdl {
     tickable() { tickables()[cur_clock_domain()].push_back(this); }
     ~tickable();
 
-    virtual void tick() = 0;
-    virtual void tock() = 0;
+    virtual void pre_tick() {}
+    virtual void tick() {}
+    virtual void tock() {}
+    virtual void post_tock() {}
   };
 };
 

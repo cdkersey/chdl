@@ -4,6 +4,7 @@
 #include "tickable.h"
 #include "tap.h"
 #include "reset.h"
+#include "cdomain.h"
 
 using namespace chdl;
 using namespace std;
@@ -14,11 +15,15 @@ CHDL_REGISTER_RESET(reset_now);
 
 cycle_t chdl::sim_time() { return now; }
 
-cycle_t chdl::advance(unsigned threads) {
-  for (auto &t : tickables()[0]) t->tick();
-  for (auto &t : tickables()[0]) t->tock();
+cycle_t chdl::advance(unsigned threads, cdomain_handle_t cd) {
+  for (auto &t : tickables()[cd]) t->pre_tick();
+  for (auto &t : tickables()[cd]) t->tick();
+  for (auto &t : tickables()[cd]) t->tock();
+  for (auto &t : tickables()[cd]) t->post_tock();
 
-  return now++;
+  if (cd == 0) now++;
+
+  return now;
 }
 
 void chdl::print_time(ostream &out) {
@@ -26,11 +31,14 @@ void chdl::print_time(ostream &out) {
 }
 
 void chdl::run(ostream &vcdout, cycle_t time, unsigned threads) {
+  std::vector<unsigned> &ti(tick_intervals());
+
   print_vcd_header(vcdout);
   print_time(vcdout);
   for (unsigned i = now; i < time; ++i) {
     print_taps(vcdout);
-    advance(threads);
+    for (unsigned j = 0; j < ti.size(); ++j)
+      if (i%ti[j] == 0) advance(threads, j);
     print_time(vcdout);
   }
 }
