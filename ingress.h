@@ -3,6 +3,7 @@
 
 #include "chdl.h"
 #include "nodeimpl.h"
+#include "sim.h"
 
 #include <functional>
 
@@ -17,12 +18,17 @@ namespace chdl {
 
   template <typename T> class ingressimpl : public nodeimpl {
   public:
-    ingressimpl(T f): nodeimpl(), f(f) {} 
-    bool eval() { return f(); }
+    ingressimpl(T f): nodeimpl(), f(f), eval_time(0) {} 
+    bool eval() {
+      if (sim_time() >= eval_time) { val = f(); eval_time = sim_time() + 1; }
+      return val;
+    }
 
     void print(std::ostream &out) { abort(); }
     void print_vl(std::ostream &out) { abort(); }
   private:
+    cycle_t eval_time;
+    bool val;
     T f;
   };
 
