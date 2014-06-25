@@ -18,7 +18,7 @@ namespace chdl {
 
   template <typename T> class ingressimpl : public nodeimpl {
   public:
-    ingressimpl(T f): nodeimpl(), f(f), eval_time(0) {} 
+  ingressimpl(T f): nodeimpl(), f(f), eval_time(0), val(0) {} 
     bool eval() {
       if (sim_time() >= eval_time) { val = f(); eval_time = sim_time() + 1; }
       return val;

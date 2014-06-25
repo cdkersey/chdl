@@ -106,7 +106,7 @@ void chdl::print_taps(ostream &out) {
   for (auto t : taps) {
     if (t.second.size() > 1) out << 'b';
     for (int j = t.second.size()-1; j >= 0; --j)
-      out << nodes[t.second[j]]->eval();
+      out << (nodes[t.second[j]]->eval() ? '1' : '0');
     if (t.second.size() > 1) out << ' ';
     out << t.first << endl;
   }
