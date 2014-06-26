@@ -22,11 +22,11 @@ tickable::~tickable() {
   vector<tickable*> dest;
   for (unsigned j = 0; j < tickables().size(); ++j) {
     bool found(false);
-    for (unsigned i = 0; i < tickables().size(); ++i)
+    for (unsigned i = 0; i < tickables()[j].size(); ++i)
       if (tickables()[j][i] == this) found = true;
 
     if (found) {
-      for (unsigned i = 0; i < tickables().size(); ++i)
+      for (unsigned i = 0; i < tickables()[j].size(); ++i)
         if (tickables()[j][i] != this) dest.push_back(tickables()[j][i]);
 
       tickables()[j] = dest;
