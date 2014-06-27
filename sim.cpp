@@ -47,6 +47,8 @@ void chdl::run(ostream &vcdout, function<bool()> end_condition,
       if (sim_time()%ti[j] == 0) advance(threads, j);
     print_time(vcdout);
   } while (!end_condition());
+
+  call_final_funcs();
 }
 
 
@@ -60,4 +62,17 @@ void chdl::run(ostream &vcdout, bool &stop, unsigned threads) {
 
 void chdl::run(ostream &vcdout, bool &stop, cycle_t tmax, unsigned threads) {
   run(vcdout, [&stop, tmax](){ return now == tmax || stop; }, threads);
+}
+
+vector<function<void()> > &final_funcs() {
+  static vector<function<void()> > &ff(*(new vector<function<void()> >()));
+  return ff;
+}
+
+void chdl::finally(function<void()> f) {
+  final_funcs().push_back(f);
+}
+
+void chdl::call_final_funcs() {
+  for (auto f : final_funcs()) f();
 }

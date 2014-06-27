@@ -19,5 +19,8 @@ namespace chdl {
   void run(std::ostream &vcdout, bool &stop, cycle_t max, unsigned threads = 1);
   void run(std::ostream &vcdout, cycle_t time, unsigned threads = 1);
   void run(std::ostream &vcdout, std::function<bool()> end, unsigned threads=1);
+
+  void finally(std::function<void()> f);
+  void call_final_funcs();
 };
 #endif
