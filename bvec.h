@@ -17,6 +17,7 @@ namespace chdl {
 
   template <unsigned N, typename T> class vec {
     public:
+      virtual ~vec() {}
       vec() {}
       vec(const T &r) { for (unsigned i = 0; i < N; ++i) nodes[i] = r; }
       vec(std::initializer_list<T> l) {
