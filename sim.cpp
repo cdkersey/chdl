@@ -10,7 +10,7 @@
 using namespace chdl;
 using namespace std;
 
-static cycle_t now = 0;
+cycle_t chdl::now = 0;
 static void reset_now() { now = 0; }
 CHDL_REGISTER_RESET(reset_now);
 

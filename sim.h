@@ -11,6 +11,8 @@
 namespace chdl {
   typedef unsigned long long cycle_t;
 
+  extern cycle_t now;
+
   cycle_t sim_time();
   void print_time(std::ostream&);
   cycle_t advance(unsigned threads=1, cdomain_handle_t cd = 0);

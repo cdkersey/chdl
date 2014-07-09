@@ -42,6 +42,11 @@ _ Testing
       - Records of improvements to optimization (with nontrivial designs) over
         time.
 
+_ Duplicate input removal:
+  - For large multi-input and and or functions, remove duplicate inputs. The
+    existing keyhole optimizations probably wouldn't do anything with
+    And(And(a, b), And(a, c)) (verify this first)
+
 _ Rebalancing optimization
   _ Normalize to chains [And(And(And(And(a), b), c), d)]. These are easier to
     route(probably; check), but O(n) in both time and space.
