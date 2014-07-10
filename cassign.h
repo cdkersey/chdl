@@ -1,24 +1,56 @@
 #ifndef CHDL_CASSIGN_H
 #define CHDL_CASSIGN_H
 
+#include <sstream>
 #include <stack>
 
 #include "bvec.h"
 
+#define GCC_CASSIGN_INSTRUMENTATION
+
 namespace chdl {
   template <unsigned N> struct cassign {
     cassign(const bvec<N> &v): v(v) {}
-    cassign<N> IF(node x, const bvec<N> &a) {
+
+    cassign<N> IF(node x, const bvec<N> &a
+      #ifdef GCC_CASSIGN_INSTRUMENTATION
+                  ,const char* func = __builtin_FUNCTION(),
+                  unsigned line = __builtin_LINE()
+      #endif
+    ) {
+      #ifdef GCC_CASSIGN_INSTRUMENTATION
+      std::ostringstream hstr;
+      hstr << "IF," << func << ':' << line;
+      hierarchy_enter(hstr.str());
+      #else
+      HIERARCHY_ENTER();
+      #endif
       bvec<N> bv;
       v = Mux(x, bv, a);
+      hierarchy_exit();
 
       return cassign(bv);
     }
 
-    cassign<N> IF(node x) {
+    cassign<N> IF(node x
+      #ifdef GCC_CASSIGN_INSTRUMENTATION
+                  ,const char* func = __builtin_FUNCTION(),
+                  unsigned line = __builtin_LINE()
+      #endif
+    ) {
+      #ifdef GCC_CASSIGN_INSTRUMENTATION
+      std::ostringstream hstr;
+      hstr << "IF," << func << ':' << line;
+      hierarchy_enter(hstr.str());
+      #else
+      HIERARCHY_ENTER();
+      #endif
+
       bvec<N> nested_val;
       cassign<N> nest(nested_val);
       cstack.push(IF(x, nested_val));
+      hierarchy_exit();
+
       return nest;
     }
 
