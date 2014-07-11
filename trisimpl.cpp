@@ -35,7 +35,7 @@ void tristateimpl::print(ostream &os) {
 
 void tristateimpl::print_vl(ostream &os) {
   for (unsigned i = 0; i < src.size(); i += 2) {
-    os << "  bufif1 __t" << id << "(__x" << id << ", "
+    os << "  bufif1 __t" << id << '_' << i/2 << "(__x" << id << ", "
        << "__x" << src[i] << ", __x" << src[i+1] << ");" << endl;
   }
 }
