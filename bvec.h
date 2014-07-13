@@ -20,12 +20,22 @@ namespace chdl {
       virtual ~vec() {}
       vec() {}
       vec(const T &r) { for (unsigned i = 0; i < N; ++i) nodes[i] = r; }
+
+      template <typename U> vec(const vec<N, U> &v) {
+        for (unsigned i = 0; i < N; ++i) nodes[i] = v[i];
+      }
+
       vec(std::initializer_list<T> l) {
         unsigned i(0);
         for (auto &x : l) nodes[i++] = x;
       }
 
-      vec &operator=(const vec& r) {
+      vec &operator=(const vec &r) {
+        for (unsigned i = 0; i < N; ++i) nodes[i] = r[i];
+        return *this;
+      }
+
+      template <typename U> vec &operator=(const vec<N, U> &r) {
         for (unsigned i = 0; i < N; ++i) nodes[i] = r[i];
         return *this;
       }
