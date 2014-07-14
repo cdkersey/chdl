@@ -37,9 +37,11 @@ static vector<cdomain_handle_t> &cdomainstack() {
 cdomain_handle_t chdl::push_clock_domain(unsigned interval) {
   set_clock_domain(new_clock_domain(interval));
   cdomainstack().push_back(cur_clock_domain());
+  return cur_clock_domain();
 }
 
 cdomain_handle_t chdl::pop_clock_domain() {
   cdomainstack().pop_back();
   cur_clock_domain() = *(cdomainstack().rbegin());
+  return cur_clock_domain();
 }
