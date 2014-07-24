@@ -3,10 +3,10 @@
 using namespace std;
 using namespace chdl;
 
-bool invimpl::eval() {
-  if (t_cval != sim_time()) {
-    cval = !(nodes[src[0]]->eval());
-    t_cval = sim_time();
+bool invimpl::eval(cdomain_handle_t cd) {
+  if (t_cval != sim_time(cd)) {
+    cval = !(nodes[src[0]]->eval(cd));
+    t_cval = sim_time(cd);
   }
 
   return cval;
@@ -21,10 +21,10 @@ void invimpl::print_vl(ostream &out) {
       << endl;
 }
 
-bool nandimpl::eval() {
-  if (t_cval != sim_time()) {
-    cval =  !(nodes[src[0]]->eval() && nodes[src[1]]->eval());
-    t_cval = sim_time();
+bool nandimpl::eval(cdomain_handle_t cd) {
+  if (t_cval != sim_time(cd)) {
+    cval =  !(nodes[src[0]]->eval(cd) && nodes[src[1]]->eval(cd));
+    t_cval = sim_time(cd);
   }
 
   return cval;

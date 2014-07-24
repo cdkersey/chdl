@@ -3,6 +3,7 @@
 
 #include "nodeimpl.h"
 #include "tickable.h"
+#include "cdomain.h"
 
 #include <iostream>
 
@@ -11,12 +12,12 @@ namespace chdl {
     regimpl(node d);
     ~regimpl();
 
-    bool eval();
+    bool eval(cdomain_handle_t cd);
     void print(std::ostream &out);
     void print_vl(std::ostream &out);
 
-    void tick() { next_q = nodes[d]->eval(); }
-    void tock() { q = next_q; }
+    void tick(cdomain_handle_t cd) { next_q = nodes[d]->eval(cd); }
+    void tock(cdomain_handle_t cd) { q = next_q; }
 
     node d;
 

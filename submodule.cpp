@@ -1,5 +1,6 @@
 #include "submodule.h"
 #include "nodeimpl.h"
+#include "cdomain.h"
 
 using namespace std;
 using namespace chdl;
@@ -11,7 +12,7 @@ class mnodeimpl : public nodeimpl {
     mnodeimpl(module &m): nodeimpl(), m(m), first(m.first_output)
       { m.first_output = false; }
     
-    bool eval() {
+    bool eval(cdomain_handle_t cd) {
       cerr << "Attempted to simulate a design containing submodules." << endl;
       abort();
     }

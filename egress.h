@@ -1,6 +1,7 @@
 #ifndef __CHDL_EGRESS_H
 #define __CHDL_EGRESS_H
 #include "nodeimpl.h"
+#include "cdomain.h"
 #include "tickable.h"
 #include "tap.h"
 
@@ -15,7 +16,7 @@ namespace chdl {
   public:
     egress(const T& x, node n): n(n), x(x) { gtap(n); }
 
-    void pre_tick() { x(nodes[n]->eval()); }
+    void pre_tick(cdomain_handle_t cd) { x(nodes[n]->eval(cd)); }
   private:
     node n;
     T x;

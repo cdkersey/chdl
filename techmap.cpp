@@ -207,7 +207,7 @@ bool tlibgate::match(nodeid_t n, int g, mapping &m) {
     }
   } else if (t == HIGH || t == LOW) {
     litimpl *p(dynamic_cast<litimpl*>(nodes[n]));
-    rval = (p && p->eval() == (t == HIGH));
+    rval = (p && p->eval(0) == (t == HIGH));
   }
 
   if (!rval) m.input = bak;

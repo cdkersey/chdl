@@ -9,7 +9,7 @@ namespace chdl {
   public:
     invimpl(node in): t_cval(~0ull) { src.push_back(in); }
 
-    virtual bool eval();
+    virtual bool eval(cdomain_handle_t cd);
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
   private:
@@ -23,7 +23,7 @@ namespace chdl {
       src.push_back(a); src.push_back(b);
     }
 
-    virtual bool eval();
+    virtual bool eval(cdomain_handle_t cd);
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 

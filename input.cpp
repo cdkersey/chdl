@@ -20,7 +20,7 @@ class inputimpl : public nodeimpl {
   public:
     inputimpl(string n, int i=-1): nodeimpl(), name(n), pos(i) {}
     
-    bool eval() {
+    bool eval(cdomain_handle_t cd) {
       cerr << "Attempted to simulate a design with unassociated inputs."
            << endl;
       abort();

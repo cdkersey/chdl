@@ -5,6 +5,7 @@
 #include "litimpl.h"
 #include "lit.h"
 #include "reset.h"
+#include "cdomain.h"
 
 using namespace std;
 using namespace chdl;
@@ -24,7 +25,7 @@ static void clear_nodes() {
 }
 CHDL_REGISTER_RESET(clear_nodes);
 
-bool litimpl::eval() { return val; }
+bool litimpl::eval(cdomain_handle_t cd) { return val; }
 
 void litimpl::print(ostream &out) {
   if (undef)  out << "  litX " << id << endl;

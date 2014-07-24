@@ -11,14 +11,15 @@
 #include "regimpl.h"
 #include "analysis.h"
 #include "reset.h"
+#include "cdomain.h"
 
 using namespace chdl;
 using namespace std;
 
-unsigned long toUint(vector<node> &v) {
+unsigned long toUint(vector<node> &v, cdomain_handle_t cd) {
   unsigned long r(0);
   for (unsigned i = 0; i < v.size(); ++i)
-    if (nodes[v[i]]->eval()) r |= 1ul<<i;
+    if (nodes[v[i]]->eval(cd)) r |= 1ul<<i;
   return r;
 }
 
@@ -34,8 +35,8 @@ struct memory : public tickable {
 
   vector<node> add_read_port(vector<node> &qa);
 
-  void tick();
-  void tock();
+  void tick(cdomain_handle_t cd);
+  void tock(cdomain_handle_t cd);
 
   void print(ostream &out);
   void print_vl(ostream &out);
@@ -56,17 +57,19 @@ struct memory : public tickable {
   bool sync;
 };
 
-void memory::tick() {
-  do_write = nodes[w]->eval();
-  if (sync) for (unsigned i = 0; i < qa.size(); ++i) raddr[i] = toUint(qa[i]);
-  waddr = toUint(da);
+void memory::tick(cdomain_handle_t cd) {
+  do_write = nodes[w]->eval(cd);
+  if (sync)
+    for (unsigned i = 0; i < qa.size(); ++i) raddr[i] = toUint(qa[i], cd);
+
+  waddr = toUint(da, cd);
 
   if (do_write)
     for (unsigned i = 0; i < d.size(); ++i)
-      wrdata[i] = nodes[d[i]]->eval();
+      wrdata[i] = nodes[d[i]]->eval(cd);
 }
 
-void memory::tock() {
+void memory::tock(cdomain_handle_t cd) {
   if (sync)
     for (unsigned i = 0; i < q.size(); ++i)
       for (unsigned j = 0; j < d.size(); ++j)
@@ -149,11 +152,11 @@ struct qnodeimpl : public nodeimpl {
   qnodeimpl(memory *mem, unsigned port, unsigned idx):
     mem(mem), port(port), idx(idx) {}
 
-  bool eval() {
+  bool eval(cdomain_handle_t cd) {
     if (mem->sync)
       return mem->rdval[port][idx];
     else
-      return mem->contents[toUint(mem->qa[port])*mem->d.size() + idx];
+      return mem->contents[toUint(mem->qa[port], cd)*mem->d.size() + idx];
   }
 
   void print(ostream &out) { if (port == 0 && idx == 0) mem->print(out); }

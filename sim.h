@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <functional>
+#include <vector>
 
 #include "tickable.h"
 #include "tap.h"
@@ -11,9 +12,9 @@
 namespace chdl {
   typedef unsigned long long cycle_t;
 
-  extern cycle_t now;
+  extern std::vector<cycle_t> now;
 
-  cycle_t sim_time();
+  cycle_t sim_time(cdomain_handle_t cd = 0);
   void print_time(std::ostream&);
   cycle_t advance(unsigned threads=1, cdomain_handle_t cd = 0);
 

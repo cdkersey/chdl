@@ -15,12 +15,12 @@ void tristateimpl::connect(node in, node enable) {
   // assert(src.size() % 2 == 0);
 }
 
-bool tristateimpl::eval() {
+bool tristateimpl::eval(cdomain_handle_t cd) {
   unsigned nDriven(0);
   bool rval(true);
   for (unsigned i = 0; i < src.size(); i += 2) {
     nodeimpl *pi(nodes[src[i]]), *pe(nodes[src[i+1]]);
-    if (pe->eval()) { ++nDriven; rval = pi->eval(); }
+    if (pe->eval(cd)) { ++nDriven; rval = pi->eval(cd); }
   }
   // assert(nDriven <= 1);
   if (nDriven > 1) std::abort(); // A tri-state node must have exactly 1 driver

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <functional>
+#include <vector>
 
 #include "sim.h"
 #include "tickable.h"
@@ -10,25 +11,25 @@
 using namespace chdl;
 using namespace std;
 
-cycle_t chdl::now = 0;
-static void reset_now() { now = 0; }
+vector<cycle_t> chdl::now{0};
+static void reset_now() { now = vector<cycle_t>(1); }
 CHDL_REGISTER_RESET(reset_now);
 
-cycle_t chdl::sim_time() { return now; }
+cycle_t chdl::sim_time(cdomain_handle_t cd) { return now[cd]; }
 
 cycle_t chdl::advance(unsigned threads, cdomain_handle_t cd) {
-  for (auto &t : tickables()[cd]) t->pre_tick();
-  for (auto &t : tickables()[cd]) t->tick();
-  for (auto &t : tickables()[cd]) t->tock();
-  for (auto &t : tickables()[cd]) t->post_tock();
+  for (auto &t : tickables()[cd]) t->pre_tick(cd);
+  for (auto &t : tickables()[cd]) t->tick(cd);
+  for (auto &t : tickables()[cd]) t->tock(cd);
+  for (auto &t : tickables()[cd]) t->post_tock(cd);
 
-  if (cd == 0) now++;
+  now[cd]++;
 
-  return now;
+  return now[cd];
 }
 
 void chdl::print_time(ostream &out) {
-  out << '#' << now << endl;  
+  out << '#' << now[0] << endl;  
 }
 
 void chdl::run(ostream &vcdout, function<bool()> end_condition,
@@ -53,7 +54,7 @@ void chdl::run(ostream &vcdout, function<bool()> end_condition,
 
 
 void chdl::run(ostream &vcdout, cycle_t time, unsigned threads) {
-  run(vcdout, [time](){ return now == time; }, threads);
+  run(vcdout, [time](){ return now[0] == time; }, threads);
 }
 
 void chdl::run(ostream &vcdout, bool &stop, unsigned threads) {
@@ -61,7 +62,7 @@ void chdl::run(ostream &vcdout, bool &stop, unsigned threads) {
 }
 
 void chdl::run(ostream &vcdout, bool &stop, cycle_t tmax, unsigned threads) {
-  run(vcdout, [&stop, tmax](){ return now == tmax || stop; }, threads);
+  run(vcdout, [&stop, tmax](){ return now[0] == tmax || stop; }, threads);
 }
 
 vector<function<void()> > &final_funcs() {

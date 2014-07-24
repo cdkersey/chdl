@@ -9,7 +9,7 @@ namespace chdl {
     litimpl(bool v): val(v), undef(0) {}
     litimpl(): val(0), undef(1) {}
 
-    virtual bool eval();
+    virtual bool eval(cdomain_handle_t cd);
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 

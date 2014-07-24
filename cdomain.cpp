@@ -1,5 +1,6 @@
 #include "cdomain.h"
 #include "tickable.h"
+#include "sim.h"
 
 #include <vector>
 #include <stack>
@@ -22,6 +23,7 @@ cdomain_handle_t chdl::new_clock_domain(unsigned interval) {
   cdomain_handle_t h(tick_intervals().size());
   tick_intervals().push_back(interval);
   tickables().push_back(vector<tickable*>());
+  now.push_back(0);
   return h;  
 }
 

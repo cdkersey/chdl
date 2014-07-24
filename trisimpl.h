@@ -3,6 +3,7 @@
 
 #include "node.h"
 #include "nodeimpl.h"
+#include "cdomain.h"
 
 #include <vector>
 
@@ -13,7 +14,7 @@ namespace chdl {
    public:
     void connect(node in, node enable);
 
-    bool eval();
+    bool eval(cdomain_handle_t cd);
 
     void print(std::ostream &os);
     void print_vl(std::ostream &os);
