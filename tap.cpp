@@ -103,11 +103,11 @@ void chdl::print_io_tap_nodes(ostream &out) {
   }
 }
 
-void chdl::print_taps(ostream &out) {
+void chdl::print_taps(ostream &out, cdomain_handle_t cd) {
   for (auto t : taps) {
     if (t.second.size() > 1) out << 'b';
     for (int j = t.second.size()-1; j >= 0; --j)
-      out << (nodes[t.second[j]]->eval(0) ? '1' : '0');
+      out << (nodes[t.second[j]]->eval(cd) ? '1' : '0');
     if (t.second.size() > 1) out << ' ';
     out << t.first << endl;
   }
