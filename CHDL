@@ -33,7 +33,7 @@ Contents
     - Register
     - Vector
   - API
-    - CLOG2() and Log2() Utility Functions
+    - CLOG2() and LOG2() Utility Functions
     - Nodes
       - Literals
       - Fundamental Gates
@@ -116,8 +116,8 @@ the simulation of the design. Because each node represents the output of a gate
 or an input to a circuit, the nodes themselves are considered synonymous with
 the objects of which they are outputs.
 
-  Register
-  --------
+   Register
+   --------
 
 In the context of CHDL design, registers can be thought of as simple delay
 elements. There is an implicit global clock signal making periodic transitions
@@ -208,8 +208,8 @@ sequent uses, but all prior uses as well:
 The downside to this is that copies performed by container objects, formerly
 benign, now have the capacity to unwittingly overwrite nodes.
 
-  Literals
-  --------
+   Literals
+   --------
 
 A literal in CHDL is a node with a time-constant value:
 
@@ -222,6 +222,67 @@ Literals are typically used as arguments to functions:
 
 The CHDL optimization system ensures that these are efficiently compacted, often
 disappearing altogether. For example, Or(And(Lit(1), x), y).
+
+   Fundamental Gates
+   -----------------
+
+In CHDL, the fundamental gate types are nand gates and inverters. These can be
+created using the functions "Nand" and "Inv". From these, any other Boolean
+logic function can be constructed.
+
+   Registers
+   ---------
+
+In addition to combinational logic, there must also be a fundamental unit for
+building sequential logic. In CHDL, this is the register, generated using the
+Reg() function. Its output is initially 0 and subsequently represents the input
+time-shifted by a single cycle.
+
+   Special Nodes
+   -------------
+
+The node implementation base object (nodeimpl) can be overloaded to create a
+variety of "special" nodes. Without full support from optimization, code
+generation, and technology mapping utilities, however, these can lead to designs
+that can be simulated but not technology mapped or output as Verilog.
+
+The most prevalent "special" node types are those used to implement static RAMs.
+These are fairly well-hidden from the end user and not exposed in any header
+files.
+
+   Tri-state Nodes
+   ---------------
+
+While most circuits involving tri-state elements could be reduced to circuits
+using multiplexers and optimized and simulated without any knowledge of these
+tri-state pieces, both the optimization of circuits for technology mapping and
+the interfacing requirements of circuits demand that a tri-state node type be
+included. These behave similarly to ordinary node objects, but include a
+connect() member function to be used to attach inputs (along with enable
+signals). Tri-state nodes that are made outputs become input/output signals.
+
+The following example implements a transceiver on a bi-directional serial bus:
+
+  tristatenode io;
+  OUTPUT(io);
+
+  node tx, tx_d, rx, rx_d;
+  io.connect(tx, tx_d);
+  rx_d = io && rx; // The and gate is likely not necessary.
+
+   Module Inputs
+   -------------
+
+Input nodes cannot be simulated, but do  participate in synthesis and will
+become, in netlist outputs, ports of the design. In a typical design, input
+nodes will be part of the top level design used for synthesis, and these will
+be replaced by other logic in a different top level design used for simulation.
+
+The following code generates a simple synthesizeable design with one input port
+called "in" and one output port called "out":
+
+  node in = Input("in"), out = Inv(in);
+  OUTPUT(out);
 
   Gates
   -----
@@ -236,20 +297,6 @@ user and provides the usual complement of basic logic gates:
        x_nor_y = Nor(x, y),
        x_xor_y = Xor(x, y),
        x_2mux_y = Mux(z, x, y);
-
-  Module Inputs
-  -------------
-
-Input nodes cannot be simulated, but do participate in synthesis and will
-become, in netlist outputs, ports of the design. In a typical design, input
-nodes will be part of the top level design used for synthesis, and these will
-be replaced by other logic in a different top level design used for simulation.
-
-The following code generates a simple synthesizeable design with one input port
-called "in" and one output port called "out":
-
-  node in = Input("in"), out = Inv(in);
-  OUTPUT(out);
 
  Basic Operator Overloads
  ------------------------
@@ -278,12 +325,15 @@ vecs, e.g. vec<M, vec<N, node> >, vec<M, vec<N, bvec<8> > >, etc.
  Vector Operator Overloads
  -------------------------
 
- Indexing
- --------
+The following sections describe the operator overloads provided for use with
+CHDL vectors.
 
-The most important operation provided by vec is the indexing operator []. The
-input can be either an integer or a range<A, B> object. Examples of valid uses
-of the indexing operator:
+  Indexing
+  --------
+
+The most basic operation provided by vec is the indexing operator []. The input
+can be either an integer or a range<A, B> object. Examples of valid uses of the
+indexing operator:
 
   bvec<8> x, y;
 
@@ -297,36 +347,116 @@ of the indexing operator:
   c = a[range<0, 15>()];
   d = a[range<8, 23>()];
 
- Logic
- -----
+  Logic
+  -----
 
 Bitwise logic operations, equivalent to their C/C++ counterparts, are provided
 for convenience, including &, |, ^, and ~.
 
- Arithmetic
- ----------
+  Arithmetic
+  ----------
 
-A full set of arithmetic operators are provided as well, but these must be used
-with caution. While adders are cheap and multipliers only somewhat expensive,
-frequent use of dividers can easily lead to intractable designs.
+A full set of arithmetic operators are provided as well, including +, *, /, and
+unary and binary -, but these must be used with caution. While adders are cheap 
+and multipliers only somewhat expensive, frequent use of dividers can easily
+lead to intractable designs, especially for large bit widths. A good rule of
+thumb is to assume that the delay of an adder is proportional to the logarithm
+of the bit width (Log(N)), the delay of a multiplier is proportional to Log(N)
+times a somewhat larger constant, and the delat of a divider is proportional to
+N*Log(N) with approximately the same constant factor as adders.
 
- Equality
- --------
+  Comparison
+  ----------
 
- Shift
- -----
+Comparison operators (!=, ==, <, >, <=, and >=) have been provided for vectors
+of nodes (bvecs), all treating the inputs as unsigned binary integers.
+
+  Shift
+  -----
+
+Logical shift operations are also provided using the >> and << operators. The
+second argument is expected to be ceil(log2(N)) bits long.
 
  Vector Concatenation
  --------------------
 
+In addition to the operator overloads, several functions are provided for
+manipulating vectors. The most basic of these are the Cat() functions, providing
+various methods of vector concatenation:
+
+  bvec<N> a, b;
+  node x, y;
+
+                           // The resulting vector:
+  bvec<N+1> xa(Cat(x, a)), //   [x, a[N-1], ..., a[0]]
+            by(Cat(b, y)); //   [b[N-1], ..., b[0], y]
+  bvec<2*N> ab(Cat(a, b)); //   [a[N-1], ..., a[0], b[N-1], ..., b[0]]
+
+In addition to the basic 2-argument Cat() functions, there is a multi-argument
+Cat() function with the following syntax:
+
+  node x;
+  bvec<N> a, b;
+  bvec<M> c, d;
+
+  bvec<1 + 2*M + 2*N> xadbc(Cat(x).Cat(a).Cat(d).Cat(b).Cat(c));
+
+It may be tempting to use concatenators to construct aggregate types (bundles of
+signals) and indeed this was an early use, but the currently preferred technique
+is to use the aggregate types provided by the CHDL STL.
+
  Encoders and Decoders
  ---------------------
+
+A set of common digital logic circuits provided by CHDL are encoders (including
+priority encoders) and decoders.
+
+  node enable;
+  bvec<N> x, x_out;
+  bvec<CLOG2(N)> x_msb, x_lsb;
+  bvec<(1<<N)> x_1hot;
+
+  x_1hot = Decoder(x, enable);
+  x_out = Enc(x_1hot); // Output undefined if input not 1-hot
+
+  // Two common types of priority encoder.
+  x_msb = Log2(x);
+  x_lsb = Lsb(x);
 
  Higher-order Arrays
  -------------------
 
+The CHDL vec<> type does not simply decribe a bit vector; a vector of nodes. It
+is in fact a general fixed-length vector type; like a fixed-length complement to
+the C++ standard library's vector<>, with some features designed specifically
+for CHDL-related data types.
+
+Nested vector types are particularly useful, providing a form of multi-
+dimensional vector. In the following example, this multidimensional vector
+provides a low-level implementation of a register file or SRAM:
+
+  node wr;
+  bvec<16> q, d;
+  vec<8, bvec<16> > r;
+  bvec<3> sel;
+
+  bvec<8> w(Decoder(sel, wr));
+
+  for (unsigned i = 0; i < 8; ++i)
+    r[i] = Wreg(w[i], d);
+
+  q = Mux(sel, r);
+
+  TAP(r); // Shows up in .vcd file as r_0, r_1, ..., r_7
+
   Flatten
   -------
+
+The flatten() function takes a multidimensional vector input and reduces it to a
+single-dimensonal vector containing all of the nodes of the input in depth-first
+order. Continuing the register file example from the previous section:
+
+  bvec<8 * 16> all_regs(Flatten(r));
 
  chdl::sz<T> Template
  -----------------
@@ -348,6 +478,44 @@ This is, in fact, how the size of the Flatten template's return type is defined.
 
  Multiplexers
  ------------
+
+The Mux() functions provide multiplexers in CHDL. There are two basic kinds of
+multiplexers. The first type maps an input of type vec<N, T> to a single output
+of a type T with a select signal of type bvec<CLOG2(N)>. The other kind has two
+signal inputs and a select input. The first signal input corresponds to a select
+signal value of 0. This is the reverse from the ternary operator it replaces.
+Unfortunately, in C++, the ?: operator cannot be overloaded.
+
+The first example is a simple if-then scenario. We have a counter we would like 
+to count from 0 to 100 and then repeat:
+
+  bvec<7> ctr;
+  ctr = Reg(Mux(ctr == Lit<7>(100),
+                  ctr + Lit<7>(1),
+                  Lit<7>(0)));
+
+In the second example, we build a simple ROM with a bit-serial output:
+
+  bvec<3> sel;
+  vec<8, bvec<8> > rom;
+
+  rom[0] = Lit<8>(0x43);
+  rom[1] = Lit<8>(0x48);
+  rom[2] = Lit<8>(0x44);
+  rom[3] = Lit<8>(0x4c);
+
+  rom[4] = Lit<8>(0x63);
+  rom[5] = Lit<8>(0x68);
+  rom[6] = Lit<8>(0x64);
+  rom[7] = Lit<8>(0x6c);
+
+  bvec<3> ctr; ctr = Reg(ctr + Lit<3>(1));
+
+  bvec<8> q_parallel = Mux(sel, rom);
+  node q_serial = Mux(ctr, q_parallel);
+
+It is assumed that sel remains stable throughout the eight cycles necessary to
+transmit a result.
 
  Conditional Assignment
  ----------------------
@@ -417,8 +585,40 @@ with a nested conditional:
  Buses
  -----
 
+The tri-state complement to the bvec is called a bus. Unlike the bvec, which is
+simply an alias template for vec<N, node>, the bus is a class that inherits from
+vec<N, tristatenode>, providing a connect() member function just like the node
+level connect function.
+
  Inputs and Outputs
  ------------------
+
+CHDL designs are frequently used as parts of larger designs. The way for signals
+to get into a CHDL design are through the use of the Input() function. There are
+two related ways for signals to leave a CHDL design. "Taps" are signals that
+show up in simulation and are named in Verilog output but are not exposed as
+ports in generated Verilog code and may optionally not be provided as outputs
+from generated netlists. "Outputs" do show up as ports for generated Verilog
+code as well as netlists. The following example uses several of the provided
+interfaces for creating taps, inputs, and outputs:
+
+  bvec<3> sel;
+  vec<8, bvec<N> > x;
+  TAP(x);
+  q = Mux(sel, x);
+  OUTPUT(q);
+  tap("x5_out", x[5], true); // The final parameter makes this an output.
+
+  x[0] = Input("x_zero");
+
+Outputs that are also tri-state become in/out signals both in CHDL netlists and
+generated Verilog code.
+
+A concept called a "ghost tap" is provided to assist the optimizer. The purpose
+of the ghost tap is to prevent a given node from being optimized away as a
+"dead" (unused) signal. The gtap() family of functions provide support for this.
+It is mostly used to signify nodes that will be read by other pieces of
+software.
 
  Arithmetic
  ----------
@@ -429,17 +629,92 @@ with a nested conditional:
  Optimization
  ------------
 
+CHDL provides a simple logic optimization system designed to enable design
+flexibility without sacrificing performance. For example, a multiplexer can be
+given a literal as an input, leading to the multiplexer and all of its
+non-active inputs being optimized away. If the result from an multiplier is
+truncated, the logic for those bits disappears. For the typical CHDL user, most
+of what needs to be known about optimization is that it is a necessary step for
+fast simulation and compact output files, and that the way to invoke it is by
+calling the optimize() function.
+
  Clock Domains
  -------------
 
 In many real-world designs, multiple clock signals are present. CHDL provides
-limited support for this, in <chdl/cdomain.h>. 
+limited support for this, in <chdl/cdomain.h>.  By setting the tick interval for
+a given clock domain in units of a fundamental unitless clock tick rate, the
+relative rate of progression of different clock domains in simulation can be
+selected. By calling the internal simulation functions and specifying clock
+domains, clock domains can be manually advanced relative to each other to
+simulate a full range of clocking scenarios.
 
  Simulator
  ---------
 
   C++ Interoperability (Ingress/Egress)
   -------------------------------------
+
+The headers <chdl/ingress.h> and <chdl/egress.h> contain functions for
+interfacing designs running in the CHDL simulator and external C++ code. These
+interfaces provide simple ways to get integer and Boolean values into and out
+of the CHDL simulator. They are very useful for performing various kinds of
+mixed-level simulation and automated verification/validation.
+
+A simple sample design using Egress and EgressInt:
+
+  bvec<8> count; count = Reg(count + Lit<8>(1));
+
+  unsigned char count_val;
+  EgressInt(count_val, count);
+
+  bool even;
+  Egress(even, !count_val[0]);  
+
+  optimize();
+  for (unsigned i = 0; i < 100; ++i) {
+    advance();
+    cout << "count = " << count_val << (even?"(even)":"(odd)") << endl;
+  }
+
+The advance function advances the simulation by a single cycle. After it has
+been called at least once, the variables correspond to the value of their
+assigned variable at the beginning of the cycle. (So in this example, count_val
+will be 0 during the first iteration, 1 during the second iteration, etc.)
+
+A simple sample design using Ingress and IngressInt:
+
+  bool cenable_var;
+  unsigned d_var;
+
+  bvec<32> d = IngressInt<32>(d_var);
+
+  node count_enable = Ingress(cenable_var),
+       load_counter = Ingress(cload_var);
+
+  bvec<32> counter, next_counter;
+  counter = Wreg(next_counter);
+  Cassign(next_counter).
+    IF(load_counter, d).
+    IF(count_enable, counter + Lit<32>(1)).
+    ELSE(counter);
+
+  TAP(count_enable);
+  TAP(load_counter);
+  TAP(counter);
+
+  optimize();
+  for (unsigned i = 0; i < 100; ++i) {
+    cenable_var = rand()%2;
+    load_counter = (rand()%16 == 0);
+
+    advance();
+  }
+
+This is most of the way to a test, lacking only an Egress and the corresponding
+result check. Note that unlike IngressInt, EgressInt requires a bit width as a
+template parameter. This is due to the fact that, in C++, template arguments
+cannot be inferred from return type.
 
   Assertions
   ----------
