@@ -4,15 +4,13 @@
 #include <sstream>
 #include <stack>
 
-#include "bvec.h"
-
 #define GCC_CASSIGN_INSTRUMENTATION
 
 namespace chdl {
-  template <unsigned N> struct cassign {
-    cassign(const bvec<N> &v): v(v) {}
+  template <typename T> struct cassign {
+    cassign(const T &v): v(v) {}
 
-    cassign<N> IF(node x, const bvec<N> &a
+    cassign<T> IF(node x, const T &a
       #ifdef GCC_CASSIGN_INSTRUMENTATION
                   ,const char* func = __builtin_FUNCTION(),
                   unsigned line = __builtin_LINE()
@@ -25,14 +23,14 @@ namespace chdl {
       #else
       HIERARCHY_ENTER();
       #endif
-      bvec<N> bv;
-      v = Mux(x, bv, a);
+      T val;
+      v = Mux(x, val, a);
       hierarchy_exit();
 
-      return cassign(bv);
+      return cassign(val);
     }
 
-    cassign<N> IF(node x
+    cassign<T> IF(node x
       #ifdef GCC_CASSIGN_INSTRUMENTATION
                   ,const char* func = __builtin_FUNCTION(),
                   unsigned line = __builtin_LINE()
@@ -46,50 +44,44 @@ namespace chdl {
       HIERARCHY_ENTER();
       #endif
 
-      bvec<N> nested_val;
-      cassign<N> nest(nested_val);
+      T nested_val;
+      cassign<T> nest(nested_val);
       cstack.push(IF(x, nested_val));
       hierarchy_exit();
 
       return nest;
     }
 
-    cassign<N> ELSE() {
-      bvec<N> nested_val;
-      cassign<N> nest(nested_val);
+    cassign<T> ELSE() {
+      T nested_val;
+      cassign<T> nest(nested_val);
       cstack.push(ELSE(nested_val));
       return nest;
     }
 
-    cassign<N> END() {
+    cassign<T> END() {
       if (cstack.empty()) abort(); // assert(!cstack.empty());
-      cassign<N> rval(cstack.top());
+      cassign<T> rval(cstack.top());
       cstack.pop();
       return rval;
     }
 
-    cassign<N> ELSE(const bvec<N> &a) { v = a; return *this; }
+    cassign<T> ELSE(const T &a) { v = a; return *this; }
 
-    cassign<N> THEN() { return *this; }
-    cassign<N> THEN(const bvec<N> &a) { return ELSE(a).END(); }
+    cassign<T> THEN() { return *this; }
+    cassign<T> THEN(const T &a) { return ELSE(a).END(); }
 
-    bvec<N> v;
+    T v;
 
     static std::stack<cassign> cstack;
   };
 
-  template <unsigned N> std::stack<cassign<N>> cassign<N>::cstack;
+  template <typename T> std::stack<cassign<T>> cassign<T>::cstack;
 
-  template <unsigned N> cassign<N> Cassign(const bvec<N> &v);
-  static cassign<1> Cassign(const node &n);
+  template <typename T> cassign<T> Cassign(const T &v);
 };
 
-template <unsigned N> chdl::cassign<N> chdl::Cassign(const chdl::bvec<N> &v) {
-  return chdl::cassign<N>(v);
+template <typename T> chdl::cassign<T> chdl::Cassign(const T &v) {
+  return chdl::cassign<T>(v);
 }
-
-static chdl::cassign<1> chdl::Cassign(const node &n) {
-  return chdl::cassign<1>(bvec<1>(n));
-}
-
 #endif
