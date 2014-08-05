@@ -5,7 +5,7 @@ LDLIBS += -pthread
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o \
        submodule.o latch.o techmap.o order.o tristate.o trisimpl.o reset.o \
-       assert.o cdomain.o chdl_present.o
+       assert.o cdomain.o chdl_present.o execbuf.o
 
 all : libchdl.so
 
