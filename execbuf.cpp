@@ -9,6 +9,7 @@ extern "C" {
 
 #include "execbuf.h"
 
+using namespace chdl;
 using namespace std;
 
 execbuf::execbuf():
