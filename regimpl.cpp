@@ -32,6 +32,15 @@ void regimpl::print_vl(ostream &out) {
       << "    end" << endl << endl;
 }
 
+void regimpl::gen_store_result(execbuf &b, nodebuf_t &from, nodebuf_t &to) {
+  b.push(char(0x48)); // mov &to[id], %rbx
+  b.push(char(0xbb));
+  b.push((void*)&to[id]);
+
+  b.push(char(0x89)); // mov %eax, *%rbx
+  b.push(char(0x03));
+}
+
 node chdl::Reg(node d, bool val) {
   HIERARCHY_ENTER();  
   if (val) {
