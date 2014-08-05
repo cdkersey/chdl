@@ -106,3 +106,34 @@ void chdl::permute_nodes(map<nodeid_t, nodeid_t> x) {
 
   nodes = new_nodes;
 }
+
+extern "C" { unsigned nodeimpl_call_eval(nodeimpl *p, unsigned cd); }
+
+// By default, just call the eval function using nodeimpl_call_eval()
+void nodeimpl::gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from) {
+  b.push(char(0x48)); // mov this, %rdi
+  b.push(char(0xbf));
+  b.push((void*)this);
+
+  b.push(char(0xbe)); // mov cd, %esi
+  b.push((unsigned)cd);
+
+  b.push(char(0x48)); // mov &nodeimpl_call_eval, %rbx
+  b.push(char(0xbb));
+  b.push((void*)&nodeimpl_call_eval);
+
+  b.push(char(0xff)); // callq *%rbx
+  b.push(char(0xd3));
+}
+
+void nodeimpl::gen_store_result(execbuf &b, nodebuf_t &from, nodebuf_t &to) {
+  b.push(char(0x48)); // mov &from[id], %rbx
+  b.push(char(0xbb));
+  b.push((void*)&from[id]);
+
+  b.push(char(0x89)); // mov %eax, *%rbx
+  b.push(char(0x03));
+}
+
+// Use a C function, not a member function, to simplify the calling convention.
+unsigned nodeimpl_call_eval(nodeimpl *p, unsigned cd) { return p->eval(cd); }
