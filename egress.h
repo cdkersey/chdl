@@ -16,7 +16,7 @@ namespace chdl {
   public:
     egress(const T& x, node n): n(n), x(x) { gtap(n); }
 
-    void pre_tick(evaluator &e) { x(e(n)); }
+    void pre_tick(evaluator_t &e) { x(e(n)); }
   private:
     node n;
     T x;

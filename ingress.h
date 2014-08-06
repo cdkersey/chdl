@@ -20,7 +20,7 @@ namespace chdl {
   template <typename T> class ingressimpl : public nodeimpl {
   public:
     ingressimpl(T f): nodeimpl(), f(f), eval_time(0), val(0) {} 
-    bool eval(evaluator &e) { return f(); }
+    bool eval(evaluator_t &e) { return f(); }
 
     void print(std::ostream &out) { abort(); }
     void print_vl(std::ostream &out) { abort(); }

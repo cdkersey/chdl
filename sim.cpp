@@ -40,9 +40,15 @@ void chdl::run(ostream &vcdout, function<bool()> end_condition,
   using namespace std;
   using namespace chdl;
 
-  // TODO: implement a memoizing evaluator
+  // Memoizing evaluator
   evaluator_t e;
-  e = [&e](nodeid_t n) { return nodes[n]->eval(e); };
+  map<nodeid_t, bool> memo;
+  e = [&e, &memo](nodeid_t n) {
+    if (!memo.count(n)) {
+      memo[n] = nodes[n]->eval(e);
+    }
+    return memo[n];
+  };
 
   vector<unsigned> &ti(tick_intervals());
 
@@ -52,6 +58,7 @@ void chdl::run(ostream &vcdout, function<bool()> end_condition,
     print_taps(vcdout, e);
     for (unsigned j = 0; j < ti.size(); ++j)
       if (sim_time()%ti[j] == 0) advance(j, e);
+    memo.clear();
     print_time(vcdout);
   } while (!end_condition());
 
