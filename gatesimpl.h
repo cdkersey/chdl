@@ -12,6 +12,8 @@ namespace chdl {
     virtual bool eval(cdomain_handle_t cd);
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
+
+    virtual void gen_eval(cdomain_handle_t cd, execbuf &e, nodebuf_t &from);
   private:
     bool cval;
     cycle_t t_cval;
@@ -27,6 +29,7 @@ namespace chdl {
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
+    virtual void gen_eval(cdomain_handle_t cd, execbuf &e, nodebuf_t &from);
   private:
     bool cval;
     cycle_t t_cval;
