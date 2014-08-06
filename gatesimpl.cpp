@@ -3,14 +3,7 @@
 using namespace std;
 using namespace chdl;
 
-bool invimpl::eval(cdomain_handle_t cd) {
-  if (t_cval != sim_time(cd)) {
-    cval = !(nodes[src[0]]->eval(cd));
-    t_cval = sim_time(cd);
-  }
-
-  return cval;
-}
+bool invimpl::eval(evaluator_t &e) { return !e(src[0]); }
 
 void invimpl::print(ostream &out) {
   out << "  inv " << src[0] << ' ' << id << endl;
@@ -21,13 +14,8 @@ void invimpl::print_vl(ostream &out) {
       << endl;
 }
 
-bool nandimpl::eval(cdomain_handle_t cd) {
-  if (t_cval != sim_time(cd)) {
-    cval =  !(nodes[src[0]]->eval(cd) && nodes[src[1]]->eval(cd));
-    t_cval = sim_time(cd);
-  }
-
-  return cval;
+bool nandimpl::eval(evaluator_t &e) {
+  return !(e(src[0]) && e(src[1]));
 }
 
 void nandimpl::print(ostream &out) {
@@ -39,6 +27,7 @@ void nandimpl::print_vl(ostream &out) {
       << src[1] << ");" << endl;
 }
 
+#if 0
 void invimpl::gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from) {
   b.push(char(0x48)); // mov &from[src[0]], %rbx
   b.push(char(0xbb));
@@ -74,3 +63,4 @@ void nandimpl::gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from) {
   b.push(char(0xf0));
   b.push(char(0x01));
 }
+#endif

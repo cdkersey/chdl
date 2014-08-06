@@ -14,7 +14,7 @@ namespace chdl {
    public:
     void connect(node in, node enable);
 
-    bool eval(cdomain_handle_t cd);
+    bool eval(evaluator_t &e);
 
     void print(std::ostream &os);
     void print_vl(std::ostream &os);

@@ -16,15 +16,14 @@ using namespace chdl;
 struct assertion_t : public tickable {
   assertion_t(string &s, const node &n): message(s), x(n) { gtap(n); }
 
-  void tick(cdomain_handle_t cd);
-  void tock(cdomain_handle_t cd) {}
+  void tick(evaluator_t &e);
 
   node x;
   string message;
 };
 
-void assertion_t::tick(cdomain_handle_t cd) {
-  if (!nodes[x]->eval(cd)) {
+void assertion_t::tick(evaluator_t &e) {
+  if (!e(x)) {
     cerr << "Cycle " << sim_time() << ": " << message << endl;
     abort();
   }

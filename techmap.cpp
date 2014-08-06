@@ -23,6 +23,11 @@
 using namespace std;
 using namespace chdl;
 
+static evaluator_t &ev() {
+  static evaluator_t *ev = new evaluator_t([](nodeid_t n){ return false; });
+  return *ev;
+}
+
 // In a tri-state world a node can be driven by multiple gates. This _only_
 // happens with the tri-state node, but now it's possible to say something like
 // "node 5 gate 3".
@@ -207,7 +212,7 @@ bool tlibgate::match(nodeid_t n, int g, mapping &m) {
     }
   } else if (t == HIGH || t == LOW) {
     litimpl *p(dynamic_cast<litimpl*>(nodes[n]));
-    rval = (p && p->eval(0) == (t == HIGH));
+    rval = (p && p->eval(ev()) == (t == HIGH));
   }
 
   if (!rval) m.input = bak;

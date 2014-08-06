@@ -7,32 +7,26 @@
 namespace chdl {
   class invimpl : public nodeimpl {
   public:
-    invimpl(node in): t_cval(~0ull) { src.push_back(in); }
+    invimpl(node in) { src.push_back(in); }
 
-    virtual bool eval(cdomain_handle_t cd);
+    virtual bool eval(evaluator_t &e);
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
-    virtual void gen_eval(cdomain_handle_t cd, execbuf &e, nodebuf_t &from);
-  private:
-    bool cval;
-    cycle_t t_cval;
+    //virtual void gen_eval(cdomain_handle_t cd, execbuf &e, nodebuf_t &from);
   };
 
   class nandimpl : public nodeimpl {
   public:
-    nandimpl(node a, node b): t_cval(~0ull) {
+    nandimpl(node a, node b) {
       src.push_back(a); src.push_back(b);
     }
 
-    virtual bool eval(cdomain_handle_t cd);
+    virtual bool eval(evaluator_t &e);
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
-    virtual void gen_eval(cdomain_handle_t cd, execbuf &e, nodebuf_t &from);
-  private:
-    bool cval;
-    cycle_t t_cval;
+    //virtual void gen_eval(cdomain_handle_t cd, execbuf &e, nodebuf_t &from);
   };
 };
 

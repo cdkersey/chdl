@@ -25,7 +25,7 @@ static void clear_nodes() {
 }
 CHDL_REGISTER_RESET(clear_nodes);
 
-bool litimpl::eval(cdomain_handle_t cd) { return val; }
+bool litimpl::eval(evaluator_t &e) { return val; }
 
 void litimpl::print(ostream &out) {
   if (undef)  out << "  litX " << id << endl;
@@ -107,16 +107,16 @@ void chdl::permute_nodes(map<nodeid_t, nodeid_t> x) {
   nodes = new_nodes;
 }
 
-extern "C" { unsigned nodeimpl_call_eval(nodeimpl *p, unsigned cd); }
+extern "C" { unsigned nodeimpl_call_eval(nodeimpl *p, evaluator_t *e); }
 
 // By default, just call the eval function using nodeimpl_call_eval()
-void nodeimpl::gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from) {
+void nodeimpl::gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from) {
   b.push(char(0x48)); // mov this, %rdi
   b.push(char(0xbf));
   b.push((void*)this);
 
   b.push(char(0xbe)); // mov cd, %esi
-  b.push((unsigned)cd);
+  b.push((void*)&e);
 
   b.push(char(0x48)); // mov &nodeimpl_call_eval, %rbx
   b.push(char(0xbb));
@@ -136,4 +136,4 @@ void nodeimpl::gen_store_result(execbuf &b, nodebuf_t &from, nodebuf_t &to) {
 }
 
 // Use a C function, not a member function, to simplify the calling convention.
-unsigned nodeimpl_call_eval(nodeimpl *p, unsigned cd) { return p->eval(cd); }
+unsigned nodeimpl_call_eval(nodeimpl *p, evaluator_t *e) { return p->eval(*e); }

@@ -15,7 +15,7 @@ regimpl::regimpl(node d): q(0), next_q(0), d(d) {}
 
 regimpl::~regimpl() {}
 
-bool regimpl::eval(cdomain_handle_t cd) { return q; }
+bool regimpl::eval(evaluator_t &e) { return q; }
 
 void regimpl::print(ostream &out) {
   out << "  reg " << d << ' ' << id << endl;

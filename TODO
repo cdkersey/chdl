@@ -11,6 +11,14 @@ _ Create a binary translation framework for simulation.
     . nandimpl
   _ Come up with a way to evaluate nodes that allows the use of a centralized
     nodebuf_t, instead of the local memoization that's done now.
+    . Comment out gen_eval() in invimpl/nandimpl
+    - eval() and tick() functions get passed an "evaluator" object instead of a
+      clock domain now. The evaluator handles evaluating nodes.
+      . Try it out with a simple basic evaluator and ordinary sim()
+      - Write a memoizing evaluator
+    - Test with the translator/evaluator and calling invimpl/nandimpl
+    - Test with the translator and binary inverter/nand implementations.
+    - Test on a more complex design.
     - This requires some rearchitecting of the simulation infrastructure.
 
 _ Remove statemachine and use cassign instead. It's no longer useful.

@@ -12,6 +12,7 @@
 #include "bus.h"
 #include "tristate.h"
 #include "cdomain.h"
+#include "nodeimpl.h"
 
 #include "hierarchy.h"
 
@@ -32,7 +33,7 @@ namespace chdl {
   void print_taps_vl_body(std::ostream &out, bool print_non_out=true);
   void print_tap_nodes(std::ostream &out);
   void print_io_tap_nodes(std::ostream &out);
-  void print_taps(std::ostream &out, cdomain_handle_t cd = 0);
+  void print_taps(std::ostream &out, evaluator_t &e);
   void print_vcd_header(std::ostream &out);
 
   // Append the set of tap nodes to s. Do not clear s.

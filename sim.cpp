@@ -19,13 +19,13 @@ CHDL_REGISTER_RESET(reset_now);
 
 cycle_t chdl::sim_time(cdomain_handle_t cd) { return now[cd]; }
 
-cycle_t chdl::advance(unsigned threads, cdomain_handle_t cd) {
-  for (auto &t : tickables()[cd]) t->pre_tick(cd);
-  for (auto &t : tickables()[cd]) t->tick(cd);
-  for (auto &t : tickables()[cd]) t->tock(cd);
-  for (auto &t : tickables()[cd]) t->post_tock(cd);
+cycle_t chdl::advance(cdomain_handle_t cd, evaluator_t &e) {
+  for (auto &t : tickables()[cd]) t->pre_tick(e);
+  for (auto &t : tickables()[cd]) t->tick(e);
+  for (auto &t : tickables()[cd]) t->tock(e);
+  for (auto &t : tickables()[cd]) t->post_tock(e);
 
-  now[cd]++;
+  ++now[cd];
 
   return now[cd];
 }
@@ -40,14 +40,18 @@ void chdl::run(ostream &vcdout, function<bool()> end_condition,
   using namespace std;
   using namespace chdl;
 
+  // TODO: implement a memoizing evaluator
+  evaluator_t e;
+  e = [&e](nodeid_t n) { return nodes[n]->eval(e); };
+
   vector<unsigned> &ti(tick_intervals());
 
   print_vcd_header(vcdout);
   print_time(vcdout);
   do {
-    print_taps(vcdout);
+    print_taps(vcdout, e);
     for (unsigned j = 0; j < ti.size(); ++j)
-      if (sim_time()%ti[j] == 0) advance(threads, j);
+      if (sim_time()%ti[j] == 0) advance(j, e);
     print_time(vcdout);
   } while (!end_condition());
 
@@ -120,6 +124,9 @@ void get_logic_layers(map<unsigned, set<nodeid_t> > &ll) {
 void chdl::gen_eval_all(cdomain_handle_t cd, execbuf &b,
                         nodebuf_t &from, nodebuf_t &to)
 {
+  // TODO: implement a memoizing evaluator
+  evaluator_t e;
+  e = [&e](nodeid_t n) { return nodes[n]->eval(e); };
   map<unsigned, set<nodeid_t> > ll;
   get_logic_layers(ll);  
 
@@ -136,7 +143,7 @@ void chdl::gen_eval_all(cdomain_handle_t cd, execbuf &b,
   for (auto p : ll) {
     for (auto n : p.second) {
       if (!dynamic_cast<regimpl*>(nodes[n])) {
-        nodes[n]->gen_eval(cd, b, from);
+        nodes[n]->gen_eval(e, b, from);
         nodes[n]->gen_store_result(b, from, to);
       }
     }
@@ -145,7 +152,7 @@ void chdl::gen_eval_all(cdomain_handle_t cd, execbuf &b,
   // Then all of the registers.
   for (nodeid_t n = 0; n < nodes.size(); ++n) {
     if (dynamic_cast<regimpl*>(nodes[n])) {
-      nodes[n]->gen_eval(cd, b, from);
+      nodes[n]->gen_eval(e, b, from);
       nodes[n]->gen_store_result(b, from, to);
     }
   }

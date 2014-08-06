@@ -22,6 +22,11 @@
 using namespace chdl;
 using namespace std;
 
+static evaluator_t &ev() {
+  static evaluator_t *ev = new evaluator_t([](nodeid_t n){ return false; });
+  return *ev;
+}
+
 void chdl::opt_set_dontcare() {
   // Find dontcare nodes
   set<nodeid_t> d;
@@ -301,7 +306,7 @@ void chdl::opt_contract() {
       
       if (inv && (l0 = dynamic_cast<litimpl*>(nodes[inv->src[0]]))) {
         ++changes;
-        nodes[i] = new litimpl(!l0->eval(0));
+        nodes[i] = new litimpl(!l0->eval(ev()));
         nodes[i]->path = hp;
         nodes.pop_back();
         nodes[i]->id = i;
@@ -322,7 +327,7 @@ void chdl::opt_contract() {
                   (l1 = dynamic_cast<litimpl*>(nodes[nand->src[1]])))
       {
         ++changes;
-        nodes[i] = new litimpl(!(l0->eval(0) && l1->eval(0)));
+        nodes[i] = new litimpl(!(l0->eval(ev()) && l1->eval(ev())));
         nodes[i]->path = hp;
         nodes.pop_back();
         nodes[i]->id = i;
@@ -331,8 +336,8 @@ void chdl::opt_contract() {
       }
 
       if (nand && (
-          (l0=dynamic_cast<litimpl*>(nodes[nand->src[0]])) && !(l0->eval(0)) ||
-          (l1=dynamic_cast<litimpl*>(nodes[nand->src[1]])) && !(l1->eval(0))))
+        (l0=dynamic_cast<litimpl*>(nodes[nand->src[0]])) && !(l0->eval(ev())) ||
+	(l1=dynamic_cast<litimpl*>(nodes[nand->src[1]])) && !(l1->eval(ev()))))
       {
         ++changes;
         nodes[i] = new litimpl(1);
@@ -365,7 +370,7 @@ void chdl::opt_contract() {
       if (tris) {
         for (unsigned i = 0; i < tris->src.size(); i += 2) {
           if (litimpl *l = dynamic_cast<litimpl*>(nodes[tris->src[i+1]])) {
-            if (l->eval(0)) {
+            if (l->eval(ev())) {
               node n(tris->id);
               n = tris->src[i];
               ++changes;
@@ -398,7 +403,7 @@ void chdl::opt_combine_literals() {
     litimpl *l(dynamic_cast<litimpl*>(nodes[i]));
     if (l) {
       node lnode(l->id);
-      lnode = (l->eval(0))?lit1:lit0;
+      lnode = (l->eval(ev()))?lit1:lit0;
     }
   }
 
@@ -506,7 +511,7 @@ void chdl::opt_limit_fanout(unsigned max) {
       else if (!buffers_for_regs && (ri = dynamic_cast<regimpl*>(p)))
         new_node = Reg(ri->d);
       else if (litimpl *li = dynamic_cast<litimpl*>(p))
-        new_node = Lit(p->eval(0));
+        new_node = Lit(p->eval(ev()));
       else if (tristateimpl *ti = dynamic_cast<tristateimpl*>(p)) {
         // It's silly to add buffers exiting a bus.
       } else {
