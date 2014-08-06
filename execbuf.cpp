@@ -51,8 +51,6 @@ void execbuf::push(char x) {
 }
 
 void execbuf::reallocate(size_t sz) {
-  cout << "Reallocate execbuf: " << dec << sz << endl;
-
   size_t old_sz(end - buf - 1);
   char *old_buf(buf);
 

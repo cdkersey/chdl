@@ -1,12 +1,14 @@
 #include <iostream>
 #include <functional>
 #include <vector>
+#include <map>
 
 #include "sim.h"
 #include "tickable.h"
 #include "tap.h"
 #include "reset.h"
 #include "cdomain.h"
+#include "regimpl.h"
 
 using namespace chdl;
 using namespace std;
@@ -76,4 +78,79 @@ void chdl::finally(function<void()> f) {
 
 void chdl::call_final_funcs() {
   for (auto f : final_funcs()) f();
+}
+
+// Get all of the destination nodes; the nodes which may not have successors.
+void get_dest_nodes(set<nodeid_t> &s) {
+  get_tap_nodes(s);
+  get_reg_nodes(s);
+}
+
+// Get all of the origin nodes; the nodes without sources.
+void get_src_nodes(set<nodeid_t> &s) {
+  for (nodeid_t n = 0; n < nodes.size(); ++n)
+    if (nodes[n]->src.size() == 0) s.insert(n);
+}
+
+void get_logic_layers(map<unsigned, set<nodeid_t> > &ll) {
+  map<nodeid_t, unsigned> ll_r;
+  set<nodeid_t> f;
+  get_dest_nodes(f);
+  unsigned l = 0;
+  while (!f.empty()) {
+    set<nodeid_t> next_f;
+    for (auto n : f) {
+      ll_r[n] = l;
+      for (auto s : nodes[n]->src)
+        next_f.insert(s);
+    }
+
+    f = next_f;
+    ++l;
+  }
+
+  // We compute the layes in reverse, starting with the destination, but we want
+  // the output to be a number corresponding to the order in which the node
+  // values should be computed.
+  unsigned max_l = l-1;
+  for (auto p : ll_r)
+    ll[max_l - p.second].insert(p.first);
+}
+
+void chdl::gen_eval_all(cdomain_handle_t cd, execbuf &b,
+                        nodebuf_t &from, nodebuf_t &to)
+{
+  map<unsigned, set<nodeid_t> > ll;
+  get_logic_layers(ll);  
+
+  #if 0
+  cout << "gen_eval_all logic layers:" << endl;
+  for (auto p : ll) {
+    cout << "  " << p.first << ':';
+    for (auto n : p.second) cout << ' ' << n;
+    cout << endl;  
+  }
+  #endif
+
+  // First, all of the non-reg nodes
+  for (auto p : ll) {
+    for (auto n : p.second) {
+      if (!dynamic_cast<regimpl*>(nodes[n])) {
+        nodes[n]->gen_eval(cd, b, from);
+        nodes[n]->gen_store_result(b, from, to);
+      }
+    }
+  }
+
+  // Then all of the registers.
+  for (nodeid_t n = 0; n < nodes.size(); ++n) {
+    if (dynamic_cast<regimpl*>(nodes[n])) {
+      nodes[n]->gen_eval(cd, b, from);
+      nodes[n]->gen_store_result(b, from, to);
+    }
+  }
+
+  // The buffer must end with a return.
+  b.push((char)0xc3); /* ret */
+
 }

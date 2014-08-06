@@ -32,6 +32,15 @@ void regimpl::print_vl(ostream &out) {
       << "    end" << endl << endl;
 }
 
+void regimpl::gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from) {
+  b.push(char(0x48)); // mov &from[d], %rbx
+  b.push(char(0xbb));
+  b.push((void*)&from[d]);
+
+  b.push(char(0x8b)); // mov *%rbx, %eax
+  b.push(char(0x03));
+}
+
 void regimpl::gen_store_result(execbuf &b, nodebuf_t &from, nodebuf_t &to) {
   b.push(char(0x48)); // mov &to[id], %rbx
   b.push(char(0xbb));
