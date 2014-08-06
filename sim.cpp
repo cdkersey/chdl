@@ -124,9 +124,11 @@ void get_logic_layers(map<unsigned, set<nodeid_t> > &ll) {
 void chdl::gen_eval_all(cdomain_handle_t cd, execbuf &b,
                         nodebuf_t &from, nodebuf_t &to)
 {
-  // TODO: implement a memoizing evaluator
-  evaluator_t e;
-  e = [&e](nodeid_t n) { return nodes[n]->eval(e); };
+  // TODO: NOT DELETED. WILL LEAK
+  evaluator_t &e = *(new evaluator_t(
+    [&from](nodeid_t n) { return from[n]; }
+  ));
+
   map<unsigned, set<nodeid_t> > ll;
   get_logic_layers(ll);  
 

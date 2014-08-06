@@ -13,7 +13,7 @@ namespace chdl {
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
-    //virtual void gen_eval(cdomain_handle_t cd, execbuf &e, nodebuf_t &from);
+    virtual void gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from);
   };
 
   class nandimpl : public nodeimpl {
@@ -26,7 +26,7 @@ namespace chdl {
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
-    //virtual void gen_eval(cdomain_handle_t cd, execbuf &e, nodebuf_t &from);
+    virtual void gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from);
   };
 };
 

@@ -32,7 +32,7 @@ void regimpl::print_vl(ostream &out) {
       << "    end" << endl << endl;
 }
 
-void regimpl::gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from) {
+void regimpl::gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from) {
   b.push(char(0x48)); // mov &from[d], %rbx
   b.push(char(0xbb));
   b.push((void*)&from[d]);

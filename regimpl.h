@@ -19,7 +19,7 @@ namespace chdl {
     void tick(evaluator_t &e) { next_q = e(d); }
     void tock(evaluator_t &e) { q = next_q; }
 
-    void gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from);
+    void gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from);
     void gen_store_result(execbuf &b, nodebuf_t &from, nodebuf_t &to);
 
     node d;

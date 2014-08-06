@@ -113,10 +113,11 @@ extern "C" { unsigned nodeimpl_call_eval(nodeimpl *p, evaluator_t *e); }
 void nodeimpl::gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from) {
   b.push(char(0x48)); // mov this, %rdi
   b.push(char(0xbf));
-  b.push((void*)this);
+  b.push(this);
 
-  b.push(char(0xbe)); // mov cd, %esi
-  b.push((void*)&e);
+  b.push(char(0x48));
+  b.push(char(0xbe)); // mov &e, %rsi
+  b.push(&e);
 
   b.push(char(0x48)); // mov &nodeimpl_call_eval, %rbx
   b.push(char(0xbb));

@@ -3,7 +3,9 @@
 using namespace std;
 using namespace chdl;
 
-bool invimpl::eval(evaluator_t &e) { return !e(src[0]); }
+bool invimpl::eval(evaluator_t &e) {
+  return !e(src[0]);
+}
 
 void invimpl::print(ostream &out) {
   out << "  inv " << src[0] << ' ' << id << endl;
@@ -27,8 +29,7 @@ void nandimpl::print_vl(ostream &out) {
       << src[1] << ");" << endl;
 }
 
-#if 0
-void invimpl::gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from) {
+void invimpl::gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from) {
   b.push(char(0x48)); // mov &from[src[0]], %rbx
   b.push(char(0xbb));
   b.push((void*)&from[src[0]]);
@@ -41,7 +42,7 @@ void invimpl::gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from) {
   b.push(char(0x01));
 }
 
-void nandimpl::gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from) {
+void nandimpl::gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from) {
   b.push(char(0x48)); // mov &from[src[0]], %rbx
   b.push(char(0xbb));
   b.push((void*)&from[src[0]]);
@@ -63,4 +64,3 @@ void nandimpl::gen_eval(cdomain_handle_t cd, execbuf &b, nodebuf_t &from) {
   b.push(char(0xf0));
   b.push(char(0x01));
 }
-#endif
