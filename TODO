@@ -1,5 +1,17 @@
 CHDL Near-term Roadmap
 ======================
+_ Create a binary translation framework for simulation.
+  . Add execbuf source files.
+  . Add gen_eval() and gen_store_result() functions to nodeimpl.
+  . Add special gen_eval() and gen_store_result() to regimpl.
+  . Add a gen_eval_all(execbuf, from, to) to sim.h/sim.cpp and test it!
+    - It works as long as ticks are performed too.
+  . Write gen_eval() for nandimpl and invimpl.
+    . invimpl
+    . nandimpl
+  _ Come up with a way to evaluate nodes that allows the use of a centralized
+    nodebuf_t, instead of the local memoization that's done now.
+    - This requires some rearchitecting of the simulation infrastructure.
 
 _ Remove statemachine and use cassign instead. It's no longer useful.
 _ Add cassign to the standard things in chdl.h
