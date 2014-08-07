@@ -19,13 +19,17 @@ namespace chdl {
   void print_time(std::ostream&);
   cycle_t advance(cdomain_handle_t cd, evaluator_t &e);
 
+  void run_trans(std::ostream &vcdout, cycle_t max);
+
   void run(std::ostream &vcdout, bool &stop, unsigned threads = 1);
   void run(std::ostream &vcdout, bool &stop, cycle_t max, unsigned threads = 1);
   void run(std::ostream &vcdout, cycle_t time, unsigned threads = 1);
   void run(std::ostream &vcdout, std::function<bool()> end, unsigned threads=1);
 
-  void gen_eval_all(cdomain_handle_t h, execbuf &b,
+  void gen_eval_all(evaluator_t &e, execbuf &b,
                     nodebuf_t &from, nodebuf_t &to);
+  void gen_eval_regs(evaluator_t &e, execbuf &b,
+                     nodebuf_t &from, nodebuf_t &to);
 
   void finally(std::function<void()> f);
   void call_final_funcs();

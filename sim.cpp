@@ -37,9 +37,6 @@ void chdl::print_time(ostream &out) {
 void chdl::run(ostream &vcdout, function<bool()> end_condition,
                unsigned threads)
 {
-  using namespace std;
-  using namespace chdl;
-
   // Memoizing evaluator
   evaluator_t e;
   map<nodeid_t, bool> memo;
@@ -65,6 +62,45 @@ void chdl::run(ostream &vcdout, function<bool()> end_condition,
   call_final_funcs();
 }
 
+void dump(nodebuf_t x) {
+  unsigned col = 0;
+  for (auto v : x) {
+    if (col && (col % 32 == 0)) cout << endl;
+    col++;
+    cout << ' ' << v;
+  }
+  cout << endl;
+}
+
+void chdl::run_trans(std::ostream &vcdout, cycle_t max) {
+  nodebuf_t v;
+  v.resize(nodes.size());
+
+  evaluator_t e = [&v](nodeid_t n){ return v[n]; };
+
+  execbuf l, r;
+
+  gen_eval_all(e, l, v, v);
+  gen_eval_regs(e, r, v, v);
+
+  cout << "Logic:" << endl;
+  l.dump();
+  cout << endl << "Regs:" << endl;
+  r.dump();
+
+  print_vcd_header(vcdout);
+  print_time(vcdout);
+  for (unsigned i = 0; i < max; ++i) {
+    l();
+    print_taps(vcdout, e);
+    r();
+    dump(v);
+    ++now[0];
+    print_time(vcdout);
+  }
+
+  call_final_funcs();
+}
 
 void chdl::run(ostream &vcdout, cycle_t time, unsigned threads) {
   run(vcdout, [time](){ return now[0] == time; }, threads);
@@ -128,14 +164,9 @@ void get_logic_layers(map<unsigned, set<nodeid_t> > &ll) {
     ll[max_l - p.second].insert(p.first);
 }
 
-void chdl::gen_eval_all(cdomain_handle_t cd, execbuf &b,
+void chdl::gen_eval_all(evaluator_t &e, execbuf &b,
                         nodebuf_t &from, nodebuf_t &to)
 {
-  // TODO: NOT DELETED. WILL LEAK
-  evaluator_t &e = *(new evaluator_t(
-    [&from](nodeid_t n) { return from[n]; }
-  ));
-
   map<unsigned, set<nodeid_t> > ll;
   get_logic_layers(ll);  
 
@@ -158,6 +189,13 @@ void chdl::gen_eval_all(cdomain_handle_t cd, execbuf &b,
     }
   }
 
+  // The buffer must end with a return.
+  b.push((char)0xc3); /* ret */
+}
+
+void chdl::gen_eval_regs(evaluator_t &e, execbuf &b,
+                         nodebuf_t &from, nodebuf_t &to)
+{
   // Then all of the registers.
   for (nodeid_t n = 0; n < nodes.size(); ++n) {
     if (dynamic_cast<regimpl*>(nodes[n])) {
@@ -166,7 +204,5 @@ void chdl::gen_eval_all(cdomain_handle_t cd, execbuf &b,
     }
   }
 
-  // The buffer must end with a return.
   b.push((char)0xc3); /* ret */
-
 }
