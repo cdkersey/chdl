@@ -31,14 +31,10 @@ void execbuf::dump() {
 
 unsigned execbuf::operator()(long c, long b, long d)
 {
-  cout << "Calling buf at " << (void*)buf << endl;
-
   unsigned val;
   __asm__ __volatile__("call *%%rax" :
                        "=a"(val),"=c"(c),"=b"(b),"=d"(d) : 
                         "a"(buf), "c"(c), "b"(b), "d"(d) );
-
-  cout << "returned " << val << ", " << c << ", " << b << ", " << d << endl;
 
   return val;
 }

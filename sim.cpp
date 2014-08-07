@@ -73,28 +73,34 @@ void dump(nodebuf_t x) {
 }
 
 void chdl::run_trans(std::ostream &vcdout, cycle_t max) {
-  nodebuf_t v;
-  v.resize(nodes.size());
+  nodebuf_t v0, v1;
+  v0.resize(nodes.size());
+  v1.resize(nodes.size());
 
-  evaluator_t e = [&v](nodeid_t n){ return v[n]; };
+  evaluator_t e0 = [&v0](nodeid_t n){ return v0[n]; },
+              e1 = [&v1](nodeid_t n){ return v1[n]; };
 
-  execbuf l, r;
+  execbuf l0, r0, l1, r1;
 
-  gen_eval_all(e, l, v, v);
-  gen_eval_regs(e, r, v, v);
-
-  cout << "Logic:" << endl;
-  l.dump();
-  cout << endl << "Regs:" << endl;
-  r.dump();
+  gen_eval_all(e0, l0, v0, v1);
+  gen_eval_regs(e0, r0, v0, v1);
+  gen_eval_all(e1, l1, v1, v0);
+  gen_eval_regs(e1, r1, v1, v0);
 
   print_vcd_header(vcdout);
   print_time(vcdout);
   for (unsigned i = 0; i < max; ++i) {
-    l();
-    print_taps(vcdout, e);
-    r();
-    dump(v);
+    l0();
+    print_taps(vcdout, e0);
+    r0();
+    ++now[0];
+    print_time(vcdout);
+
+    if (++i == max) break;
+
+    l1();
+    print_taps(vcdout, e1);
+    r1();
     ++now[0];
     print_time(vcdout);
   }
@@ -170,16 +176,6 @@ void chdl::gen_eval_all(evaluator_t &e, execbuf &b,
   map<unsigned, set<nodeid_t> > ll;
   get_logic_layers(ll);  
 
-  #if 0
-  cout << "gen_eval_all logic layers:" << endl;
-  for (auto p : ll) {
-    cout << "  " << p.first << ':';
-    for (auto n : p.second) cout << ' ' << n;
-    cout << endl;  
-  }
-  #endif
-
-  // First, all of the non-reg nodes
   for (auto p : ll) {
     for (auto n : p.second) {
       if (!dynamic_cast<regimpl*>(nodes[n])) {
@@ -196,7 +192,6 @@ void chdl::gen_eval_all(evaluator_t &e, execbuf &b,
 void chdl::gen_eval_regs(evaluator_t &e, execbuf &b,
                          nodebuf_t &from, nodebuf_t &to)
 {
-  // Then all of the registers.
   for (nodeid_t n = 0; n < nodes.size(); ++n) {
     if (dynamic_cast<regimpl*>(nodes[n])) {
       nodes[n]->gen_eval(e, b, from);
@@ -204,5 +199,6 @@ void chdl::gen_eval_regs(evaluator_t &e, execbuf &b,
     }
   }
 
+  // The buffer must end with a return.
   b.push((char)0xc3); /* ret */
 }
