@@ -14,10 +14,10 @@
 namespace chdl {
   struct nodeimpl;
 
-  extern std::vector<nodeimpl*> nodes;
-
   typedef std::vector<unsigned> nodebuf_t;
   typedef std::function<bool(nodeid_t)> evaluator_t;
+
+  extern std::vector<nodeimpl*> nodes;
 
   struct nodeimpl {
     nodeimpl() { id = nodes.size(); nodes.push_back(this); path = get_hpath(); }

@@ -4,6 +4,7 @@
 
 #include "cdomain.h"
 #include "nodeimpl.h"
+#include "execbuf.h"
 
 #include <vector>
 #include <set>
@@ -22,6 +23,15 @@ namespace chdl {
     virtual void tick(evaluator_t &e) {}
     virtual void tock(evaluator_t &e) {}
     virtual void post_tock(evaluator_t &e) {}
+
+    virtual void gen_pre_tick(evaluator_t &e, execbuf &b,
+                              nodebuf_t &from, nodebuf_t &to);
+    virtual void gen_tick(evaluator_t &e, execbuf &b,
+                          nodebuf_t &from, nodebuf_t &to);
+    virtual void gen_tock(evaluator_t &e, execbuf &b,
+                          nodebuf_t &from, nodebuf_t &to);
+    virtual void gen_post_tock(evaluator_t &e, execbuf &b,
+                               nodebuf_t &from, nodebuf_t &to);
 
     cdomain_handle_t cd;
   };

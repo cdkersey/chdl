@@ -18,8 +18,13 @@ _ Create a binary translation framework for simulation.
       . Write a memoizing evaluator
     . Test with the translator/evaluator and calling invimpl/nandimpl
     . Test with the translator and binary inverter/nand implementations.
-    _ Test on a more complex design.
-    _ This requires some rearchitecting of the simulation infrastructure.
+    . Test on a more complex design.
+  . Replace bizarre reg/everything else eval distinction with a gen_tick
+    interface that defaults to calling the ordinary *tick/*tock functions using
+    a supplied evaluator.
+  _ Update the tests to work with this interface.
+  _ Add support for clock domains to the simulation interface.
+  
 
 _ Remove statemachine and use cassign instead. It's no longer useful.
 _ Add cassign to the standard things in chdl.h

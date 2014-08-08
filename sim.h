@@ -28,8 +28,14 @@ namespace chdl {
 
   void gen_eval_all(evaluator_t &e, execbuf &b,
                     nodebuf_t &from, nodebuf_t &to);
-  void gen_eval_regs(evaluator_t &e, execbuf &b,
-                     nodebuf_t &from, nodebuf_t &to);
+  void gen_pre_tick_all(evaluator_t &e, execbuf &b,
+                        nodebuf_t &from, nodebuf_t &to);
+  void gen_tick_all(evaluator_t &e, execbuf &b,
+                    nodebuf_t &from, nodebuf_t &to);
+  void gen_tock_all(evaluator_t &e, execbuf &b,
+                    nodebuf_t &from, nodebuf_t &to);
+  void gen_post_tock_all(evaluator_t &e, execbuf &b,
+                         nodebuf_t &from, nodebuf_t &to);
 
   void finally(std::function<void()> f);
   void call_final_funcs();

@@ -83,9 +83,20 @@ void chdl::run_trans(std::ostream &vcdout, cycle_t max) {
   execbuf l0, r0, l1, r1;
 
   gen_eval_all(e0, l0, v0, v1);
-  gen_eval_regs(e0, r0, v0, v1);
+  l0.push((char)0xc3);
+  gen_pre_tick_all(e0, r0, v0, v1);
+  gen_tick_all(e0, r0, v0, v1);
+  gen_tock_all(e0, r0, v0, v1);
+  gen_post_tock_all(e0, r0, v0, v1);
+  r0.push((char)0xc3); // ret
+
   gen_eval_all(e1, l1, v1, v0);
-  gen_eval_regs(e1, r1, v1, v0);
+  l1.push((char)0xc3);
+  gen_pre_tick_all(e1, r1, v1, v0);
+  gen_tick_all(e1, r1, v1, v0);
+  gen_tock_all(e1, r1, v1, v0);
+  gen_post_tock_all(e1, r1, v1, v0);
+  r1.push((char)0xc3); // ret
 
   print_vcd_header(vcdout);
   print_time(vcdout);
@@ -178,27 +189,32 @@ void chdl::gen_eval_all(evaluator_t &e, execbuf &b,
 
   for (auto p : ll) {
     for (auto n : p.second) {
-      if (!dynamic_cast<regimpl*>(nodes[n])) {
-        nodes[n]->gen_eval(e, b, from);
-        nodes[n]->gen_store_result(b, from, to);
-      }
-    }
-  }
-
-  // The buffer must end with a return.
-  b.push((char)0xc3); /* ret */
-}
-
-void chdl::gen_eval_regs(evaluator_t &e, execbuf &b,
-                         nodebuf_t &from, nodebuf_t &to)
-{
-  for (nodeid_t n = 0; n < nodes.size(); ++n) {
-    if (dynamic_cast<regimpl*>(nodes[n])) {
       nodes[n]->gen_eval(e, b, from);
       nodes[n]->gen_store_result(b, from, to);
     }
   }
+}
 
-  // The buffer must end with a return.
-  b.push((char)0xc3); /* ret */
+void chdl::gen_pre_tick_all(evaluator_t &e, execbuf &b,
+                            nodebuf_t &from, nodebuf_t &to)
+{
+  for (auto t : tickables()[0]) t->gen_pre_tick(e, b, from, to);
+}
+
+void chdl::gen_tick_all(evaluator_t &e, execbuf &b,
+                        nodebuf_t &from, nodebuf_t &to)
+{
+  for (auto t : tickables()[0]) t->gen_tick(e, b, from, to);
+}
+
+void chdl::gen_tock_all(evaluator_t &e, execbuf &b,
+                        nodebuf_t &from, nodebuf_t &to)
+{
+  for (auto t : tickables()[0]) t->gen_tock(e, b, from, to);
+}
+
+void chdl::gen_post_tock_all(evaluator_t &e, execbuf &b,
+                             nodebuf_t &from, nodebuf_t &to)
+{
+  for (auto t : tickables()[0]) t->gen_post_tock(e, b, from, to);
 }

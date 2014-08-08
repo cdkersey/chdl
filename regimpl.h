@@ -22,6 +22,9 @@ namespace chdl {
     void gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from);
     void gen_store_result(execbuf &b, nodebuf_t &from, nodebuf_t &to);
 
+    void gen_tick(evaluator_t &e, execbuf &b, nodebuf_t &from, nodebuf_t &to);
+    void gen_tock(evaluator_t &e, execbuf &b, nodebuf_t &from, nodebuf_t &to);
+
     node d;
 
     bool q, next_q;

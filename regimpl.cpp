@@ -32,22 +32,31 @@ void regimpl::print_vl(ostream &out) {
       << "    end" << endl << endl;
 }
 
-void regimpl::gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from) {
+// Do nothing-- the value is already there. 
+void regimpl::gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from) {}
+void regimpl::gen_store_result(execbuf &b, nodebuf_t &from, nodebuf_t &to) {}
+
+void regimpl::gen_tick(evaluator_t &e, execbuf &b,
+                       nodebuf_t &from, nodebuf_t &to)
+{
   b.push(char(0x48)); // mov &from[d], %rbx
   b.push(char(0xbb));
   b.push((void*)&from[d]);
 
   b.push(char(0x8b)); // mov *%rbx, %eax
   b.push(char(0x03));
-}
 
-void regimpl::gen_store_result(execbuf &b, nodebuf_t &from, nodebuf_t &to) {
   b.push(char(0x48)); // mov &to[id], %rbx
   b.push(char(0xbb));
   b.push((void*)&to[id]);
 
   b.push(char(0x89)); // mov %eax, *%rbx
-  b.push(char(0x03));
+  b.push(char(0x03));  
+}
+
+void regimpl::gen_tock(evaluator_t &e, execbuf &b,
+                       nodebuf_t &from, nodebuf_t &to)
+{
 }
 
 node chdl::Reg(node d, bool val) {
