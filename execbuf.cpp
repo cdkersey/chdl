@@ -39,6 +39,8 @@ unsigned execbuf::operator()(long c, long b, long d)
   return val;
 }
 
+void execbuf::clear() { reallocate(1); pos = buf; }
+
 void execbuf::push(char x) {
   if (pos == end - 1)
     reallocate((end - buf)*2);
@@ -53,10 +55,16 @@ void execbuf::reallocate(size_t sz) {
   buf = (char*)mmap(NULL, sz, PROT_EXEC | PROT_READ | PROT_WRITE,
                     MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 
+  if (!buf) {
+    cerr << "Execbuf failed to allocate new buffer of size " << sz
+         << '.' << endl;
+    abort();
+  }
+
   end = buf + sz;
   pos = pos - old_buf + buf;
 
-  memcpy(buf, old_buf, old_sz);
+  if (old_sz <= sz) memcpy(buf, old_buf, old_sz);
 
   munmap(old_buf, old_sz);
 }

@@ -13,6 +13,8 @@ namespace chdl {
     unsigned operator()(long c=0, long b=0, long d=0);
     void push(char x);
 
+    void clear();
+
     template <typename T>
       void push(T x_in)
     {

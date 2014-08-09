@@ -19,6 +19,12 @@ namespace chdl {
   void print_time(std::ostream&);
   cycle_t advance(cdomain_handle_t cd, evaluator_t &e);
 
+  evaluator_t &default_evaluator();
+
+  void init_trans();
+  void advance_trans();
+
+  void run_trans(std::ostream &vcdout, bool &stop, cycle_t max);
   void run_trans(std::ostream &vcdout, cycle_t max);
 
   void run(std::ostream &vcdout, bool &stop, unsigned threads = 1);

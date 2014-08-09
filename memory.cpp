@@ -66,7 +66,7 @@ void memory::tick(evaluator_t &e) {
 
   if (do_write)
     for (unsigned i = 0; i < d.size(); ++i)
-      wrdata[i] = nodes[d[i]]->eval(e);
+      wrdata[i] = e(d[i]);
 }
 
 void memory::tock(evaluator_t &e) {

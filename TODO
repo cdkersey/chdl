@@ -22,8 +22,15 @@ _ Create a binary translation framework for simulation.
   . Replace bizarre reg/everything else eval distinction with a gen_tick
     interface that defaults to calling the ordinary *tick/*tock functions using
     a supplied evaluator.
-  _ Update the tests to work with this interface.
+  _ Consider support for disabling taps to create a faster simulation (or making
+    it possible to call run without an ostream.
   _ Add support for clock domains to the simulation interface.
+  _ Make single-stepping the tests something that could reasonably be done.
+    - Now we're manually looping through the tickables; we could do something
+      better than that even in the mainline.
+    - Or we're calling advance. Perhaps we could build an advance function that
+      caches generated code.
+  _ Update the tests to work with this interface.
   
 
 _ Remove statemachine and use cassign instead. It's no longer useful.

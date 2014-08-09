@@ -5,7 +5,7 @@
 #include "../ingress.h"
 #include "../egress.h"
 
-const unsigned TRIALS(100);
+const unsigned TRIALS(1000);
 
 using namespace std;
 using namespace chdl;
@@ -38,24 +38,16 @@ template <unsigned N, typename F, typename H>
   bvec<N> a(IngressInt<N>(in_a)), b(IngressInt<N>(in_b)), s(h(a,b));
   EgressInt(out, s);
 
-  // Memoizing evaluator
-  evaluator_t e;
-  map<nodeid_t, bool> memo;
-  e = [&e, &memo](nodeid_t n) {
-    if (!memo.count(n)) {
-      memo[n] = nodes[n]->eval(e);
-    }
-    return memo[n];
-  };
-
   optimize();
+
+  init_trans();
 
   for (unsigned i = 0; i < TRIALS; ++i) {
     in_a = RandInt<N>();
     in_b = RandInt<N>();
     uint64_t sum(Trunc<N>(f(in_a, in_b)));
-    advance(0, e);
-    memo.clear();
+    advance_trans(); 
+    // advance(0, default_evaluator());
     if (out != sum) {
       cout << "func(" << in_a << ", " << in_b << ") => " << sum
            << "; incorrect value " << out << endl;

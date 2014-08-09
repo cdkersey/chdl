@@ -9,6 +9,7 @@
 #include "reset.h"
 #include "cdomain.h"
 #include "regimpl.h"
+#include "memory.h"
 
 using namespace chdl;
 using namespace std;
@@ -18,6 +19,33 @@ static void reset_now() { now = vector<cycle_t>(1); }
 CHDL_REGISTER_RESET(reset_now);
 
 cycle_t chdl::sim_time(cdomain_handle_t cd) { return now[cd]; }
+
+static cycle_t memo_expires = 0;
+static map<nodeid_t, bool> memo;
+static evaluator_t *default_evaluator_ptr = NULL;
+
+evaluator_t &chdl::default_evaluator() {
+  if (!default_evaluator_ptr) {
+    default_evaluator_ptr = new evaluator_t(
+      [](nodeid_t n){
+        if (sim_time(0) == memo_expires) { memo.clear(); ++memo_expires; }
+        if (!memo.count(n))
+          memo[n] = nodes[n]->eval(*default_evaluator_ptr);
+        return memo[n];
+      }
+    );
+  }
+
+  return *default_evaluator_ptr;
+}
+
+static void reset_default_evaluator() {
+  delete(default_evaluator_ptr);
+  default_evaluator_ptr = NULL;
+  memo.clear();
+  memo_expires = 0;
+}
+CHDL_REGISTER_RESET(reset_default_evaluator);
 
 cycle_t chdl::advance(cdomain_handle_t cd, evaluator_t &e) {
   for (auto &t : tickables()[cd]) t->pre_tick(e);
@@ -72,15 +100,19 @@ void dump(nodebuf_t x) {
   cout << endl;
 }
 
-void chdl::run_trans(std::ostream &vcdout, cycle_t max) {
-  nodebuf_t v0, v1;
+static nodebuf_t v0, v1;
+static evaluator_t e0, e1;
+static execbuf l0, r0, l1, r1;
+
+void chdl::init_trans() {
+  l0.clear(); r0.clear();
+  l1.clear(); r1.clear();
+
   v0.resize(nodes.size());
   v1.resize(nodes.size());
 
-  evaluator_t e0 = [&v0](nodeid_t n){ return v0[n]; },
-              e1 = [&v1](nodeid_t n){ return v1[n]; };
-
-  execbuf l0, r0, l1, r1;
+  e0 = [](nodeid_t n){ return v0[n]; };
+  e1 = [](nodeid_t n){ return v1[n]; };
 
   gen_eval_all(e0, l0, v0, v1);
   l0.push((char)0xc3);
@@ -97,17 +129,33 @@ void chdl::run_trans(std::ostream &vcdout, cycle_t max) {
   gen_tock_all(e1, r1, v1, v0);
   gen_post_tock_all(e1, r1, v1, v0);
   r1.push((char)0xc3); // ret
+}
+
+void chdl::advance_trans() {
+  if (!(now[0] & 1)) {
+    l0();
+    r0();
+    ++now[0];
+  } else {
+    l1();
+    r1();
+    ++now[0];
+  }
+}
+
+void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
+  init_trans();
 
   print_vcd_header(vcdout);
   print_time(vcdout);
-  for (unsigned i = 0; i < max; ++i) {
+  for (unsigned i = 0; i < max && !stop; ++i) {
     l0();
     print_taps(vcdout, e0);
     r0();
     ++now[0];
     print_time(vcdout);
 
-    if (++i == max) break;
+    if (stop || ++i == max) break;
 
     l1();
     print_taps(vcdout, e1);
@@ -117,6 +165,11 @@ void chdl::run_trans(std::ostream &vcdout, cycle_t max) {
   }
 
   call_final_funcs();
+}
+
+void chdl::run_trans(std::ostream &vcdout, cycle_t max) {
+  bool stop(false);
+  run_trans(vcdout, stop, max);
 }
 
 void chdl::run(ostream &vcdout, cycle_t time, unsigned threads) {
@@ -148,6 +201,7 @@ void chdl::call_final_funcs() {
 void get_dest_nodes(set<nodeid_t> &s) {
   get_tap_nodes(s);
   get_reg_nodes(s);
+  get_mem_nodes(s);
 }
 
 // Get all of the origin nodes; the nodes without sources.
