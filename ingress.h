@@ -11,7 +11,6 @@
 namespace chdl {
   template <typename T> node IngressFunc(const T &f);
   static node Ingress(bool &x);
-  static node IngressAutoclear(bool &x);
   template <unsigned N, typename T> void IngressInt(bvec<N> &b, const T &x);
   template <unsigned N, typename T> bvec<N> IngressInt(const T &x);
   template <unsigned N, typename T> void IngressIntFunc(bvec<N> &b, const T &x);
@@ -19,14 +18,12 @@ namespace chdl {
 
   template <typename T> class ingressimpl : public nodeimpl {
   public:
-    ingressimpl(T f): nodeimpl(), f(f), eval_time(0), val(0) {} 
+    ingressimpl(T f): nodeimpl(), f(f) {} 
     bool eval(evaluator_t &e) { return f(); }
 
     void print(std::ostream &out) { abort(); }
     void print_vl(std::ostream &out) { abort(); }
   private:
-    cycle_t eval_time;
-    bool val;
     T f;
   };
 
@@ -41,10 +38,6 @@ namespace chdl {
 
   static node Ingress(bool &x) {
     return IngressFunc([&x](){ return x; });
-  }
-
-  static node IngressAutoclear(bool &x) {
-    return IngressFunc([&x](){ bool prevx(x); x = false; return prevx; });
   }
 
   template <typename T> std::function<bool()> GetBit(unsigned bit, T &x) {
