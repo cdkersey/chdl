@@ -1,44 +1,73 @@
 #include <iostream>
 #include <fstream>
 
-#include <gates.h>
-#include <gateops.h>
-#include <lit.h>
-#include <netlist.h>
-#include <reg.h>
-
-#include <tap.h>
-#include <opt.h>
-#include <sim.h>
-
-#include <vis.h>
-#include <hierarchy.h>
+#include "../adder.h"
+#include "../analysis.h"
+#include "../assert.h"
+#include "../bus.h"
+#include "../bvec-basic.h"
+#include "../bvec-basic-op.h"
+#include "../bvec.h"
+#include "../cassign.h"
+#include "../cdomain.h"
+#include "../chdl.h"
+#include "../divider.h"
+#include "../egress.h"
+#include "../enc.h"
+#include "../execbuf.h"
+#include "../gateops.h"
+#include "../gates.h"
+#include "../gatesimpl.h"
+#include "../hierarchy.h"
+#include "../ingress.h"
+#include "../input.h"
+#include "../latch.h"
+#include "../lit.h"
+#include "../litimpl.h"
+#include "../llmem.h"
+#include "../memory.h"
+#include "../mult.h"
+#include "../mux.h"
+#include "../netlist.h"
+#include "../node.h"
+#include "../nodeimpl.h"
+#include "../opt.h"
+#include "../reg.h"
+#include "../regimpl.h"
+#include "../reset.h"
+#include "../shifter.h"
+#include "../sim.h"
+#include "../statemachine.h"
+#include "../submodule.h"
+#include "../tap.h"
+#include "../techmap.h"
+#include "../tickable.h"
+#include "../trisimpl.h"
+#include "../tristate.h"
+#include "../vis.h"
 
 using namespace std;
 using namespace chdl;
 
 int main(int argc, char **argv) {
-  // The design
-  node r0, r1;
+  push_clock_domain(3);
+  bvec<4> ctr3; ctr3 = Reg(ctr3 + Lit<4>(1));
+  pop_clock_domain();
 
-  // We are going to intentionally re-assign this node to show that it is
-  // possible.
-  node lit1;
-  node lit2(lit1);
+  push_clock_domain(5);
+  bvec<4> ctr5; ctr5 = Reg(ctr5 + Lit<4>(1));
+  pop_clock_domain();
 
-  r0 = Reg(Xor(r0, lit2));
-  r1 = Reg(!Xor(r0, r1));
-
-  lit1 = Lit(1); // This is retroactively effective.
-
-  TAP(r0);
-  TAP(r1);
+  node eq(ctr3 == ctr5);
+  TAP(ctr3);
+  TAP(ctr5);
+  TAP(eq);
 
   // The simulation (generate .vcd file)
   optimize();
 
   ofstream wave_file("example0.vcd");
-  run(wave_file, 8);
+  run_trans(wave_file, 1000);
 
   ofstream netlist_file("example0.nand");
   print_netlist(netlist_file);

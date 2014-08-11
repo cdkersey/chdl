@@ -100,78 +100,94 @@ void dump(nodebuf_t x) {
   cout << endl;
 }
 
-static nodebuf_t v0, v1;
-static evaluator_t e0, e1;
-static execbuf l0, r0, l1, r1, pre_tick_buf0, pre_tick_buf1, tick_buf0,
-               tick_buf1, tock_buf0, tock_buf1, post_tock_buf0,
-               post_tock_buf1;
+static vector<nodebuf_t> v0, v1;
+static vector<evaluator_t> e0, e1;
+static vector<execbuf> l0, r0, l1, r1, pre_tick_buf0, pre_tick_buf1, tick_buf0,
+                       tick_buf1, tock_buf0, tock_buf1, post_tock_buf0,
+                       post_tock_buf1;
 
 void chdl::init_trans() {
-  l0.clear(); r0.clear();
-  l1.clear(); r1.clear();
+  unsigned n_cdomains(tickables().size());
+  l0.resize(n_cdomains);  r0.resize(n_cdomains);
+  l1.resize(n_cdomains);  r1.resize(n_cdomains);
+  v0.resize(n_cdomains);  v1.resize(n_cdomains);
+  e0.resize(n_cdomains);  e1.resize(n_cdomains);
+  pre_tick_buf0.resize(n_cdomains);
+  pre_tick_buf1.resize(n_cdomains);
+  tick_buf0.resize(n_cdomains);
+  tick_buf1.resize(n_cdomains);
+  tock_buf0.resize(n_cdomains);
+  tock_buf1.resize(n_cdomains);
+  post_tock_buf0.resize(n_cdomains);
+  post_tock_buf1.resize(n_cdomains);
 
-  pre_tick_buf0.clear();
-  pre_tick_buf1.clear();
-  tick_buf0.clear();
-  tick_buf1.clear();
-  tock_buf0.clear();
-  tock_buf1.clear();
-  post_tock_buf0.clear();
-  post_tock_buf1.clear();
+  for (cdomain_handle_t i = 0; i < n_cdomains; ++i) {
+    l0[i].clear(); r0[i].clear();
+    l1[i].clear(); r1[i].clear();
 
-  v0.resize(nodes.size());
-  v1.resize(nodes.size());
+    pre_tick_buf0[i].clear();
+    pre_tick_buf1[i].clear();
+    tick_buf0[i].clear();
+    tick_buf1[i].clear();
+    tock_buf0[i].clear();
+    tock_buf1[i].clear();
+    post_tock_buf0[i].clear();
+    post_tock_buf1[i].clear();
 
-  e0 = [](nodeid_t n){ return v0[n]; };
-  e1 = [](nodeid_t n){ return v1[n]; };
+    v0[i].resize(nodes.size());
+    v1[i].resize(nodes.size());
 
-  gen_eval_all(e0, l0, v0, v1);
-  l0.push((char)0xc3);
-  gen_pre_tick_all(e0, r0, v0, v1);
-  gen_tick_all(e0, r0, v0, v1);
-  gen_tock_all(e0, r0, v0, v1);
-  gen_post_tock_all(e0, r0, v0, v1);
-  r0.push((char)0xc3); // ret
+    e0[i] = [i](nodeid_t n){ return v0[i][n]; };
+    e1[i] = [i](nodeid_t n){ return v1[i][n]; };
 
-  gen_pre_tick_all(e0, pre_tick_buf0, v0, v1);
-  pre_tick_buf0.push((char)0xc3); // ret
-  gen_tick_all(e0, tick_buf0, v0, v1);
-  tick_buf0.push((char)0xc3); // ret
-  gen_tock_all(e0, tock_buf0, v0, v1);
-  tock_buf0.push((char)0xc3); // ret
-  gen_post_tock_all(e0, post_tock_buf0, v0, v1);
-  post_tock_buf0.push((char)0xc3); // ret
+    gen_eval_all(e0[i], l0[i], v0[i], v1[i]);
+    l0[i].push((char)0xc3);
+    gen_pre_tick_all(i, e0[i], r0[i], v0[i], v1[i]);
+    gen_tick_all(i, e0[i], r0[i], v0[i], v1[i]);
+    gen_tock_all(i, e0[i], r0[i], v0[i], v1[i]);
+    gen_post_tock_all(i, e0[i], r0[i], v0[i], v1[i]);
+    r0[i].push((char)0xc3); // ret
 
-  gen_eval_all(e1, l1, v1, v0);
-  l1.push((char)0xc3);
-  gen_pre_tick_all(e1, r1, v1, v0);
-  gen_tick_all(e1, r1, v1, v0);
-  gen_tock_all(e1, r1, v1, v0);
-  gen_post_tock_all(e1, r1, v1, v0);
-  r1.push((char)0xc3); // ret
+    gen_pre_tick_all(i, e0[i], pre_tick_buf0[i], v0[i], v1[i]);
+    pre_tick_buf0[i].push((char)0xc3); // ret
+    gen_tick_all(i, e0[i], tick_buf0[i], v0[i], v1[i]);
+    tick_buf0[i].push((char)0xc3); // ret
+    gen_tock_all(i, e0[i], tock_buf0[i], v0[i], v1[i]);
+    tock_buf0[i].push((char)0xc3); // ret
+    gen_post_tock_all(i, e0[i], post_tock_buf0[i], v0[i], v1[i]);
+    post_tock_buf0[i].push((char)0xc3); // ret
 
-  gen_pre_tick_all(e1, pre_tick_buf1, v1, v0);
-  pre_tick_buf1.push((char)0xc3); // ret
-  gen_tick_all(e1, tick_buf1, v1, v0);
-  tick_buf1.push((char)0xc3); // ret
-  gen_tock_all(e1, tock_buf1, v1, v0);
-  tock_buf1.push((char)0xc3); // ret
-  gen_post_tock_all(e1, post_tock_buf1, v1, v0);
-  post_tock_buf1.push((char)0xc3); // ret
+    gen_eval_all(e1[i], l1[i], v1[i], v0[i]);
+    l1[i].push((char)0xc3);
+    gen_pre_tick_all(i, e1[i], r1[i], v1[i], v0[i]);
+    gen_tick_all(i, e1[i], r1[i], v1[i], v0[i]);
+    gen_tock_all(i, e1[i], r1[i], v1[i], v0[i]);
+    gen_post_tock_all(i, e1[i], r1[i], v1[i], v0[i]);
+    r1[i].push((char)0xc3); // ret
+
+    gen_pre_tick_all(i, e1[i], pre_tick_buf1[i], v1[i], v0[i]);
+    pre_tick_buf1[i].push((char)0xc3); // ret
+    gen_tick_all(i, e1[i], tick_buf1[i], v1[i], v0[i]);
+    tick_buf1[i].push((char)0xc3); // ret
+    gen_tock_all(i, e1[i], tock_buf1[i], v1[i], v0[i]);
+    tock_buf1[i].push((char)0xc3); // ret
+    gen_post_tock_all(i, e1[i], post_tock_buf1[i], v1[i], v0[i]);
+    post_tock_buf1[i].push((char)0xc3); // ret
+  }
 }
 
 evaluator_t &chdl::trans_evaluator() {
-  if (now[0] % 2 == 0) return e0; else return e1;
+  if (now[0] % 2 == 0) return e0[0]; else return e1[0];
 }
 
 void chdl::advance_trans() {
   if (!(now[0] & 1)) {
-    l0();
-    r0();
+    l0[0]();
+    r0[0]();
     ++now[0];
   } else {
-    l1();
-    r1();
+    l1[0]();
+    r1[0]();
     ++now[0];
   }
 }
@@ -182,17 +198,17 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   print_vcd_header(vcdout);
   print_time(vcdout);
   for (unsigned i = 0; i < max && !stop; ++i) {
-    l0();
-    print_taps(vcdout, e0);
-    r0();
+    l0[0]();
+    print_taps(vcdout, e0[0]);
+    r0[0]();
     ++now[0];
     print_time(vcdout);
 
     if (stop || ++i == max) break;
 
-    l1();
-    print_taps(vcdout, e1);
-    r1();
+    l1[0]();
+    print_taps(vcdout, e1[0]);
+    r1[0]();
     ++now[0];
     print_time(vcdout);
   }
@@ -202,41 +218,41 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
 
 void chdl::recompute_logic_trans() {
   if ((now[0] % 2) == 0)
-    l0();
+    l0[0]();
   else
-    l1();
+    l1[0]();
 }
 
 void chdl::pre_tick_trans() {
   if ((now[0] % 2) == 0) {
-    l0();
-    pre_tick_buf1();
+    l0[0]();
+    pre_tick_buf1[0]();
   } else {
-    l1();
-    pre_tick_buf0();
+    l1[0]();
+    pre_tick_buf0[0]();
   }
 }
 
 void chdl::tick_trans() {
   if ((now[0] % 2) == 0) {
-    tick_buf0();
+    tick_buf0[0]();
   } else {
-    tick_buf1();
+    tick_buf1[0]();
   }
 }
 
 void chdl::tock_trans() {
   if ((now[0] % 2) == 0)
-    tock_buf0();
+    tock_buf0[0]();
   else
-    tock_buf1();
+    tock_buf1[0]();
 }
 
 void chdl::post_tock_trans() {
   if ((now[0] % 2) == 0)
-    post_tock_buf0();
+    post_tock_buf0[0]();
   else
-    post_tock_buf1();
+    post_tock_buf1[0]();
 }
 
 void chdl::run_trans(std::ostream &vcdout, cycle_t max) {
@@ -321,26 +337,26 @@ void chdl::gen_eval_all(evaluator_t &e, execbuf &b,
   }
 }
 
-void chdl::gen_pre_tick_all(evaluator_t &e, execbuf &b,
+void chdl::gen_pre_tick_all(cdomain_handle_t cd, evaluator_t &e, execbuf &b,
                             nodebuf_t &from, nodebuf_t &to)
 {
-  for (auto t : tickables()[0]) t->gen_pre_tick(e, b, from, to);
+  for (auto t : tickables()[cd]) t->gen_pre_tick(e, b, from, to);
 }
 
-void chdl::gen_tick_all(evaluator_t &e, execbuf &b,
+void chdl::gen_tick_all(cdomain_handle_t cd, evaluator_t &e, execbuf &b,
                         nodebuf_t &from, nodebuf_t &to)
 {
-  for (auto t : tickables()[0]) t->gen_tick(e, b, from, to);
+  for (auto t : tickables()[cd]) t->gen_tick(e, b, from, to);
 }
 
-void chdl::gen_tock_all(evaluator_t &e, execbuf &b,
+void chdl::gen_tock_all(cdomain_handle_t cd, evaluator_t &e, execbuf &b,
                         nodebuf_t &from, nodebuf_t &to)
 {
-  for (auto t : tickables()[0]) t->gen_tock(e, b, from, to);
+  for (auto t : tickables()[cd]) t->gen_tock(e, b, from, to);
 }
 
-void chdl::gen_post_tock_all(evaluator_t &e, execbuf &b,
+void chdl::gen_post_tock_all(cdomain_handle_t cd, evaluator_t &e, execbuf &b,
                              nodebuf_t &from, nodebuf_t &to)
 {
-  for (auto t : tickables()[0]) t->gen_post_tock(e, b, from, to);
+  for (auto t : tickables()[cd]) t->gen_post_tock(e, b, from, to);
 }
