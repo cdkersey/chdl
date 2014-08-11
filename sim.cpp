@@ -102,11 +102,22 @@ void dump(nodebuf_t x) {
 
 static nodebuf_t v0, v1;
 static evaluator_t e0, e1;
-static execbuf l0, r0, l1, r1;
+static execbuf l0, r0, l1, r1, pre_tick_buf0, pre_tick_buf1, tick_buf0,
+               tick_buf1, tock_buf0, tock_buf1, post_tock_buf0,
+               post_tock_buf1;
 
 void chdl::init_trans() {
   l0.clear(); r0.clear();
   l1.clear(); r1.clear();
+
+  pre_tick_buf0.clear();
+  pre_tick_buf1.clear();
+  tick_buf0.clear();
+  tick_buf1.clear();
+  tock_buf0.clear();
+  tock_buf1.clear();
+  post_tock_buf0.clear();
+  post_tock_buf1.clear();
 
   v0.resize(nodes.size());
   v1.resize(nodes.size());
@@ -122,6 +133,15 @@ void chdl::init_trans() {
   gen_post_tock_all(e0, r0, v0, v1);
   r0.push((char)0xc3); // ret
 
+  gen_pre_tick_all(e0, pre_tick_buf0, v0, v1);
+  pre_tick_buf0.push((char)0xc3); // ret
+  gen_tick_all(e0, tick_buf0, v0, v1);
+  tick_buf0.push((char)0xc3); // ret
+  gen_tock_all(e0, tock_buf0, v0, v1);
+  tock_buf0.push((char)0xc3); // ret
+  gen_post_tock_all(e0, post_tock_buf0, v0, v1);
+  post_tock_buf0.push((char)0xc3); // ret
+
   gen_eval_all(e1, l1, v1, v0);
   l1.push((char)0xc3);
   gen_pre_tick_all(e1, r1, v1, v0);
@@ -129,6 +149,19 @@ void chdl::init_trans() {
   gen_tock_all(e1, r1, v1, v0);
   gen_post_tock_all(e1, r1, v1, v0);
   r1.push((char)0xc3); // ret
+
+  gen_pre_tick_all(e1, pre_tick_buf1, v1, v0);
+  pre_tick_buf1.push((char)0xc3); // ret
+  gen_tick_all(e1, tick_buf1, v1, v0);
+  tick_buf1.push((char)0xc3); // ret
+  gen_tock_all(e1, tock_buf1, v1, v0);
+  tock_buf1.push((char)0xc3); // ret
+  gen_post_tock_all(e1, post_tock_buf1, v1, v0);
+  post_tock_buf1.push((char)0xc3); // ret
+}
+
+evaluator_t &chdl::trans_evaluator() {
+  if (now[0] % 2 == 0) return e0; else return e1;
 }
 
 void chdl::advance_trans() {
@@ -165,6 +198,45 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   }
 
   call_final_funcs();
+}
+
+void chdl::recompute_logic_trans() {
+  if ((now[0] % 2) == 0)
+    l0();
+  else
+    l1();
+}
+
+void chdl::pre_tick_trans() {
+  if ((now[0] % 2) == 0) {
+    l0();
+    pre_tick_buf1();
+  } else {
+    l1();
+    pre_tick_buf0();
+  }
+}
+
+void chdl::tick_trans() {
+  if ((now[0] % 2) == 0) {
+    tick_buf0();
+  } else {
+    tick_buf1();
+  }
+}
+
+void chdl::tock_trans() {
+  if ((now[0] % 2) == 0)
+    tock_buf0();
+  else
+    tock_buf1();
+}
+
+void chdl::post_tock_trans() {
+  if ((now[0] % 2) == 0)
+    post_tock_buf0();
+  else
+    post_tock_buf1();
 }
 
 void chdl::run_trans(std::ostream &vcdout, cycle_t max) {

@@ -23,6 +23,12 @@ namespace chdl {
 
   void init_trans();
   void advance_trans();
+  void recompute_logic_trans();
+  void pre_tick_trans();
+  void tick_trans();
+  void tock_trans();
+  void post_tock_trans();
+  evaluator_t &trans_evaluator();
 
   void run_trans(std::ostream &vcdout, bool &stop, cycle_t max);
   void run_trans(std::ostream &vcdout, cycle_t max);
