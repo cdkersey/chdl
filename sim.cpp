@@ -20,30 +20,39 @@ CHDL_REGISTER_RESET(reset_now);
 
 cycle_t chdl::sim_time(cdomain_handle_t cd) { return now[cd]; }
 
-static cycle_t memo_expires = 0;
-static map<nodeid_t, bool> memo;
-static evaluator_t *default_evaluator_ptr = NULL;
+static vector<cycle_t> memo_expires;
+static vector<map<nodeid_t, bool> > memo;
+static vector<evaluator_t*> default_evaluator_ptr;
 
-evaluator_t &chdl::default_evaluator() {
-  if (!default_evaluator_ptr) {
-    default_evaluator_ptr = new evaluator_t(
-      [](nodeid_t n){
-        if (sim_time(0) == memo_expires) { memo.clear(); ++memo_expires; }
-        if (!memo.count(n))
-          memo[n] = nodes[n]->eval(*default_evaluator_ptr);
-        return memo[n];
+evaluator_t &chdl::default_evaluator(cdomain_handle_t cd) {
+  if (default_evaluator_ptr.size() <= cd) {
+    default_evaluator_ptr.resize(cd + 1);
+    memo.resize(cd + 1);
+    memo_expires.resize(cd + 1);
+  }
+
+  if (default_evaluator_ptr[cd] == NULL) {
+    default_evaluator_ptr[cd] = new evaluator_t(
+      [cd](nodeid_t n){
+        if (sim_time(cd) == memo_expires[cd]) {
+          memo[cd].clear();
+          ++memo_expires[cd];
+        }
+        if (!memo[cd].count(n))
+          memo[cd][n] = nodes[n]->eval(*default_evaluator_ptr[cd]);
+        return memo[cd][n];
       }
     );
   }
 
-  return *default_evaluator_ptr;
+  return *default_evaluator_ptr[cd];
 }
 
 static void reset_default_evaluator() {
-  delete(default_evaluator_ptr);
-  default_evaluator_ptr = NULL;
+  for (auto p: default_evaluator_ptr) delete p;
+  default_evaluator_ptr.clear();
   memo.clear();
-  memo_expires = 0;
+  memo_expires.clear();
 }
 CHDL_REGISTER_RESET(reset_default_evaluator);
 
@@ -180,15 +189,15 @@ evaluator_t &chdl::trans_evaluator() {
   if (now[0] % 2 == 0) return e0[0]; else return e1[0];
 }
 
-void chdl::advance_trans() {
-  if (!(now[0] & 1)) {
-    l0[0]();
-    r0[0]();
+void chdl::advance_trans(cdomain_handle_t cd) {
+  if (!(now[cd] & 1)) {
+    l0[cd]();
+    r0[cd]();
     ++now[0];
   } else {
-    l1[0]();
-    r1[0]();
-    ++now[0];
+    l1[cd]();
+    r1[cd]();
+    ++now[cd];
   }
 }
 
@@ -198,61 +207,65 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   print_vcd_header(vcdout);
   print_time(vcdout);
   for (unsigned i = 0; i < max && !stop; ++i) {
-    l0[0]();
-    print_taps(vcdout, e0[0]);
-    r0[0]();
-    ++now[0];
-    print_time(vcdout);
-
-    if (stop || ++i == max) break;
-
-    l1[0]();
-    print_taps(vcdout, e1[0]);
-    r1[0]();
-    ++now[0];
-    print_time(vcdout);
+    for (unsigned cd = 0; cd < tickables().size(); ++cd) {
+      if (i % tick_intervals()[cd] == 0) {
+        if ((i & 1) == 0) {
+          l0[cd]();
+          print_taps(vcdout, e0[cd]);
+          r0[cd]();
+          ++now[cd];
+        print_time(vcdout);
+        } else {
+          l1[cd]();
+          print_taps(vcdout, e1[cd]);
+          r1[cd]();
+          ++now[cd];
+          print_time(vcdout);
+        }
+      }
+    }
   }
 
   call_final_funcs();
 }
 
-void chdl::recompute_logic_trans() {
+void chdl::recompute_logic_trans(cdomain_handle_t cd) {
   if ((now[0] % 2) == 0)
-    l0[0]();
+    l0[cd]();
   else
-    l1[0]();
+    l1[cd]();
 }
 
-void chdl::pre_tick_trans() {
+void chdl::pre_tick_trans(cdomain_handle_t cd) {
   if ((now[0] % 2) == 0) {
-    l0[0]();
+    l0[cd]();
     pre_tick_buf1[0]();
   } else {
-    l1[0]();
+    l1[cd]();
     pre_tick_buf0[0]();
   }
 }
 
-void chdl::tick_trans() {
+void chdl::tick_trans(cdomain_handle_t cd) {
   if ((now[0] % 2) == 0) {
-    tick_buf0[0]();
+    tick_buf0[cd]();
   } else {
-    tick_buf1[0]();
+    tick_buf1[cd]();
   }
 }
 
-void chdl::tock_trans() {
-  if ((now[0] % 2) == 0)
-    tock_buf0[0]();
+void chdl::tock_trans(cdomain_handle_t cd) {
+  if ((now[cd] % 2) == 0)
+    tock_buf0[cd]();
   else
-    tock_buf1[0]();
+    tock_buf1[cd]();
 }
 
-void chdl::post_tock_trans() {
-  if ((now[0] % 2) == 0)
-    post_tock_buf0[0]();
+void chdl::post_tock_trans(cdomain_handle_t cd) {
+  if ((now[cd] % 2) == 0)
+    post_tock_buf0[cd]();
   else
-    post_tock_buf1[0]();
+    post_tock_buf1[cd]();
 }
 
 void chdl::run_trans(std::ostream &vcdout, cycle_t max) {

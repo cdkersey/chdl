@@ -19,16 +19,16 @@ namespace chdl {
   void print_time(std::ostream&);
   cycle_t advance(cdomain_handle_t cd, evaluator_t &e);
 
-  evaluator_t &default_evaluator();
+  evaluator_t &default_evaluator(cdomain_handle_t cd);
 
   evaluator_t &trans_evaluator();
   void init_trans();
-  void advance_trans();
-  void recompute_logic_trans();
-  void pre_tick_trans();
-  void tick_trans();
-  void tock_trans();
-  void post_tock_trans();
+  void advance_trans(cdomain_handle_t cd);
+  void recompute_logic_trans(cdomain_handle_t cd);
+  void pre_tick_trans(cdomain_handle_t cd);
+  void tick_trans(cdomain_handle_t cd);
+  void tock_trans(cdomain_handle_t cd);
+  void post_tock_trans(cdomain_handle_t cd);
 
   void run_trans(std::ostream &vcdout, bool &stop, cycle_t max);
   void run_trans(std::ostream &vcdout, cycle_t max);
