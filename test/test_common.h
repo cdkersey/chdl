@@ -46,7 +46,7 @@ template <unsigned N, typename F, typename H>
     in_a = RandInt<N>();
     in_b = RandInt<N>();
     uint64_t sum(Trunc<N>(f(in_a, in_b)));
-    advance_trans(); 
+    advance_trans(0); 
     // advance(0, default_evaluator(0));
     if (out != sum) {
       cout << "func(" << in_a << ", " << in_b << ") => " << sum

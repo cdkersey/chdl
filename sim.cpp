@@ -109,7 +109,7 @@ void dump(nodebuf_t x) {
   cout << endl;
 }
 
-static vector<nodebuf_t> v0, v1;
+static nodebuf_t v;
 static vector<evaluator_t> e0, e1;
 static vector<execbuf> l0, r0, l1, r1, pre_tick_buf0, pre_tick_buf1, tick_buf0,
                        tick_buf1, tock_buf0, tock_buf1, post_tock_buf0,
@@ -119,7 +119,6 @@ void chdl::init_trans() {
   unsigned n_cdomains(tickables().size());
   l0.resize(n_cdomains);  r0.resize(n_cdomains);
   l1.resize(n_cdomains);  r1.resize(n_cdomains);
-  v0.resize(n_cdomains);  v1.resize(n_cdomains);
   e0.resize(n_cdomains);  e1.resize(n_cdomains);
   pre_tick_buf0.resize(n_cdomains);
   pre_tick_buf1.resize(n_cdomains);
@@ -129,6 +128,7 @@ void chdl::init_trans() {
   tock_buf1.resize(n_cdomains);
   post_tock_buf0.resize(n_cdomains);
   post_tock_buf1.resize(n_cdomains);
+  v.resize(nodes.size());
 
   for (cdomain_handle_t i = 0; i < n_cdomains; ++i) {
     l0[i].clear(); r0[i].clear();
@@ -143,44 +143,41 @@ void chdl::init_trans() {
     post_tock_buf0[i].clear();
     post_tock_buf1[i].clear();
 
-    v0[i].resize(nodes.size());
-    v1[i].resize(nodes.size());
+    e0[i] = [i](nodeid_t n){ return v[n]; };
+    e1[i] = [i](nodeid_t n){ return v[n]; };
 
-    e0[i] = [i](nodeid_t n){ return v0[i][n]; };
-    e1[i] = [i](nodeid_t n){ return v1[i][n]; };
-
-    gen_eval_all(e0[i], l0[i], v0[i], v1[i]);
+    gen_eval_all(e0[i], l0[i], v, v);
     l0[i].push((char)0xc3);
-    gen_pre_tick_all(i, e0[i], r0[i], v0[i], v1[i]);
-    gen_tick_all(i, e0[i], r0[i], v0[i], v1[i]);
-    gen_tock_all(i, e0[i], r0[i], v0[i], v1[i]);
-    gen_post_tock_all(i, e0[i], r0[i], v0[i], v1[i]);
+    gen_pre_tick_all(i, e0[i], r0[i], v, v);
+    gen_tick_all(i, e0[i], r0[i], v, v);
+    gen_tock_all(i, e0[i], r0[i], v, v);
+    gen_post_tock_all(i, e0[i], r0[i], v, v);
     r0[i].push((char)0xc3); // ret
 
-    gen_pre_tick_all(i, e0[i], pre_tick_buf0[i], v0[i], v1[i]);
+    gen_pre_tick_all(i, e0[i], pre_tick_buf0[i], v, v);
     pre_tick_buf0[i].push((char)0xc3); // ret
-    gen_tick_all(i, e0[i], tick_buf0[i], v0[i], v1[i]);
+    gen_tick_all(i, e0[i], tick_buf0[i], v, v);
     tick_buf0[i].push((char)0xc3); // ret
-    gen_tock_all(i, e0[i], tock_buf0[i], v0[i], v1[i]);
+    gen_tock_all(i, e0[i], tock_buf0[i], v, v);
     tock_buf0[i].push((char)0xc3); // ret
-    gen_post_tock_all(i, e0[i], post_tock_buf0[i], v0[i], v1[i]);
+    gen_post_tock_all(i, e0[i], post_tock_buf0[i], v, v);
     post_tock_buf0[i].push((char)0xc3); // ret
 
-    gen_eval_all(e1[i], l1[i], v1[i], v0[i]);
+    gen_eval_all(e1[i], l1[i], v, v);
     l1[i].push((char)0xc3);
-    gen_pre_tick_all(i, e1[i], r1[i], v1[i], v0[i]);
-    gen_tick_all(i, e1[i], r1[i], v1[i], v0[i]);
-    gen_tock_all(i, e1[i], r1[i], v1[i], v0[i]);
-    gen_post_tock_all(i, e1[i], r1[i], v1[i], v0[i]);
+    gen_pre_tick_all(i, e1[i], r1[i], v, v);
+    gen_tick_all(i, e1[i], r1[i], v, v);
+    gen_tock_all(i, e1[i], r1[i], v, v);
+    gen_post_tock_all(i, e1[i], r1[i], v, v);
     r1[i].push((char)0xc3); // ret
 
-    gen_pre_tick_all(i, e1[i], pre_tick_buf1[i], v1[i], v0[i]);
+    gen_pre_tick_all(i, e1[i], pre_tick_buf1[i], v, v);
     pre_tick_buf1[i].push((char)0xc3); // ret
-    gen_tick_all(i, e1[i], tick_buf1[i], v1[i], v0[i]);
+    gen_tick_all(i, e1[i], tick_buf1[i], v, v);
     tick_buf1[i].push((char)0xc3); // ret
-    gen_tock_all(i, e1[i], tock_buf1[i], v1[i], v0[i]);
+    gen_tock_all(i, e1[i], tock_buf1[i], v, v);
     tock_buf1[i].push((char)0xc3); // ret
-    gen_post_tock_all(i, e1[i], post_tock_buf1[i], v1[i], v0[i]);
+    gen_post_tock_all(i, e1[i], post_tock_buf1[i], v, v);
     post_tock_buf1[i].push((char)0xc3); // ret
   }
 }
@@ -193,7 +190,7 @@ void chdl::advance_trans(cdomain_handle_t cd) {
   if (!(now[cd] & 1)) {
     l0[cd]();
     r0[cd]();
-    ++now[0];
+    ++now[cd];
   } else {
     l1[cd]();
     r1[cd]();
@@ -208,21 +205,21 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   print_time(vcdout);
   for (unsigned i = 0; i < max && !stop; ++i) {
     for (unsigned cd = 0; cd < tickables().size(); ++cd) {
-      if (i % tick_intervals()[cd] == 0) {
+      if (i % tick_intervals()[cd] == tick_intervals()[cd] - 1) {
         if ((i & 1) == 0) {
           l0[cd]();
-          print_taps(vcdout, e0[cd]);
+          if (cd == 0) print_taps(vcdout, e0[cd]);
           r0[cd]();
           ++now[cd];
-        print_time(vcdout);
         } else {
           l1[cd]();
-          print_taps(vcdout, e1[cd]);
+          if (cd == 0) print_taps(vcdout, e1[cd]);
           r1[cd]();
           ++now[cd];
-          print_time(vcdout);
         }
+        
       }
+      print_time(vcdout);
     }
   }
 
