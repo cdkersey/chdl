@@ -13,8 +13,9 @@ libchdl.so : $(OBJS)
 	g++ -shared $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 install: libchdl.so
+	if [ ! -e $(PREFIX)/lib ]; then mkdir -p $(PREFIX)/lib; fi
 	cp libchdl.so $(PREFIX)/lib
-	if [ ! -e $(PREFIX)/include/chdl ]; then mkdir $(PREFIX)/include/chdl; fi
+	if [ ! -e $(PREFIX)/include/chdl ]; then mkdir -p $(PREFIX)/include/chdl; fi
 	cp *.h $(PREFIX)/include/chdl
 
 uninstall:
