@@ -10,7 +10,7 @@
 
 namespace chdl {
   constexpr unsigned LOG2(unsigned long x) {
-    return x == 1 ? 0 : LOG2(x >> 1) + 1;
+    return x <= 1 ? 0 : LOG2(x >> 1) + 1;
   }
 
   constexpr unsigned CLOG2(unsigned long x) {
