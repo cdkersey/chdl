@@ -4,7 +4,7 @@
 #include <sstream>
 #include <stack>
 
-#define GCC_CASSIGN_INSTRUMENTATION
+// #define GCC_CASSIGN_INSTRUMENTATION
 
 namespace chdl {
   template <typename T> struct cassign {
