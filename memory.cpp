@@ -80,6 +80,8 @@ void memory::tock(cdomain_handle_t cd) {
       contents[waddr*d.size() + i] = wrdata[i];
 }
 
+static bool exists(nodeid_t x) { return x != (~0ull); }
+
 void memory::print(ostream &out) {
   out << "  " << (sync?"sync":"") << "ram <" << qa[0].size() << ' ' << d.size();
   if (filename != "") out << " \"" << filename << '"';
@@ -89,7 +91,8 @@ void memory::print(ostream &out) {
   out << ' ' << w;
   for (unsigned j = 0; j < qa.size(); ++j) {
     for (unsigned i = 0; i < qa[0].size(); ++i) out << ' ' << qa[j][i];
-    for (unsigned i = 0; i < q[0].size(); ++i) out << ' ' << q[j][i];
+    for (unsigned i = 0; i < q[0].size(); ++i)
+      if (exists(q[j][i])) out << ' ' << q[j][i];
   }
   out << endl;
 }
@@ -139,6 +142,7 @@ void memory::print_vl(ostream &out) {
         << endl;
   for (unsigned j = 0; j < q.size(); ++j) {
     for (unsigned i = 0; i < q[j].size(); ++i) {
+      if (!exists(q[j][i])) continue;
       out << "  assign __x" << q[j][i] << " = __mem_q" << id << '_' << j
           << '[' << i << "];" << endl;
     }
