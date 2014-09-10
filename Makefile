@@ -10,7 +10,7 @@ OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
 all : libchdl.so
 
 libchdl.so : $(OBJS)
-	g++ -shared $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 install: libchdl.so
 	if [ ! -e $(PREFIX)/lib ]; then mkdir -p $(PREFIX)/lib; fi
