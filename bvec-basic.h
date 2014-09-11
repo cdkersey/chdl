@@ -66,7 +66,7 @@ namespace chdl {
     T rt;
     bvec<sz<T>::value> r(rt);
     for (unsigned i = 0; i < sz<T>::value; ++i)
-      r[i] = Reg(d[i], val[i]);
+      r[i] = Reg(Flatten(d)[i], val[i]);
     HIERARCHY_EXIT();
     return r;
   }
@@ -84,9 +84,7 @@ namespace chdl {
   {
     HIERARCHY_ENTER();
     bvec<sz<T>::value> q(qt), d(dt);
-
-    for (unsigned i = 0; i < sz<T>::value; ++i)
-      q[i] = Reg(Mux(w, q[i], d[i]), val & (1ull<<i));
+    q = Reg(Mux(w, q, d), val);
     HIERARCHY_EXIT();
   }
 
@@ -95,9 +93,7 @@ namespace chdl {
   {
     HIERARCHY_ENTER();
     bvec<sz<T>::value> q(qt), d(dt);
-
-    for (unsigned i = 0; i < sz<T>::value; ++i)
-      q[i] = Reg(Mux(w, q[i], d[i]), val[i]);
+    q = Reg(Mux(w, q, d), val);
     HIERARCHY_EXIT();
   }
 
