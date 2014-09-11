@@ -27,30 +27,26 @@ namespace chdl {
     return o;
   }
 
-  // 2^M to 1 mux
-  template <unsigned M>
-    node Mux(bvec<M> sel, bvec<1<<M> inputs)
-  {
-    HIERARCHY_ENTER();
-    bvec<2<<M> nodes;
-    nodes[range<(1<<M),2*(1<<M)-1>()] = inputs;
-    for (int i = (1<<M)-1; i >= 1; --i)
-      nodes[i] = Mux(sel[M - LOG2(i) - 1], nodes[i*2], nodes[i*2 + 1]);
-    HIERARCHY_EXIT();
-    return nodes[1];
+  // Base case for recursive mux
+  template <typename T> T Mux(bvec<1> sel, const vec<2, T> &in) {
+    return Mux(sel[0], in[0], in[1]);
   }
 
   // 2^M-input recursive mux
-  template <unsigned N, unsigned M, typename T>
-    vec<M, T> Mux(bvec<CLOG2(N)> sel, const vec<N, vec<M, T> > &in)
+  template <unsigned N, typename T>
+    T Mux(bvec<CLOG2(N)> sel, const vec<N, T>&in)
   {
-    vec<M, T> out;
-    for (unsigned i = 0; i < M; ++i) {
-      vec<N, T> inx;
-      for (unsigned j = 0; j < N; ++j) inx[j] = in[j][i];
-      out[i] = Mux(sel, inx);
-    }
- 
+    HIERARCHY_ENTER();
+    const unsigned LSZ(1<<(CLOG2(N)-1)), RSZ(N - LSZ);
+    vec<LSZ, T> lv(in[range<0,LSZ-1>()]);
+    vec<RSZ, T> rv(in[range<LSZ,N-1>()]);
+    
+    T l(Mux(sel[range<0,CLOG2(LSZ)-1>()], lv)), 
+      r(Mux(sel[range<0,CLOG2(RSZ)-1>()], rv));
+
+    T out = Mux(sel[CLOG2(N)-1], l, r); 
+    HIERARCHY_EXIT();
+
     return out;
   }
 
