@@ -20,9 +20,9 @@ namespace chdl {
   // 2-input N-bit mux
   template <typename T> T Mux(node sel, const T &i0, const T &i1) {
     HIERARCHY_ENTER();
-    bvec<sz<T>::value> o;
+    T o;
     for (unsigned i = 0; i < sz<T>::value; ++i)
-      o[i] = Mux(sel, Flatten(i0)[i], Flatten(i1)[i]);
+      Flatten(o)[i] = Mux(sel, Flatten(i0)[i], Flatten(i1)[i]);
     HIERARCHY_EXIT();
     return o;
   }
