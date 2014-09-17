@@ -42,9 +42,8 @@ namespace chdl {
     vec<RSZ, T> rv(in[range<LSZ,N-1>()]);
     
     T l(Mux(sel[range<0,CLOG2(LSZ)-1>()], lv)), 
-      r(Mux(sel[range<0,CLOG2(RSZ)-1>()], rv));
-
-    T out = Mux(sel[CLOG2(N)-1], l, r); 
+      r(Mux(sel[range<0,CLOG2(RSZ)-1>()], rv)),
+      out(Mux(sel[CLOG2(N)-1], l, r));
     HIERARCHY_EXIT();
 
     return out;
@@ -53,9 +52,7 @@ namespace chdl {
   // 1-2 decoder/demux
   static inline bvec<2> Decoder(node i, node e = Lit(1)) {
     HIERARCHY_ENTER();
-    bvec<2> out;
-    out[0] = And(Inv(i), e);
-    out[1] = And(i, e);
+    bvec<2> out{And(Inv(i), e), And(i, e)};
     HIERARCHY_EXIT();
 
     return out;

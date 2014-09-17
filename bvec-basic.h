@@ -11,10 +11,7 @@ namespace chdl {
   template <unsigned A, unsigned B>
     bvec<A + B> Cat(bvec<A> a, bvec<B> b)
   {
-    bvec<A + B> r;
-    for (unsigned i = 0; i < B; ++i) r[i] = b[i];
-    for (unsigned i = 0; i < A; ++i) r[B+i] = a[i];
-    return r;
+    return bvec<A + B>(a, b);
   }
 
   // Concatenate a bit vector and a node
@@ -27,15 +24,21 @@ namespace chdl {
   }
 
   static bvec<1> Flatten(const node &n) { return bvec<1>(n); }
+  static bvec<1> Flatten(const bvec<1> &n) { return n; }
+
+  template <typename T>
+    bvec<sz<T>::value> Flatten(const vec<1, T> &x)
+  {
+    return bvec<sz<T>::value>(x[0]);
+  }
 
   template <unsigned N, typename T>
     bvec<N * sz<T>::value> Flatten(const vec<N, T> &x)
   {
-    vec<N*sz<T>::value, node> out;
-    for (unsigned i = 0; i < N; ++i)
-      for (unsigned j = 0; j < sz<T>::value; ++j)
-        out[sz<T>::value*i + j] = Flatten(x[i])[j];
-    return out;
+    return vec<N*sz<T>::value, node>(
+      Flatten(x[range<0,N/2-1>()]),
+      Flatten(x[range<N/2,N-1>()])
+    );
   }
 
   static inline bvec<2> Cat(const node &a, const node &b) {
@@ -63,8 +66,7 @@ namespace chdl {
   // Create an array of registers.
   template <typename T> T Reg(T d, vec<sz<T>::value, bool> val) {
     HIERARCHY_ENTER();
-    T rt;
-    bvec<sz<T>::value> r(rt);
+    bvec<sz<T>::value> r;
     for (unsigned i = 0; i < sz<T>::value; ++i)
       r[i] = Reg(Flatten(d)[i], val[i]);
     HIERARCHY_EXIT();

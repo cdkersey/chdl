@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <initializer_list>
+#include <vector>
 
 #include "reg.h"
 #include "lit.h"
@@ -18,16 +19,28 @@ namespace chdl {
   template <unsigned N, typename T> class vec {
     public:
       virtual ~vec() {}
-      vec() {}
-      vec(const T &r) { for (unsigned i = 0; i < N; ++i) nodes[i] = r; }
+      vec(): nodes(N) {}
+      vec(const T &r) {
+        nodes.reserve(N);
+        for (unsigned i = 0; i < N; ++i) nodes.push_back(r);
+      }
 
       template <typename U> vec(const vec<N, U> &v) {
-        for (unsigned i = 0; i < N; ++i) nodes[i] = v[i];
+        nodes.reserve(N);
+        for (unsigned i = 0; i < N; ++i) nodes.push_back(v[i]);
       }
 
       vec(std::initializer_list<T> l) {
+        nodes.reserve(N);
         unsigned i(0);
-        for (auto &x : l) nodes[i++] = x;
+        for (auto &x : l) { nodes.push_back(x); ++i; }
+        for (; i < N; ++i) nodes.push_back(node());
+      }
+
+      template <unsigned A> vec(const vec<A, T> &a, const vec<N-A, T> &b) {
+        nodes.reserve(N);
+        for (unsigned i = 0; i < A; ++i) nodes.push_back(a[i]);
+        for (unsigned i = A; i < N; ++i) nodes.push_back(b[i - A]);
       }
 
       vec &operator=(const vec &r) {
@@ -41,8 +54,14 @@ namespace chdl {
       }
 
       // Indexing operators
-      T &operator[](size_t i) { bc(i); return nodes[i]; }
-      const T &operator[](size_t i) const { bc(i); return nodes[i]; }
+      typename std::vector<T>::reference operator[](size_t i) {
+        bc(i); return nodes[i];
+      }
+
+      typename std::vector<T>::const_reference operator[](size_t i) const {
+        bc(i); return nodes[i];
+      }
+
       template <unsigned A, unsigned B>
         vec<B-A+1, T> operator[](range<A, B> r) const
       {
@@ -55,7 +74,7 @@ namespace chdl {
       }
 
     protected:
-      T nodes[N];
+      std::vector<T> nodes;
 
     private:
       void bc(size_t i) const { if (i >= N) abort(); }
