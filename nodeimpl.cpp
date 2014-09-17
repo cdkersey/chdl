@@ -2,6 +2,8 @@
 #include <map>
 #include <set>
 
+#include <iostream>
+
 #include "nodeimpl.h"
 #include "litimpl.h"
 #include "lit.h"
@@ -58,7 +60,7 @@ void litimpl::print_vl(ostream &out) {
   out << "  assign __x" << id << " = " << val << ';' << endl;
 }
 
-node::node():              idx(/*nodes.size()*/Lit(0)) { /*nodes.push_back(&dummynode());*/ node_dir().insert(ndp(idx, this)); }
+node::node():              idx(nodes.size()) { nodes.push_back(&dummynode()); node_dir().insert(ndp(idx, this)); }
 node::node(nodeid_t i):    idx(i)        { node_dir().insert(ndp(idx, this)); }
 node::node(const node &r): idx(r.idx)    { node_dir().insert(ndp(idx, this)); }
 

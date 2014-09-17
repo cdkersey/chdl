@@ -9,17 +9,17 @@
 namespace chdl {
   // Concatenate two bit vectors
   template <unsigned A, unsigned B>
-    bvec<A + B> Cat(bvec<A> a, bvec<B> b)
+    bvec<A + B> Cat(const bvec<A> &a, const bvec<B> &b)
   {
     return bvec<A + B>(a, b);
   }
 
   // Concatenate a bit vector and a node
-  template <unsigned A> bvec<A + 1> Cat(bvec<A> a, node b) {
+  template <unsigned A> bvec<A + 1> Cat(const bvec<A> &a, const node &b) {
     return Cat(a, bvec<1>(b));
   }
 
-  template <unsigned B> bvec<B + 1> Cat(node a, bvec<B> b) {
+  template <unsigned B> bvec<B + 1> Cat(const node &a, const bvec<B> &b) {
     return Cat(bvec<1>(a), b);
   }
 
@@ -156,81 +156,90 @@ namespace chdl {
   }
 
   // Perform an operation element-wise over an N-bit array.
-  template <unsigned N, node (*op)(node, node)>
-    bvec<N> OpElementwise(bvec<N> a, bvec<N> b)
+  template <node (*op)(const node &, const node &)>
+    bvec<1> OpElementwise(const bvec<1> &a, const bvec<1> &b)
   {
-    bvec<N> r;
-    for (unsigned i = 0; i < N; ++i) r[i] = op(a[i], b[i]);
-    return r;
+    return bvec<1>{op(a[0], b[0])};
+  }
+
+  template <node (*op)(const node &, const node &), unsigned N>
+    bvec<N> OpElementwise(const bvec<N> &a, const bvec<N> &b)
+  {
+    return Cat(OpElementwise<op>(a[range<0,N/2-1>()], b[range<0,N/2-1>()]),
+               OpElementwise<op>(a[range<N/2,N-1>()], b[range<N/2,N-1>()]));
   }
 
   // Perform an all-reduce type operation over the given operation to produce
   // a 1-bit result. Used to, say, construct N-input gates from a 2-input op.
-  template <unsigned N, node (*op)(node, node)>
+  template <node (*op)(const node &, const node &)>
+    node OpReduce(const bvec<1> &in)
+  { return in[0]; }
+
+  template <node (*op)(const node &, const node &), unsigned N>
     node OpReduce(bvec<N> in)
   {
-    bvec<2*N> nodes;
-    nodes[range<N, 2*N-1>()] = in;
-    for (int i = N-1; i >= 0; --i) nodes[i] = op(nodes[2*i], nodes[2*i + 1]);
-    return nodes[1];
+    return op(OpReduce<op>(in[range<0,N/2-1>()]),
+              OpReduce<op>(in[range<N/2,N-1>()]));
   }
 
   // Some common operations in element-wise form
+  static bvec<1> Not(const bvec<1> &in) { return bvec<1>{!in[0]}; }
+
   template <unsigned N>
-    bvec<N> Not(bvec<N> in)
+    bvec<N> Not(const bvec<N> &in)
   {
       HIERARCHY_ENTER();
-      bvec<N> r;
-      for (unsigned i = 0; i < N; ++i) r[i] = !in[i];
+      bvec<N> r(Cat(Not(in[range<0,N/2-1>()]), Not(in[range<N/2,N-1>()])));
       HIERARCHY_EXIT();
+
       return r; 
   }
 
-  template <unsigned N> bvec<N> And(bvec<N> a, bvec<N> b) {
+  template <unsigned N> bvec<N> And(const bvec<N> &a, const bvec<N> &b) {
     HIERARCHY_ENTER();
-    bvec<N> r(OpElementwise<N, And>(a, b));
+    bvec<N> r(OpElementwise<And>(a, b));
     HIERARCHY_EXIT();
     return r;
   }
 
-  template <unsigned N> bvec<N> Or (bvec<N> a, bvec<N> b) {
+  template <unsigned N> bvec<N> Or (const bvec<N> &a, const bvec<N> &b) {
     HIERARCHY_ENTER();
-    bvec<N> r(OpElementwise<N,  Or>(a, b));
+    bvec<N> r(OpElementwise<Or>(a, b));
     HIERARCHY_EXIT();
     return r;
   }
 
-  template <unsigned N> bvec<N> Xor(bvec<N> a, bvec<N> b) {
+  template <unsigned N> bvec<N> Xor(const bvec<N> &a, const bvec<N> &b) {
     HIERARCHY_ENTER();
-    bvec<N> r(OpElementwise<N, Xor>(a, b));
+    bvec<N> r(OpElementwise<Xor>(a, b));
     HIERARCHY_EXIT();
     return r;
   }
 
   // Those same operations in all-reduce form
-  template <unsigned N> node AndN(bvec<N> in) {
+  template <unsigned N> node AndN(const bvec<N> &in) {
     HIERARCHY_ENTER();
-    node r(OpReduce<N, And>(in));
+    node r(OpReduce<And>(in));
     HIERARCHY_EXIT();
     return r;
   }
 
-  template <unsigned N> node OrN (bvec<N> in) {
+  template <unsigned N> node OrN (const bvec<N> &in) {
     HIERARCHY_ENTER();
-    node r(OpReduce<N,  Or>(in));
+    node r(OpReduce< Or>(in));
     HIERARCHY_EXIT();
     return r;
   }
 
-  template <unsigned N> node XorN(bvec<N> in) {
+  template <unsigned N> node XorN(const bvec<N> &in) {
     HIERARCHY_ENTER();
-    node r(OpReduce<N, Xor>(in));
+    node r(OpReduce< Xor>(in));
     HIERARCHY_EXIT();
     return r;
   }
 
   // Detect whether two values are equal
-  template <unsigned N> node EqDetect(bvec<N> a, bvec<N> b) {
+  template <unsigned N> node EqDetect(const bvec<N> &a, const bvec<N> &b) {
     HIERARCHY_ENTER();
     node r(AndN(Not(Xor(a, b))));
     HIERARCHY_EXIT();

@@ -13,12 +13,14 @@
 namespace chdl {
   // range is used to index a fixed-width subset of a vec
   template <unsigned A, unsigned B> struct range{};
+  template <unsigned LEN, unsigned A> struct xrange{};
 
   template <unsigned N, typename T> class vec;
 
   template <unsigned N, typename T> class vec {
     public:
       virtual ~vec() {}
+
       vec(): nodes(N) {}
       vec(const T &r) {
         nodes.reserve(N);
@@ -30,11 +32,21 @@ namespace chdl {
         for (unsigned i = 0; i < N; ++i) nodes.push_back(v[i]);
       }
 
+      vec(const vec &v) {
+        nodes.reserve(N);
+        for (unsigned i = 0; i < N; ++i) nodes.push_back(v[i]);
+      }
+
+      vec(vec &v) {
+        nodes.reserve(N);
+        for (unsigned i = 0; i < N; ++i) nodes.push_back(v[i]);
+      }
+
       vec(std::initializer_list<T> l) {
         nodes.reserve(N);
         unsigned i(0);
         for (auto &x : l) { nodes.push_back(x); ++i; }
-        for (; i < N; ++i) nodes.push_back(node());
+        for (; i < N; ++i) nodes.push_back(T());
       }
 
       template <unsigned A> vec(const vec<A, T> &a, const vec<N-A, T> &b) {
@@ -62,15 +74,22 @@ namespace chdl {
         bc(i); return nodes[i];
       }
 
-      template <unsigned A, unsigned B>
-        vec<B-A+1, T> operator[](range<A, B> r) const
+      template <unsigned A> vec<1, T> operator[](const xrange<1, A> &r) const {
+        return vec<1, T>(nodes[A]);
+      }
+
+      template <unsigned A, unsigned LEN>
+        vec<LEN, T> operator[](const xrange<LEN, A> &r) const
       {
-        vec<B-A+1, T> out;
+        return vec<LEN, T>((*this)[xrange<LEN/2,A>()],
+			   (*this)[xrange<LEN-LEN/2,A+LEN/2>()]);
 
-        for (unsigned i = 0; i < B-A+1; ++i)
-          out[i] = (*this)[A+i];
+      }
 
-        return out;
+      template <unsigned A, unsigned B>
+        vec<B-A+1, T> operator[](const range<A, B> &r) const
+      {
+        return (*this)[xrange<B-A+1, A>()];
       }
 
     protected:
