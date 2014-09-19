@@ -36,8 +36,8 @@ namespace chdl {
     bvec<N * sz<T>::value> Flatten(const vec<N, T> &x)
   {
     return vec<N*sz<T>::value, node>(
-      Flatten(x[range<0,N/2-1>()]),
-      Flatten(x[range<N/2,N-1>()])
+      Flatten(x[range<N/2,N-1>()]),
+      Flatten(x[range<0,N/2-1>()])
     );
   }
 
@@ -165,8 +165,8 @@ namespace chdl {
   template <node (*op)(const node &, const node &), unsigned N>
     bvec<N> OpElementwise(const bvec<N> &a, const bvec<N> &b)
   {
-    return Cat(OpElementwise<op>(a[range<0,N/2-1>()], b[range<0,N/2-1>()]),
-               OpElementwise<op>(a[range<N/2,N-1>()], b[range<N/2,N-1>()]));
+    return Cat(OpElementwise<op>(a[range<N/2,N-1>()], b[range<N/2,N-1>()]),
+               OpElementwise<op>(a[range<0,N/2-1>()], b[range<0,N/2-1>()]));
   }
 
   // Perform an all-reduce type operation over the given operation to produce
@@ -178,8 +178,8 @@ namespace chdl {
   template <node (*op)(const node &, const node &), unsigned N>
     node OpReduce(bvec<N> in)
   {
-    return op(OpReduce<op>(in[range<0,N/2-1>()]),
-              OpReduce<op>(in[range<N/2,N-1>()]));
+    return op(OpReduce<op>(in[range<N/2,N-1>()]),
+              OpReduce<op>(in[range<0,N/2-1>()]));
   }
 
   // Some common operations in element-wise form
@@ -189,7 +189,7 @@ namespace chdl {
     bvec<N> Not(const bvec<N> &in)
   {
       HIERARCHY_ENTER();
-      bvec<N> r(Cat(Not(in[range<0,N/2-1>()]), Not(in[range<N/2,N-1>()])));
+      bvec<N> r(Cat(Not(in[range<N/2,N-1>()]), Not(in[range<0,N/2-1>()])));
       HIERARCHY_EXIT();
 
       return r; 

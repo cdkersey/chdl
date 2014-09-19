@@ -51,8 +51,8 @@ namespace chdl {
 
       template <unsigned A> vec(const vec<A, T> &a, const vec<N-A, T> &b) {
         nodes.reserve(N);
+        for (unsigned i = 0; i < N-A; ++i) nodes.push_back(b[i]);
         for (unsigned i = 0; i < A; ++i) nodes.push_back(a[i]);
-        for (unsigned i = A; i < N; ++i) nodes.push_back(b[i - A]);
       }
 
       vec &operator=(const vec &r) {
@@ -81,8 +81,8 @@ namespace chdl {
       template <unsigned A, unsigned LEN>
         vec<LEN, T> operator[](const xrange<LEN, A> &r) const
       {
-        return vec<LEN, T>((*this)[xrange<LEN/2,A>()],
-			   (*this)[xrange<LEN-LEN/2,A+LEN/2>()]);
+        return vec<LEN, T>((*this)[xrange<LEN-LEN/2,A+LEN/2>()],
+                           (*this)[xrange<LEN/2,A>()]);
 
       }
 
