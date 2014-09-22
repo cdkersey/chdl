@@ -74,6 +74,10 @@ namespace chdl {
         bc(i); return nodes[i];
       }
 
+      template <unsigned A> vec<0, T> operator[](const xrange<0, A> &r) const {
+        return vec<0, T>();
+      }
+
       template <unsigned A> vec<1, T> operator[](const xrange<1, A> &r) const {
         return vec<1, T>(nodes[A]);
       }

@@ -7,20 +7,24 @@
 #include "hierarchy.h"
 
 namespace chdl {
-  // Concatenate two bit vectors
-  template <unsigned A, unsigned B>
-    bvec<A + B> Cat(const bvec<A> &a, const bvec<B> &b)
+  // Concatenate two vectors
+  template <typename T, unsigned A, unsigned B>
+    vec<A + B, T> Cat(const vec<A, T> &a, const vec<B, T> &b)
   {
-    return bvec<A + B>(a, b);
+    return vec<A + B, T>(a, b);
   }
 
-  // Concatenate a bit vector and a node
-  template <unsigned A> bvec<A + 1> Cat(const bvec<A> &a, const node &b) {
-    return Cat(a, bvec<1>(b));
+  // Concatenate a vector and a single element
+  template <typename T, unsigned A>
+    vec<A + 1, T> Cat(const vec<A, T> &a, const T &b)
+  {
+    return Cat(a, vec<1, T>(b));
   }
 
-  template <unsigned B> bvec<B + 1> Cat(const node &a, const bvec<B> &b) {
-    return Cat(bvec<1>(a), b);
+  template <typename T, unsigned B>
+    vec<B + 1, T> Cat(const T &a, const vec<B, T> &b)
+  {
+    return Cat(vec<1, T>(a), b);
   }
 
   static bvec<1> Flatten(const node &n) { return bvec<1>(n); }
