@@ -23,12 +23,26 @@ void chdl::print_netlist(ostream &out) {
 }
 
 void chdl::print_verilog(const char* module_name, ostream &out) {
+  const bool reset_signal(false);
+
   out << "module " << module_name << '(' << endl << "  phi";
+  if (reset_signal) {
+    out << ", reset";
+  }
+
   print_inputs_vl_head(out);
   print_taps_vl_head(out);
   out << endl << ");" << endl << endl << "  input phi;" << endl;
+  if (reset_signal) {
+    out << "  input reset;" << endl;
+  }
   print_inputs_vl_body(out);
   print_taps_vl_body(out);
+
+  if (!reset_signal) {
+    out << "  wire reset;" << endl;
+    out << "  assign reset = 0;" << endl;
+  }
 
   set<nodeid_t> regs;
   get_reg_nodes(regs);
