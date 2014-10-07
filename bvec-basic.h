@@ -68,11 +68,13 @@ namespace chdl {
   static concatenator<1> Cat(const node &x) { return concatenator<1>(x); }
 
   // Create an array of registers.
-  template <typename T> T Reg(T d, vec<sz<T>::value, bool> val) {
+  template <typename T> T Reg(const T &d, vec<sz<T>::value, bool> val) {
     HIERARCHY_ENTER();
-    bvec<sz<T>::value> r;
+    bvec<sz<T>::value> s;
+    T r;
+    Flatten(r) = s;
     for (unsigned i = 0; i < sz<T>::value; ++i)
-      r[i] = Reg(Flatten(d)[i], val[i]);
+      s[i] = Reg(Flatten(d)[i], val[i]);
     HIERARCHY_EXIT();
     return r;
   }
@@ -86,19 +88,17 @@ namespace chdl {
 
   // Add a write signal to an existing array of registers
   template <typename T>
-    void Wreg(T qt, T dt, node w, unsigned long val=0)
+    void Wreg(T &q, const T &d, node w, unsigned long val=0)
   {
     HIERARCHY_ENTER();
-    bvec<sz<T>::value> q(qt), d(dt);
     q = Reg(Mux(w, q, d), val);
     HIERARCHY_EXIT();
   }
 
   template <typename T>
-    void Wreg(T qt, T dt, node w, vec<sz<T>::value, bool> val)
+    void Wreg(T &q, const T &d, node w, vec<sz<T>::value, bool> val)
   {
     HIERARCHY_ENTER();
-    bvec<sz<T>::value> q(qt), d(dt);
     q = Reg(Mux(w, q, d), val);
     HIERARCHY_EXIT();
   }
