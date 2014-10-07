@@ -7,13 +7,8 @@
 #include "bvec-basic.h"
 
 namespace chdl {
-  node Latch(node l, node d);
-
-  template <unsigned N> bvec<N> Latch(node l, bvec<N> d) {
-    bvec<N> r;
-    for (unsigned i = 0; i < N; ++i)
-      r[i] = Latch(l, d[i]);
-    return r;
+  template <typename T> T Latch(node l, const T &d) {
+    return Mux(l, d, Wreg(Inv(l), d));
   }
 };
 
