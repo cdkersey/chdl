@@ -15,6 +15,7 @@ namespace chdl {
   template <typename T> class egress : public tickable {
   public:
     egress(const T& x, node n): n(n), x(x) { gtap(n); }
+    virtual ~egress() {}
 
     void pre_tick(cdomain_handle_t cd) { x(nodes[n]->eval(cd)); }
   private:

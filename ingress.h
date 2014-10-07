@@ -5,6 +5,7 @@
 #include "nodeimpl.h"
 #include "sim.h"
 #include "cdomain.h"
+#include "reset.h"
 
 #include <functional>
 
@@ -19,7 +20,9 @@ namespace chdl {
 
   template <typename T> class ingressimpl : public nodeimpl {
   public:
-  ingressimpl(T f): nodeimpl(), f(f), eval_time(0), val(0) {} 
+    ingressimpl(T f): nodeimpl(), f(f), eval_time(0), val(0) {} 
+    virtual ~ingressimpl() {}
+
     bool eval(cdomain_handle_t cd) {
       if (sim_time(cd) >= eval_time) { val = f(); eval_time = sim_time(cd) + 1;}
       return val;
