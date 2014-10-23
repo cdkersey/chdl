@@ -32,7 +32,7 @@ void assertion_t::tick(cdomain_handle_t cd) {
 
 static vector<assertion_t *> assertions;
 
-void chdl::assert(std::string text, node n) {
+void chdl::assert_node_true(std::string text, node n) {
   assertions.push_back(new assertion_t(text, n));
 }
 
