@@ -10,7 +10,7 @@
 
 namespace chdl {
   static bvec<0> PriEnc(node &valid, const bvec<1> &in, bool reverse=false) {
-    valid = Lit(0);
+    valid = in[0];
     return bvec<0>();
   }
 
