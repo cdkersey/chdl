@@ -65,7 +65,7 @@ template <unsigned A, unsigned N>
     vector<bool> tt;
     for (unsigned j = 0; j < contents.size(); ++j)
       tt.push_back((contents[j] >> i) & 1);
-    q[i] = NewRom(a, tt, cache);
+    q[i] = LLRom(a, tt, cache);
   }
 
   return q;

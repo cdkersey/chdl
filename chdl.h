@@ -6,6 +6,7 @@
 #include <chdl/bus.h>
 #include <chdl/bvec-basic.h>
 #include <chdl/bvec-basic-op.h>
+#include <chdl/cassign.h>
 #include <chdl/divider.h>
 #include <chdl/enc.h>
 #include <chdl/gateops.h>
@@ -23,7 +24,6 @@
 #include <chdl/reg.h>
 #include <chdl/shifter.h>
 #include <chdl/sim.h>
-#include <chdl/statemachine.h>
 #include <chdl/submodule.h>
 #include <chdl/tap.h>
 #include <chdl/tristate.h>

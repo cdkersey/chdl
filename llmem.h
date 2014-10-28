@@ -5,7 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "bvec-basic.h"
+#include "gateops.h"
+#include "bvec-basic-op.h"
 #include "node.h"
 #include "lit.h"
 #include "reg.h"
