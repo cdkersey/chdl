@@ -27,6 +27,7 @@
 #include <chdl/submodule.h>
 #include <chdl/tap.h>
 #include <chdl/tristate.h>
+#include <chdl/ttable.h>
 #include <chdl/vis.h>
 #include <chdl/cdomain.h>
 #endif
