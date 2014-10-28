@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <random>
+#include <string>
 
 namespace chdl {
 
@@ -45,7 +46,7 @@ node LLRom(const bvec<A> &a, const std::vector<bool> &contents,
 // TODO: LLRom<A, N, T> for arbitrary vectors of T
 
 template <unsigned A, unsigned N>
-  bvec<N> LLRom(const bvec<A> &a, const char *filename)
+  bvec<N> LLRom(const bvec<A> &a, std::string filename)
 {
   using namespace std;
 
