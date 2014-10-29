@@ -31,8 +31,6 @@ namespace chdl {
 
     std::vector<node> src;
   };
-
-  nodeimpl &dummynode();
 };
 
 #endif

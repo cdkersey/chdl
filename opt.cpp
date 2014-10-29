@@ -245,18 +245,11 @@ void chdl::node_sweep() {
   set<nodeid_t> dead_nodes;
   get_dead_nodes(dead_nodes);
 
-  #if 0
-  for (auto n : dead_nodes) {
-    if (nodes[n] != &dummynode()) delete nodes[n];
-    nodes[n] = NULL;
-  }
-  #else
   map<nodeid_t, nodeid_t> pm;
   nodeid_t dest(0);
   for (nodeid_t i = 0; i < nodes.size(); ++i)
     if (dead_nodes.count(i) == 0) pm[i] = dest++;
   permute_nodes(pm);
-  #endif
 }
 
 template<typename T> node vecOrN(T begin, T end) {

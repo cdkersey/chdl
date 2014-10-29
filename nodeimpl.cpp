@@ -35,11 +35,6 @@ void nde(nodeid_t i, node *p) {
   if (node_dir()[i].empty()) node_dir().erase(i);
 }
 
-nodeimpl &chdl::dummynode() {
-  static nodeimpl* dn = nodes[Lit('x')];
-  return *dn;
-}
-
 static void clear_nodes() {
   node_dir().clear();
   nodes.clear();
@@ -57,9 +52,13 @@ void litimpl::print_vl(ostream &out) {
   out << "  assign __x" << id << " = " << val << ';' << endl;
 }
 
-node::node():              idx(nodes.size()) { nodes.push_back(&dummynode()); node_dir()[idx].insert(this); }
-node::node(nodeid_t i):    idx(i)        { node_dir()[idx].insert(this); }
-node::node(const node &r): idx(r.idx)    { node_dir()[idx].insert(this); }
+node::node(): idx(nodes.size()) {
+  new litimpl();
+  node_dir()[idx].insert(this);
+}
+
+node::node(nodeid_t i):    idx(i)            { node_dir()[idx].insert(this); }
+node::node(const node &r): idx(r.idx)        { node_dir()[idx].insert(this); }
 
 node::~node() { nde(idx, this); }
 
@@ -108,7 +107,7 @@ void chdl::permute_nodes(map<nodeid_t, nodeid_t> x) {
       // It's not in the mapping; the nodeimpl can be freed, and the
       // corresponding node objects made to point at NO_NODE.
       n = node(NO_NODE);
-      if (nodes[i] != &dummynode()) delete nodes[i];
+      delete nodes[i];
     }
   }
 
