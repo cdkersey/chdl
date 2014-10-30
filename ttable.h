@@ -43,7 +43,23 @@ node LLRom(const bvec<A> &a, const std::vector<bool> &contents,
   return TruthTable(a, tt, cache);
 }
 
-// TODO: LLRom<A, N, T> for arbitrary vectors of T
+template <unsigned A, unsigned N, typename T>
+  bvec<N> LLRom(const bvec<A> &a, const std::vector<T> &init) 
+{
+  using namespace std;
+
+  bvec<N> q;
+  map<set<int>, node> cache;
+
+  for (unsigned i = 0; i < N; ++i) {
+    vector<bool> tt;
+    for (unsigned j = 0; j < init.size(); ++j)
+      tt.push_back((init[j] >> i) & 1);
+    q[i] = LLRom(a, tt, cache);
+  }
+
+  return q;  
+}
 
 template <unsigned A, unsigned N>
   bvec<N> LLRom(const bvec<A> &a, std::string filename)
@@ -59,17 +75,7 @@ template <unsigned A, unsigned N>
     if (!!in) contents.push_back(x);
   }
 
-  bvec<N> q;
-  map<set<int>, node> cache;
-
-  for (unsigned i = 0; i < N; ++i) {
-    vector<bool> tt;
-    for (unsigned j = 0; j < contents.size(); ++j)
-      tt.push_back((contents[j] >> i) & 1);
-    q[i] = LLRom(a, tt, cache);
-  }
-
-  return q;
+  return LLRom<A, N>(a, contents);
 }
 
 }
