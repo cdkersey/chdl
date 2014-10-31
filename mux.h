@@ -27,7 +27,11 @@ namespace chdl {
     return o;
   }
 
-  // Base case for recursive mux
+  // Base cases for recursive mux
+  template <typename T> T Mux(bvec<0> sel, const vec<1, T> &in) {
+    return in[0];
+  } 
+
   template <typename T> T Mux(bvec<1> sel, const vec<2, T> &in) {
     return Mux(sel[0], in[0], in[1]);
   }

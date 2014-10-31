@@ -31,6 +31,12 @@ namespace chdl {
   static bvec<1> Flatten(const bvec<1> &n) { return n; }
 
   template <typename T>
+    bvec<0> Flatten(const vec<0, T> &x)
+  {
+    return bvec<0>();
+  }
+
+  template <typename T>
     bvec<sz<T>::value> Flatten(const vec<1, T> &x)
   {
     return bvec<sz<T>::value>(x[0]);
