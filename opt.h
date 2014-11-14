@@ -8,6 +8,10 @@
 #include <vector>
 
 namespace chdl {
+  // Lightweight dead node elimination for use by library code. Keep the dead
+  // nodes in check.
+  void node_sweep();
+
   // These functions are all called by optimize()
   void opt_dead_node_elimination();
   void opt_contract();

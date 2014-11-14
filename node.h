@@ -6,6 +6,7 @@
 #define __NODE_H
 
 #include <map>
+#include <set>
 
 namespace chdl {
   typedef unsigned long nodeid_t;
@@ -30,6 +31,9 @@ namespace chdl {
   protected:
     nodeid_t idx;
   };
+
+  // Get all of the nodeids of nodeimpls to which no node points.
+  void get_dead_nodes(std::set<nodeid_t> &s);
 
   // Given a map from old node id to new node id, rearrange all of the nodes to
   // fit. 

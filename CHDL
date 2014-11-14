@@ -1,5 +1,5 @@
-C++ Hardware Description Library
-================================
+C++ Hardware Design Library
+===========================
 
 CHDL (call it "the" CHDL at your peril) is a domain-specific language based on
 C++. Specifically, it attmpts to fill the role of a "structural" hardware

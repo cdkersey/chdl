@@ -31,7 +31,7 @@ void assertion_t::tick(evaluator_t &e) {
 
 static vector<assertion_t *> assertions;
 
-void chdl::assert(std::string text, node n) {
+void chdl::assert_node_true(std::string text, node n) {
   assertions.push_back(new assertion_t(text, n));
 }
 

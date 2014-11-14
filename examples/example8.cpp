@@ -2,12 +2,13 @@
 #include <iostream>
 #include <fstream>
 
-#include <statemachine.h>
-
+#include <gateops.h>
 #include <lit.h>
 
 #include <llmem.h>
 
+#include <bvec-basic-op.h>
+#include <adder.h>
 #include <tap.h>
 #include <analysis.h>
 #include <vis.h>
@@ -15,6 +16,8 @@
 #include <opt.h>
 #include <netlist.h>
 #include <hierarchy.h>
+#include <cassign.h>
+#include <mux.h>
 
 #include "report.h"
 
@@ -30,32 +33,23 @@ int main(int argc, char **argv) {
   counter = Reg(counter + Lit<6>(1));
   bvec<7> charinput = LLRom<6, 7>(counter, "text.hex");
 
-  // State:
-  //   0 - no letters seen
-  //   1 - "C" seen
-  //   2 - "H" seen
-  //   3 - "D" seen
-  //   4 - "L" seen -- successful match.
-  //
-  // Since this machine stays in the '"L" seen' state for 1 cycle, it cannot
-  // handle back-to-back matches. CHDLCHDL would lead to only a single match.
+  // match goes high for 1 cycle for each instance of the text "CHDL" in any
+  // capitalization in the input stream.
   node cMatch(match(charinput, 'c', 'C')), hMatch(match(charinput, 'h', 'H')),
        dMatch(match(charinput, 'd', 'D')), lMatch(match(charinput, 'l', 'L'));
 
-  Statemachine<5> sm;
-  sm.edge(0, 1, cMatch);  sm.edge(1, 2, hMatch);
-  sm.edge(2, 3, dMatch);  sm.edge(3, 4, lMatch);
+  enum state { INITIAL, C_SEEN, H_SEEN, D_SEEN, L_SEEN, N_STATES };
+  bvec<CLOG2(N_STATES)> next_state, state(Reg(next_state));
+  bvec<N_STATES> state_1h(Zext<N_STATES>(Decoder(state)));
+  Cassign(next_state).
+    IF((state_1h[INITIAL] || state_1h[L_SEEN]) && cMatch,
+         Lit<CLOG2(N_STATES)>(C_SEEN)).
+    IF(state_1h[C_SEEN] && hMatch, Lit<CLOG2(N_STATES)>(H_SEEN)).
+    IF(state_1h[H_SEEN] && dMatch, Lit<CLOG2(N_STATES)>(D_SEEN)).
+    IF(state_1h[D_SEEN] && lMatch, Lit<CLOG2(N_STATES)>(L_SEEN)).
+    ELSE(Lit<CLOG2(N_STATES)>(INITIAL));
 
-  sm.edge(0, 0, !cMatch); sm.edge(1, 0, !hMatch);
-  sm.edge(2, 0, !dMatch); sm.edge(3, 0, !lMatch);
-
-  sm.edge(4, 0, Lit(1));
-
-  sm.generate();
-
-  bvec<CLOG2(5)> state(sm);
-
-  node match(state == Lit<CLOG2(5)>(4));
+  node match(state == Lit<CLOG2(N_STATES)>(L_SEEN));
 
   TAP(charinput);
   TAP(state);

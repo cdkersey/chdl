@@ -80,6 +80,8 @@ void memory::tock(evaluator_t &e) {
       contents[waddr*d.size() + i] = wrdata[i];
 }
 
+static bool exists(nodeid_t x) { return x != NO_NODE; }
+
 void memory::print(ostream &out) {
   out << "  " << (sync?"sync":"") << "ram <" << qa[0].size() << ' ' << d.size();
   if (filename != "") out << " \"" << filename << '"';
@@ -89,13 +91,23 @@ void memory::print(ostream &out) {
   out << ' ' << w;
   for (unsigned j = 0; j < qa.size(); ++j) {
     for (unsigned i = 0; i < qa[0].size(); ++i) out << ' ' << qa[j][i];
-    for (unsigned i = 0; i < q[0].size(); ++i) out << ' ' << q[j][i];
+    for (unsigned i = 0; i < q[0].size(); ++i)
+      if (exists(q[j][i])) out << ' ' << q[j][i];
   }
   out << endl;
 }
 
 void memory::print_vl(ostream &out) {
+  set<unsigned> dead_ports; // HACK
   unsigned id(q[0][0]);
+
+  // HACK: identify dead ports
+  for (unsigned i = 0; i < q.size(); ++i) {
+    bool dead = true;
+    for (unsigned j = 0; j < q[i].size(); ++j)
+      if (q[i][j] != NO_NODE) dead = false;
+    if (dead) dead_ports.insert(i);
+  }
 
   if (!sync) {
     cerr << "Async RAM not currently supported in verilog. Use llmem." << endl;
@@ -104,6 +116,7 @@ void memory::print_vl(ostream &out) {
 
   size_t words(1ul<<da.size()), bits(d.size());
   for (unsigned i = 0; i < qa.size(); ++i) {
+    if (dead_ports.count(i)) continue;
     out << "  wire [" << qa[0].size()-1 << ":0] __mem_qa" << id << '_' << i
         << ';' << endl
         << "  reg [" << bits-1 << ":0] __mem_q" << id << '_' << i <<  ';'
@@ -118,6 +131,7 @@ void memory::print_vl(ostream &out) {
       << "  always @(posedge phi)" << endl
       << "    begin" << endl;
   for (unsigned i = 0; i < q.size(); ++i) {
+    if (dead_ports.count(i)) continue;
     out << "      __mem_q" << id << '_' << i
         << " <= __mem_array" << id << "[__mem_qa" << id << '_' << i << "];"
         << endl;
@@ -129,15 +143,19 @@ void memory::print_vl(ostream &out) {
   
   out << "  assign __mem_w" << id << " = __x" << w << ';' << endl;
   for (unsigned j = 0; j < qa.size(); ++j) {
+    if (dead_ports.count(j)) continue;
     for (unsigned i = 0; i < qa[0].size(); ++i)
       out << "  assign __mem_qa" << id << '_' << j << '[' << i << "] = __x"
           << qa[j][i] << ';' << endl;
   }
 
-  for (unsigned i = 0; i < da.size(); ++i)
+  for (unsigned i = 0; i < da.size(); ++i) {
     out << "  assign __mem_da" << id << '[' << i << "] = __x" << da[i] << ';'
         << endl;
+  }
+
   for (unsigned j = 0; j < q.size(); ++j) {
+    if (dead_ports.count(j)) continue;
     for (unsigned i = 0; i < q[j].size(); ++i) {
       out << "  assign __x" << q[j][i] << " = __mem_q" << id << '_' << j
           << '[' << i << "];" << endl;

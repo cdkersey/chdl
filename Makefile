@@ -4,17 +4,18 @@ LDLIBS += -pthread
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o \
-       submodule.o latch.o techmap.o order.o tristate.o trisimpl.o reset.o \
-       assert.o cdomain.o chdl_present.o execbuf.o
+       submodule.o techmap.o order.o tristate.o trisimpl.o reset.o assert.o \
+       cdomain.o chdl_present.o ttable.o execbuf.o
 
 all : libchdl.so
 
 libchdl.so : $(OBJS)
-	g++ -shared $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 install: libchdl.so
+	if [ ! -e $(PREFIX)/lib ]; then mkdir -p $(PREFIX)/lib; fi
 	cp libchdl.so $(PREFIX)/lib
-	if [ ! -e $(PREFIX)/include/chdl ]; then mkdir $(PREFIX)/include/chdl; fi
+	if [ ! -e $(PREFIX)/include/chdl ]; then mkdir -p $(PREFIX)/include/chdl; fi
 	cp *.h $(PREFIX)/include/chdl
 
 uninstall:
@@ -70,9 +71,6 @@ hierarchy.o: hierarchy.cpp hierarchy.h reset.h cdomain.h
 
 submodule.o: submodule.cpp submodule.h bvec.h node.h cdomain.h
 
-latch.o: latch.cpp latch.h bvec.h bvec-basic.h gates.h reg.h lit.h node.h \
-         hierarchy.h cdomain.h
-
 techmap.o: techmap.cpp techmap.h gatesimpl.h gates.h regimpl.h reg.h node.h \
            nodeimpl.h tap.h trisimpl.h litimpl.h memory.h cdomain.h execbuf.h
 
@@ -89,6 +87,8 @@ order.o: order.cpp adder.h analysis.h bvec-basic.h bvec-basic-op.h bvec.h \
          tickable.h vis.h cdomain.h execbuf.h
 
 cdomain.o: cdomain.cpp cdomain.h tickable.h
+
+ttable.o: ttable.cpp bvec-basic.h bvec-basic-op.h
 
 chdl_present.o: chdl_present.cpp
 

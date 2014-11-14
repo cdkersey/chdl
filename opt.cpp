@@ -240,8 +240,20 @@ void chdl::opt_dead_node_elimination() {
   map<nodeid_t, nodeid_t> pm;
   nodeid_t dest(0);
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
-    if (live_nodes.find(i) != live_nodes.end()) pm[i] = dest++;
+    if (live_nodes.count(i)) pm[i] = dest++;
   }
+  permute_nodes(pm);
+}
+
+void chdl::node_sweep() {
+  // Remove any nodeimpl to which no node objects point.
+  set<nodeid_t> dead_nodes;
+  get_dead_nodes(dead_nodes);
+
+  map<nodeid_t, nodeid_t> pm;
+  nodeid_t dest(0);
+  for (nodeid_t i = 0; i < nodes.size(); ++i)
+    if (dead_nodes.count(i) == 0) pm[i] = dest++;
   permute_nodes(pm);
 }
 

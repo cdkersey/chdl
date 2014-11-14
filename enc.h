@@ -9,6 +9,11 @@
 #include "hierarchy.h"
 
 namespace chdl {
+  static bvec<0> PriEnc(node &valid, const bvec<1> &in, bool reverse=false) {
+    valid = in[0];
+    return bvec<0>();
+  }
+
   static bvec<1> PriEnc(node &valid, const bvec<2> &in, bool reverse=false) {
     HIERARCHY_ENTER();
     valid = in[0] || in[1];
@@ -25,7 +30,7 @@ namespace chdl {
   {
     HIERARCHY_ENTER();
 
-    const unsigned A(N/2), B(N - A);
+    const unsigned P2N(1<<CLOG2(N)), A(P2N/2), B(N - A);
 
     bvec<A> rin(in[range<0, A-1>()]);
     node rvalid;
@@ -50,7 +55,7 @@ namespace chdl {
   }
 
   // Integer logarithm unit (find index of highest set bit); priority encoder
-  template <unsigned N> bvec<CLOG2(N)> Log2(bvec<N> x) {
+  template <unsigned N> bvec<CLOG2(N)> Log2(const bvec<N> &x) {
     HIERARCHY_ENTER();
 
     node valid;
@@ -61,13 +66,13 @@ namespace chdl {
     return ret;
   }
 
-  template <unsigned N> bvec<CLOG2(N)> Lsb(bvec<N> x) {
+  template <unsigned N> bvec<CLOG2(N)> Lsb(const bvec<N> &x) {
     node valid;
     return PriEnc(valid, x, true);
   }
 
   // Cheap encoder, results valid only when exactly one input set
-  template <unsigned N> bvec<CLOG2(N)> Enc(bvec<N> x) {
+  template <unsigned N> bvec<CLOG2(N)> Enc(const bvec<N> &x) {
     HIERARCHY_ENTER();
 
     vec<CLOG2(N), bvec<N>> mask;

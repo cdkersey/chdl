@@ -22,14 +22,29 @@ void regimpl::print(ostream &out) {
 }
 
 void regimpl::print_vl(ostream &out) {
-  out << "  initial" << endl
-      << "    begin" << endl
-      << "      __x" << id << " <= 0;" << endl
-      << "    end" << endl
-      << "  always @ (posedge phi)" << endl
-      << "    begin" << endl
+  const bool reset_signal(false), level_trig_reset(false);
+
+  if (!reset_signal) {
+    out << "  initial" << endl
+        << "    begin" << endl
+        << "      __x" << id << " <= 0;" << endl
+        << "    end" << endl;
+  }
+
+  out << "  always @ (posedge phi)" << endl;
+  if (reset_signal && level_trig_reset) {
+    out << "  if (!reset)" << endl;
+  }
+  out << "    begin" << endl
       << "      __x" << id << " <= " << "__x" << d << ';' << endl
-      << "    end" << endl << endl;
+      << "    end" << endl;
+
+  if (reset_signal) {
+    out << "  always @ (posedge reset)" << endl
+        << "    begin" << endl
+        << "      __x" << id << " <= " << "0;" << endl
+        << "    end" << endl;
+  }
 }
 
 // Do nothing-- the value is already there. 

@@ -5,6 +5,7 @@
 #include "nodeimpl.h"
 #include "sim.h"
 #include "cdomain.h"
+#include "reset.h"
 
 #include <functional>
 
@@ -18,6 +19,7 @@ namespace chdl {
 
   template <typename T> class ingressimpl : public nodeimpl {
   public:
+
     ingressimpl(T f): nodeimpl(), f(f) {} 
     bool eval(evaluator_t &e) { return f(); }
 

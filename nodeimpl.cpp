@@ -1,5 +1,8 @@
+#include <unordered_map>
 #include <map>
 #include <set>
+
+#include <iostream>
 
 #include "nodeimpl.h"
 #include "litimpl.h"
@@ -12,11 +15,24 @@ using namespace chdl;
 
 vector<nodeimpl*> chdl::nodes;
 
+typedef unordered_map<nodeid_t, set<node*> > node_dir_t;
+
 // The node directory keeps track of every node. This is used by optimizations
 // to perform transforms requiring changing, e.g. node IDs.
-map<nodeid_t, set<node*>> &node_dir() {
-  static auto nd = new map<nodeid_t, set<node*>>();
+node_dir_t &node_dir() {
+  static auto nd = new unordered_map<nodeid_t, set<node*> >();
   return *nd;
+}
+
+// Node dir pair
+pair<nodeid_t, node*> ndp(nodeid_t i, node *p) {
+  return pair<nodeid_t, node*>(i, p);
+}
+
+// Node dir erase
+void nde(nodeid_t i, node *p) {
+  node_dir()[i].erase(p);
+  if (node_dir()[i].empty()) node_dir().erase(i);
 }
 
 static void clear_nodes() {
@@ -36,25 +52,27 @@ void litimpl::print_vl(ostream &out) {
   out << "  assign __x" << id << " = " << val << ';' << endl;
 }
 
-node::node():              idx(Lit('x')) { node_dir()[idx].insert(this); }
-node::node(nodeid_t i):    idx(i)        { node_dir()[idx].insert(this); }
-node::node(const node &r): idx(r.idx)    { node_dir()[idx].insert(this); }
+node::node(): idx(nodes.size()) {
+  new litimpl();
+  node_dir()[idx].insert(this);
+}
 
-node::~node() { node_dir()[idx].erase(this); }
+node::node(nodeid_t i):    idx(i)            { node_dir()[idx].insert(this); }
+node::node(const node &r): idx(r.idx)        { node_dir()[idx].insert(this); }
+
+node::~node() { nde(idx, this); }
 
 node &node::operator=(const node &r) {
   nodeid_t from(idx), to(r.idx);
 
-  node_dir()[from].erase(this);
+  nde(from, this);
   if (from != NO_NODE && from != to) {
-    // Move all of the nodes to the new node.
-    for (auto it = node_dir()[from].begin(); it != node_dir()[from].end(); ++it)
-    {
-      node_dir()[to].insert(*it);
-      (*it)->idx = to;
+    for (auto x : node_dir()[from]) {
+      node_dir()[to].insert(x);
+      x->idx = to;
     }
 
-    node_dir()[from].clear();
+    node_dir().erase(from);
   }
 
   node_dir()[to].insert(this);
@@ -64,20 +82,9 @@ node &node::operator=(const node &r) {
 }
 
 void node::change_net(nodeid_t i) {
-  node_dir()[idx].erase(this);
+  nde(idx, this);
   node_dir()[i].insert(this);
   idx = i;
-}
-
-void show_node_dir() {
-  cout << "Node directory:" << endl;
-  for (auto n : node_dir()) {
-    cout << n.first << endl;
-    for (auto m : n.second) {
-      cout << "  " << m << ' ';
-    }
-    cout << endl;
-  }
 }
 
 void chdl::permute_nodes(map<nodeid_t, nodeid_t> x) {
@@ -138,3 +145,23 @@ void nodeimpl::gen_store_result(execbuf &b, nodebuf_t &from, nodebuf_t &to) {
 
 // Use a C function, not a member function, to simplify the calling convention.
 unsigned nodeimpl_call_eval(nodeimpl *p, evaluator_t *e) { return p->eval(*e); }
+
+void chdl::get_dead_nodes(std::set<nodeid_t> &s) {
+  s.clear();
+
+  for (nodeid_t i = 0; i < nodes.size(); ++i)
+    if (!node_dir().count(i) || node_dir()[i].size() == 0) s.insert(i);
+
+#if 0
+  unsigned long n(0);
+
+  for (auto &x : node_dir()) {
+    if (x.second.empty()) {
+      s.insert(x.first);
+      ++n;
+    }
+  }
+#endif
+
+  cout << "Found " << s.size() << " dead nodes." << endl;
+}

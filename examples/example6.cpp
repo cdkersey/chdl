@@ -1,68 +1,71 @@
 #include <fstream>
 
-#include "../adder.h"
-#include "../analysis.h"
-#include "../assert.h"
-#include "../bus.h"
-#include "../bvec-basic.h"
-#include "../bvec-basic-op.h"
-#include "../bvec.h"
-#include "../cassign.h"
-#include "../cdomain.h"
-#include "../chdl.h"
-#include "../divider.h"
-#include "../egress.h"
-#include "../enc.h"
-#include "../execbuf.h"
-#include "../gateops.h"
-#include "../gates.h"
-#include "../gatesimpl.h"
-#include "../hierarchy.h"
-#include "../ingress.h"
-#include "../input.h"
-#include "../latch.h"
-#include "../lit.h"
-#include "../litimpl.h"
-#include "../llmem.h"
-#include "../memory.h"
-#include "../mult.h"
-#include "../mux.h"
-#include "../netlist.h"
-#include "../node.h"
-#include "../nodeimpl.h"
-#include "../opt.h"
-#include "../reg.h"
-#include "../regimpl.h"
-#include "../reset.h"
-#include "../shifter.h"
-#include "../sim.h"
-#include "../statemachine.h"
-#include "../submodule.h"
-#include "../tap.h"
-#include "../techmap.h"
-#include "../tickable.h"
-#include "../trisimpl.h"
-#include "../tristate.h"
-#include "../vis.h"
+#include <gateops.h>
+#include <bvec-basic-op.h>
+#include <adder.h>
+#include <shifter.h>
+#include <mux.h>
+#include <enc.h>
+#include <llmem.h>
+#include <memory.h>
+
+#include <opt.h>
+#include <tap.h>
+#include <sim.h>
+#include <netlist.h>
+#include <analysis.h>
+#include <vis.h>
+#include <cassign.h>
+#include <egress.h>
+
+#include <hierarchy.h>
+#include <techmap.h>
+
+#include "report.h"
 
 using namespace std;
 using namespace chdl;
 
 int main() {
-  bvec<32> x, y, z, w;
+  vec<2, vec<2, bvec<2> > > ocho;
+  TAP(ocho);
+  for (unsigned i = 0; i < 2; ++i)
+    for (unsigned j = 0; j < 2; ++j)
+      ocho[i][j] = Reg(ocho[i][j] + Lit<2>(i ^ j), i + j);
 
-  x = Reg(x + Lit<32>(13), 1234);
-  y = Reg(x + Lit<32>(7), 1357);
-  z = x * y;
-  w = z / y;
+  bvec<8> ochoflat(Flatten(ocho));
+  TAP(ochoflat);
 
-  TAP(x); TAP(y); TAP(z); TAP(w);
-  // TAP(y);
+  #if 0
+
+  bvec<32> c1; c1 = Reg(c1 + Lit<32>(1));
+
+  push_clock_domain(3);
+  bvec<4> next_c3, c3(Reg(next_c3));
+  next_c3 = c3 + Lit<4>(1);  
+
+  pop_clock_domain();
+
+  push_clock_domain(5);
+  bvec<32> next_c5, c5(Reg(next_c5));
+  Cassign(next_c5).
+    IF(c3 == Lit<4>(3), c5 + Lit<32>(2)).
+    ELSE(c5 + Lit<32>(1));
+  pop_clock_domain();
+
+  TAP(c1);
+  TAP(c3);
+  TAP(c5);
+
+  #endif
 
   optimize();
 
-  ofstream vcd("example6.vcd");
-  run_trans(vcd, 10000);
+   // Do the simulation
+  ofstream wave_file("example6.vcd");
+  run(wave_file, 1000);
+
+  report();
 
   return 0;
 }

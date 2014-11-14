@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <set>
 
 namespace chdl {
   void reset(); // Completely reset CHDL state
@@ -17,6 +18,13 @@ namespace chdl {
     reset_func(const T &f): f(f) { rfuns()->push_back(this); }
     virtual void operator()() { f(); }
     const T &f;
+  };
+
+  // Mixin: delete your object on reset;
+  struct delete_on_reset {
+    delete_on_reset();
+    virtual ~delete_on_reset();
+    static std::set<delete_on_reset*> dors;
   };
 }
 
