@@ -109,77 +109,30 @@ void dump(nodebuf_t x) {
   cout << endl;
 }
 
+// Data for new algorithm:
+//  Register copy order
+//  Short circuit sets and corresponding essential sets (candidates; not all)
+//  Clusters (output node, countained nodes, input nodes)
+//  Successor chunks
+//  Short-circuit sets and essential sets (as clusters)
+//  Benefit counters for short-circuiting
+//  Benefit counters for successor-to-unchanged
+
 static nodebuf_t v;
-static vector<evaluator_t> e0, e1;
-static vector<execbuf> l0, r0, l1, r1, pre_tick_buf0, pre_tick_buf1, tick_buf0,
-                       tick_buf1, tock_buf0, tock_buf1, post_tock_buf0,
-                       post_tock_buf1;
+static evaluator_t e;
+execbuf exb;
 
 void chdl::init_trans() {
-  unsigned n_cdomains(tickables().size());
-  l0.resize(n_cdomains);  r0.resize(n_cdomains);
-  l1.resize(n_cdomains);  r1.resize(n_cdomains);
-  e0.resize(n_cdomains);  e1.resize(n_cdomains);
-  pre_tick_buf0.resize(n_cdomains);
-  pre_tick_buf1.resize(n_cdomains);
-  tick_buf0.resize(n_cdomains);
-  tick_buf1.resize(n_cdomains);
-  tock_buf0.resize(n_cdomains);
-  tock_buf1.resize(n_cdomains);
-  post_tock_buf0.resize(n_cdomains);
-  post_tock_buf1.resize(n_cdomains);
-  v.resize(nodes.size());
+  const unsigned CLUSTER_N(3);
 
-  for (cdomain_handle_t i = 0; i < n_cdomains; ++i) {
-    l0[i].clear(); r0[i].clear();
-    l1[i].clear(); r1[i].clear();
-
-    pre_tick_buf0[i].clear();
-    pre_tick_buf1[i].clear();
-    tick_buf0[i].clear();
-    tick_buf1[i].clear();
-    tock_buf0[i].clear();
-    tock_buf1[i].clear();
-    post_tock_buf0[i].clear();
-    post_tock_buf1[i].clear();
-
-    e0[i] = [i](nodeid_t n){ return v[n]; };
-    e1[i] = [i](nodeid_t n){ return v[n]; };
-
-    gen_eval_all(e0[i], l0[i], v, v);
-    l0[i].push((char)0xc3);
-    gen_pre_tick_all(i, e0[i], r0[i], v, v);
-    gen_tick_all(i, e0[i], r0[i], v, v);
-    gen_tock_all(i, e0[i], r0[i], v, v);
-    gen_post_tock_all(i, e0[i], r0[i], v, v);
-    r0[i].push((char)0xc3); // ret
-
-    gen_pre_tick_all(i, e0[i], pre_tick_buf0[i], v, v);
-    pre_tick_buf0[i].push((char)0xc3); // ret
-    gen_tick_all(i, e0[i], tick_buf0[i], v, v);
-    tick_buf0[i].push((char)0xc3); // ret
-    gen_tock_all(i, e0[i], tock_buf0[i], v, v);
-    tock_buf0[i].push((char)0xc3); // ret
-    gen_post_tock_all(i, e0[i], post_tock_buf0[i], v, v);
-    post_tock_buf0[i].push((char)0xc3); // ret
-
-    gen_eval_all(e1[i], l1[i], v, v);
-    l1[i].push((char)0xc3);
-    gen_pre_tick_all(i, e1[i], r1[i], v, v);
-    gen_tick_all(i, e1[i], r1[i], v, v);
-    gen_tock_all(i, e1[i], r1[i], v, v);
-    gen_post_tock_all(i, e1[i], r1[i], v, v);
-    r1[i].push((char)0xc3); // ret
-
-    gen_pre_tick_all(i, e1[i], pre_tick_buf1[i], v, v);
-    pre_tick_buf1[i].push((char)0xc3); // ret
-    gen_tick_all(i, e1[i], tick_buf1[i], v, v);
-    tick_buf1[i].push((char)0xc3); // ret
-    gen_tock_all(i, e1[i], tock_buf1[i], v, v);
-    tock_buf1[i].push((char)0xc3); // ret
-    gen_post_tock_all(i, e1[i], post_tock_buf1[i], v, v);
-    post_tock_buf1[i].push((char)0xc3); // ret
-  }
+  // Find valid register copy order.
+  // Find depth-limited short circuit sets and essential sets for each node
+  // Select a set of candidate short circuit nodes
+  // Perform exclusive N-clustering, starting with SC nodes in s
+  // Compute successor chunks for each cluster.
+  // Convert short circuit node sets to clusters (wholly contained clusters)
+  // Set initial benefit counter values for each node to short circuit set sizes
+  // Set initial benefit counter values for each successor chunk to chunk sizes
 }
 
 evaluator_t &chdl::trans_evaluator() {
@@ -187,19 +140,15 @@ evaluator_t &chdl::trans_evaluator() {
 }
 
 void chdl::advance_trans(cdomain_handle_t cd) {
-  if (!(now[cd] & 1)) {
-    l0[cd]();
-    r0[cd]();
-    ++now[cd];
-  } else {
-    l1[cd]();
-    r1[cd]();
-    ++now[cd];
-  }
+  // TODO
+  // Is it time to re-evaluate yet?
 }
 
 void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   init_trans();
+
+  // TODO
+  #if 0  
 
   print_vcd_header(vcdout);
   print_time(vcdout);
@@ -222,6 +171,7 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
       print_time(vcdout);
     }
   }
+  #endif
 
   call_final_funcs();
 }
