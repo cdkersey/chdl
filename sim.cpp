@@ -9,10 +9,15 @@
 #include "reset.h"
 #include "cdomain.h"
 #include "regimpl.h"
+#include "trisimpl.h"
+#include "gatesimpl.h"
 #include "memory.h"
+#include "stopwatch.h"
 
 using namespace chdl;
 using namespace std;
+
+#define DEBUG_TRANS
 
 vector<cycle_t> chdl::now{0};
 static void reset_now() { now = vector<cycle_t>(1); }
@@ -109,34 +114,339 @@ void dump(nodebuf_t x) {
   cout << endl;
 }
 
-// Data for new algorithm:
 //  Register copy order
-//  Short circuit sets and corresponding essential sets (candidates; not all)
-//  Clusters (output node, countained nodes, input nodes)
-//  Successor chunks
-//  Short-circuit sets and essential sets (as clusters)
-//  Benefit counters for short-circuiting
-//  Benefit counters for successor-to-unchanged
+vector<nodeid_t> rcpy;
 
+//  Short circuit sets and corresponding essential sets (candidates; not all)
+map<nodeid_t, pair<set<nodeid_t>, set<nodeid_t> > > scs;
+
+//  Clusters (output node, countained nodes, input nodes)
+map<nodeid_t, pair<set<nodeid_t>, set<nodeid_t> > > clusters;
+map<nodeid_t, nodeid_t> rclusters;
+
+//  Successor chunks
+map<nodeid_t, set<nodeid_t> > schunk;
+
+//  Benefit counters for short-circuiting and successor-to-unchanged
+vector<unsigned long> bc_sc, bc_suc;
+
+// The default node buffer.
 static nodebuf_t v;
+
+// The default evaluator.
 static evaluator_t e;
+
+// The default exec buffer.
 execbuf exb;
 
-void chdl::init_trans() {
-  const unsigned CLUSTER_N(3);
+// The stopwatch collection
+vector<pair<string, double> > times;
+void push_time(const char *s) {
+  times.push_back(make_pair<string, double>(s, 0));;
+  stopwatch_start();
+}
 
+void pop_time() {
+  times[times.size() - 1].second = stopwatch_stop();
+}
+
+// Find a valid register copy order.
+void find_rcpy() {
+  push_time("find_rcpy");
+
+  // Get registers. Each register will have an entry in rg.
+  set<nodeid_t> regs;
+  get_reg_q_nodes(regs);
+
+  // Register graph; for each q, a set of qs having it as d.
+  map<nodeid_t, set<nodeid_t> > rg;
+
+  // Generate the graph. Should be a DAG
+  for (auto r : regs) {
+    rg[r];
+    regimpl *rp(static_cast<regimpl *>(nodes[r]));
+    if (regs.count(rp->d)) rg[rp->d].insert(r);
+  }
+
+  #ifdef DEBUG_TRANS
+  cout << "Register dependency graph (incoming edges):" << endl;
+  for (auto &p : rg) {
+    cout << "  " << p.first << ':';
+    for (auto &r : p.second)
+      cout << ' ' << r;
+    cout << endl;
+  }
+  #endif
+
+  // Build the register copy order.
+  while (!rg.empty()) {
+    for (auto p : rg) {
+      if (p.second.empty()) {
+        rcpy.push_back(p.first);
+        rg.erase(p.first);
+        for (auto q : rg)
+          rg[q.first].erase(p.first);
+        break;
+      }
+    }
+  }
+
+  #ifdef DEBUG_TRANS
+  cout << "Register copy order:" << endl;
+  for (auto r : rcpy)
+    cout << "  " << r << endl;
+  #endif
+
+  pop_time();
+}
+
+// Recursively find all nodes that a node n depends on.
+void dep_set(set<nodeid_t> &s, nodeid_t n, int max_depth = -1) {
+  set<nodeid_t> frontier;
+  frontier.insert(n);
+
+  while (frontier.size() && max_depth--) {
+    set<nodeid_t> next_frontier;
+    for (auto n : frontier) {
+      s.insert(n);
+      for (auto src : nodes[n]->src)
+        next_frontier.insert(src);
+    }
+
+    frontier = next_frontier;
+  }
+}
+
+void find_scs() {
+  push_time("find_scs");
+
+  const unsigned DEPTH_LIMIT(10), MIN_SCS_SIZE(100);
+
+  // First, build a successor table.
+  map<nodeid_t, set<nodeid_t> > succ;
+  for (nodeid_t n = 0; n < nodes.size(); ++n)
+    for (auto s : nodes[n]->src)
+      succ[s].insert(n);
+
+  // Find all nand inputs and tristate enables and their associated nodes
+  // Also find the gates that will be performing the short circuiting.
+  map<nodeid_t, set<nodeid_t> > sc_nodes, sc_gates;
+  for (nodeid_t n = 0; n < nodes.size(); ++n) {
+    vector<node> &src(nodes[n]->src);                                        
+    if (dynamic_cast<nandimpl *>(nodes[n])) {                                
+      sc_nodes[src[0]].insert(src[1]);                                       
+      sc_nodes[src[1]].insert(src[0]);                                       
+      sc_gates[src[0]].insert(n);                                            
+      sc_gates[src[1]].insert(n);                                            
+    } else if (dynamic_cast<tristateimpl *>(nodes[n])) {                     
+      // Odd nodes are enables                                               
+      for (unsigned i = 0; i < src.size(); i += 2) {                         
+        sc_nodes[src[i + 1]].insert(src[i]);                                 
+        sc_gates[src[i + 1]].insert(n);                                      
+      }                                                                      
+    }                                                                        
+  } 
+
+  // For each nand input and tristate enable, find its short circuiting set.
+  for (auto &p : sc_nodes) {
+    // n is the enable/node for which we're finding the short circuiting set.
+    nodeid_t n(p.first);
+    set<nodeid_t> s(p.second);
+
+    // Find the "essential set" of all nodes required to evaluate n.
+    set<nodeid_t> e;
+    dep_set(e, n, DEPTH_LIMIT);
+
+    // Find all dependencies for the nodes in s and add them to s
+    set<nodeid_t> s0(s);
+    for (auto n : s0)
+      dep_set(s, n, DEPTH_LIMIT);
+
+    // Remove all of the nodes that are in the essential set.
+    for (auto n : e) s.erase(n);
+
+    // Remove all of the nodes with external successors until none remain.
+    bool ext;
+    do {
+      ext = false;
+
+      for (auto m : s) {
+        for (auto ms : succ[m]) {
+          // The gates responsible for the short-circuiting are allowed to be
+          // successors, of course.
+          if (sc_gates[n].count(ms)) continue;
+          if (!s.count(ms)) {
+            ext = true;
+            break;
+          }
+        }
+        if (ext) {
+          s.erase(m);
+          break;
+        }
+      }     
+    } while(ext);
+
+    if (!s.empty() && s.size() >= MIN_SCS_SIZE)
+      scs[n] = make_pair(s, e);
+  }
+
+  #ifdef DEBUG_TRANS
+  cout << "Short-circuit and essential set sizes for each node:" << endl;
+  for (auto &p : scs)
+    cout << "  " << p.first << ", " << p.second.first.size()
+         << ", " << p.second.second.size() << endl;
+  #endif
+
+  pop_time();
+}
+
+void find_clusters() {
+  push_time("find_clusters");
+
+  const unsigned CLUSTER_INPUTS(3), MERGE_ITERATIONS(10);
+
+  // Successor table
+  map<nodeid_t, set<nodeid_t> > succ;
+  for (nodeid_t n = 0; n < nodes.size(); ++n)
+    for (auto s : nodes[n]->src)
+      succ[s].insert(n);
+
+  // This is a bottom-up algorithm. Start with single-node clusters.
+  for (nodeid_t i = 0; i < nodes.size(); ++i) {
+    set<nodeid_t> inputs;
+    for (auto x : nodes[i]->src) inputs.insert(x);
+    clusters[i] = make_pair(set<nodeid_t>{i}, inputs);
+  }
+
+  cout << "Created " << clusters.size() << " initial clusters out of "
+       << nodes.size() << " nodes." << endl;
+
+  for (unsigned iter = 0; iter < MERGE_ITERATIONS; ++iter) {
+    // For each cluster
+    for (auto &c : clusters) {
+      // For each input cluster
+      for (auto d : c.second.second) {
+        // All successors have to be in the cluster already.
+        bool not_in_cluster(false);
+        for (auto x : succ[d]) {
+          if (!c.second.first.count(x)) {
+            not_in_cluster = true;
+            break;
+          }
+        }
+        if (not_in_cluster) continue;
+        
+        // Try to merge.
+        set<nodeid_t> inputs(c.second.second);
+        inputs.erase(d);
+        inputs.insert(clusters[d].second.begin(), clusters[d].second.end());
+        if (inputs.size() > CLUSTER_INPUTS) continue;
+      
+        // Success. Perform the merge.
+        c.second.second = inputs;
+        c.second.first.insert(clusters[d].first.begin(),
+                              clusters[d].first.end());
+        clusters.erase(d);
+        break;
+      } 
+    }
+  }
+
+  // Create reverse cluster lookup mapping node->cluster
+  for (auto &c : clusters)
+    for (auto n : c.second.first)
+      rclusters[n] = c.first;
+
+  #ifdef DEBUG_TRANS
+  cout << "Clusters:" << endl;
+  for (auto &c : clusters) {
+    cout << "  " << c.first << ':';
+    for (auto n : c.second.first) cout << ' ' << n;
+    cout << '(';
+    for (auto n : c.second.second) cout << ' ' << n;
+    cout << ')' << endl;
+  }
+  #endif
+
+  pop_time();
+}
+
+void find_succ() {
+  push_time("find_succ");
+
+  // Find successor cluster sets for each cluster.
+  for (auto &c : clusters)
+    for (auto i : c.second.second)
+
+      schunk[i].insert(c.first);
+
+  #ifdef DEBUG_TRANS
+  cout << "Successor chunks:" << endl;
+  for (auto &p : schunk) {
+    cout << "  " << p.first << ':';
+    for (auto n : p.second)
+      cout << ' ' << n;
+    cout << endl;
+  }
+  #endif
+
+  pop_time();
+}
+
+void prune_to_clusters(set<nodeid_t> &s) {
+  // Prune all members of s that are not clusters.
+  set<nodeid_t> non_cluster;
+  for (auto x : s)
+    if (!clusters.count(x))
+      non_cluster.insert(x);
+
+  for (auto x : non_cluster)
+    s.erase(x);
+
+  // Prune all members of s that are not fully contained in s
+  set<nodeid_t> non_fully_contained;
+  for (auto c : s) {
+    for (auto x : clusters[c].first) {
+      if (x == c) continue;
+      if (!non_cluster.count(x))
+        non_fully_contained.insert(x);
+    }
+  }
+
+  for (auto x : non_fully_contained)
+    s.erase(x);
+}
+
+void chdl::clusterize_scs() {
+  push_time("clusterize_scs");
+  // TODO
+  pop_time();
+}
+
+void chdl::init_trans() {
   // Find valid register copy order.
+  find_rcpy();
+
   // Find depth-limited short circuit sets and essential sets for each node
   // Select a set of candidate short circuit nodes
+  find_scs();
+
   // Perform exclusive N-clustering, starting with SC nodes in s
+  find_clusters();
+
   // Compute successor chunks for each cluster.
+  find_succ();
+
   // Convert short circuit node sets to clusters (wholly contained clusters)
+  clusterize_scs();
+
   // Set initial benefit counter values for each node to short circuit set sizes
   // Set initial benefit counter values for each successor chunk to chunk sizes
 }
 
 evaluator_t &chdl::trans_evaluator() {
-  if (now[0] % 2 == 0) return e0[0]; else return e1[0];
+  return e;
 }
 
 void chdl::advance_trans(cdomain_handle_t cd) {
@@ -174,45 +484,25 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   #endif
 
   call_final_funcs();
+
+  cout << "Stopwatch values:" << endl;
+  for (auto &p : times)
+    cout << "  " << p.first << ": " << p.second << "ms" << endl;    
 }
 
 void chdl::recompute_logic_trans(cdomain_handle_t cd) {
-  if ((now[0] % 2) == 0)
-    l0[cd]();
-  else
-    l1[cd]();
 }
 
 void chdl::pre_tick_trans(cdomain_handle_t cd) {
-  if ((now[0] % 2) == 0) {
-    l0[cd]();
-    pre_tick_buf1[0]();
-  } else {
-    l1[cd]();
-    pre_tick_buf0[0]();
-  }
 }
 
 void chdl::tick_trans(cdomain_handle_t cd) {
-  if ((now[0] % 2) == 0) {
-    tick_buf0[cd]();
-  } else {
-    tick_buf1[cd]();
-  }
 }
 
 void chdl::tock_trans(cdomain_handle_t cd) {
-  if ((now[cd] % 2) == 0)
-    tock_buf0[cd]();
-  else
-    tock_buf1[cd]();
 }
 
 void chdl::post_tock_trans(cdomain_handle_t cd) {
-  if ((now[cd] % 2) == 0)
-    post_tock_buf0[cd]();
-  else
-    post_tock_buf1[cd]();
 }
 
 void chdl::run_trans(std::ostream &vcdout, cycle_t max) {

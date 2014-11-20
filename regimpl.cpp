@@ -110,3 +110,10 @@ void chdl::get_reg_d_nodes(set<nodeid_t> &s) {
     if (r) s.insert(r->d);
   }
 }
+
+void chdl::get_reg_q_nodes(set<nodeid_t> &s) {
+  for (size_t i = 0; i < nodes.size(); ++i) {
+    regimpl *r(dynamic_cast<regimpl*>(nodes[i]));
+    if (r) s.insert(r->id);
+  }
+}

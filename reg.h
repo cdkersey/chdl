@@ -12,6 +12,7 @@ namespace chdl {
 
   void get_reg_nodes(std::set<nodeid_t> &s);
   void get_reg_d_nodes(std::set<nodeid_t> &s);
+  void get_reg_q_nodes(std::set<nodeid_t> &s);
 };
 
 #endif
