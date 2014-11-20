@@ -220,7 +220,7 @@ void dep_set(set<nodeid_t> &s, nodeid_t n, int max_depth = -1) {
 void find_scs() {
   push_time("find_scs");
 
-  const unsigned DEPTH_LIMIT(10), MIN_SCS_SIZE(100);
+  const unsigned DEPTH_LIMIT(10), MIN_SCS_SIZE(10);
 
   // First, build a successor table.
   map<nodeid_t, set<nodeid_t> > succ;
@@ -319,9 +319,6 @@ void find_clusters() {
     clusters[i] = make_pair(set<nodeid_t>{i}, inputs);
   }
 
-  cout << "Created " << clusters.size() << " initial clusters out of "
-       << nodes.size() << " nodes." << endl;
-
   for (unsigned iter = 0; iter < MERGE_ITERATIONS; ++iter) {
     // For each cluster
     for (auto &c : clusters) {
@@ -394,13 +391,14 @@ void find_succ() {
   pop_time();
 }
 
-void prune_to_clusters(set<nodeid_t> &s) {
+void clusterize(set<nodeid_t> &s) {
   // Prune all members of s that are not clusters.
   set<nodeid_t> non_cluster;
   for (auto x : s)
     if (!clusters.count(x))
       non_cluster.insert(x);
 
+  // ... and remove them.
   for (auto x : non_cluster)
     s.erase(x);
 
@@ -418,9 +416,68 @@ void prune_to_clusters(set<nodeid_t> &s) {
     s.erase(x);
 }
 
-void chdl::clusterize_scs() {
+void conservative_clusterize(set<nodeid_t> &s) {
+  set<nodeid_t> new_s;
+
+  for (auto n : s)
+    new_s.insert(rclusters[n]);
+
+  s = new_s;
+}
+
+void clusterize_scs() {
   push_time("clusterize_scs");
-  // TODO
+
+  #ifdef DEBUG_TRANS
+    cout << "Short circuit set clusterization:" << endl;
+  #endif
+
+  for (auto &p : scs) {
+    #ifdef DEBUG_TRANS
+    cout << "scs for " << p.first << ": " << p.second.first.size()
+         << '(' << p.second.second.size() << ')';
+    #endif
+
+    clusterize(p.second.first);
+    conservative_clusterize(p.second.second);
+
+    #ifdef DEBUG_TRANS
+    cout << "->" << p.second.first.size()
+         << '(' << p.second.second.size() << ')' << endl;
+    #endif
+  }
+
+  pop_time();
+}
+
+void init_bcs() {
+  push_time("init_bcs");
+
+  for (nodeid_t i = 0; i < nodes.size(); ++i) {
+    // Short circuit set.
+    if (scs.count(i)) {
+      if (scs[i].second.size() >= scs[i].first.size())
+        bc_sc.push_back(0);
+      else
+        bc_sc.push_back(scs[i].first.size() - scs[i].second.size());
+    } else {
+      bc_sc.push_back(0);
+    }
+
+    // Successor
+    if (schunk.count(i)) bc_suc.push_back(schunk[i].size());
+    else bc_suc.push_back(0);
+  }
+
+
+  #ifdef DEBUG_TRANS
+  cout << "Initial benefit counters:" << endl;
+  for (nodeid_t i = 0; i < nodes.size(); ++i) {
+    if (bc_sc[i]) cout << "  sc[" << i << "]: " << bc_sc[i] << endl;
+    if (bc_suc[i]) cout << "  suc[" << i << "]: " << bc_suc[i] << endl;
+  }
+  #endif
+
   pop_time();
 }
 
@@ -443,6 +500,7 @@ void chdl::init_trans() {
 
   // Set initial benefit counter values for each node to short circuit set sizes
   // Set initial benefit counter values for each successor chunk to chunk sizes
+  init_bcs();
 }
 
 evaluator_t &chdl::trans_evaluator() {
