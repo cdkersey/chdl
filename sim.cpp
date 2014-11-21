@@ -117,6 +117,9 @@ void dump(nodebuf_t x) {
 //  Register copy order
 vector<nodeid_t> rcpy;
 
+// Successor table
+map<nodeid_t, set<nodeid_t> > succ;
+
 //  Short circuit sets and corresponding essential sets (candidates; not all)
 map<nodeid_t, pair<set<nodeid_t>, set<nodeid_t> > > scs;
 
@@ -129,7 +132,7 @@ map<nodeid_t, vector<nodeid_t> > cluster_order;
 map<nodeid_t, set<nodeid_t> > schunk;
 
 //  Benefit counters for short-circuiting and successor-to-unchanged
-vector<unsigned long> bc_sc, bc_suc;
+vector<unsigned long> bc_sc, bc_suc, nodescore;
 
 // The default node buffer.
 static nodebuf_t v;
@@ -203,18 +206,39 @@ void find_rcpy() {
 
 // Recursively find all nodes that a node n depends on.
 void dep_set(set<nodeid_t> &s, nodeid_t n, int max_depth = -1) {
-  set<nodeid_t> frontier;
-  frontier.insert(n);
+  static map<nodeid_t, set<nodeid_t> > ds;
 
-  while (frontier.size() && max_depth--) {
-    set<nodeid_t> next_frontier;
-    for (auto n : frontier) {
-      s.insert(n);
-      for (auto src : nodes[n]->src)
-        next_frontier.insert(src);
+  if (max_depth == 0) return;
+
+  if (ds.count(n)) {
+    for (auto &x : ds[n]) s.insert(x);
+  } else {
+    #if 0
+    set<nodeid_t> frontier;
+    frontier.insert(n);
+
+    while (frontier.size() && max_depth--) {
+      set<nodeid_t> next_frontier, &dsn(ds[n]);
+      for (auto n : frontier) {
+        s.insert(n);
+        dsn.insert(n);
+        for (auto src : nodes[n]->src)
+          next_frontier.insert(src);
+      }
+
+      frontier = next_frontier;
     }
-
-    frontier = next_frontier;
+    #endif
+    for (auto src : nodes[n]->src) {
+      set<nodeid_t> new_el;
+      dep_set(new_el, src, max_depth - 1);
+      
+      for (auto x : new_el) {
+        s.insert(x);
+        ds[n].insert(x);
+      }
+    }
+      
   }
 }
 
@@ -224,7 +248,6 @@ void find_scs() {
   const unsigned DEPTH_LIMIT(10), MIN_SCS_SIZE(10);
 
   // First, build a successor table.
-  map<nodeid_t, set<nodeid_t> > succ;
   for (nodeid_t n = 0; n < nodes.size(); ++n)
     for (auto s : nodes[n]->src)
       succ[s].insert(n);
@@ -307,12 +330,6 @@ void find_clusters() {
 
   const unsigned CLUSTER_INPUTS(3), MERGE_ITERATIONS(10);
 
-  // Successor table
-  map<nodeid_t, set<nodeid_t> > succ;
-  for (nodeid_t n = 0; n < nodes.size(); ++n)
-    for (auto s : nodes[n]->src)
-      succ[s].insert(n);
-
   // This is a bottom-up algorithm. Start with single-node clusters.
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
     set<nodeid_t> inputs;
@@ -373,12 +390,6 @@ void find_clusters() {
 void find_cluster_orders() {
   push_time("find_cluster_orders");
   
-  // Build yet another node successor table.
-  map<nodeid_t, set<nodeid_t> > succ;
-  for (nodeid_t n = 0; n < nodes.size(); ++n)
-    for (auto s : nodes[n]->src)
-      succ[s].insert(n);
-
   for (auto &c : clusters) {
     map<nodeid_t, int> depcount;
     for (auto n : c.second.first)
@@ -497,6 +508,9 @@ void clusterize_scs() {
 void init_bcs() {
   push_time("init_bcs");
 
+  // Space for the node scores.
+  nodescore.resize(nodes.size());
+
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
     // Short circuit set.
     if (scs.count(i)) {
@@ -569,9 +583,14 @@ void reg_trans() {
   pop_time();
 }
 
-void gen_dep_table(map<nodeid_t, int> &t, set<nodeid_t> &evalable) {
+void gen_dep_table(map<nodeid_t, int> &t, set<nodeid_t> &evalable,
+                   multimap<unsigned long, nodeid_t> &rank)
+{
   for (auto &p : clusters) {
-    if (p.second.second.size() == 0) evalable.insert(p.first);
+    if (p.second.second.size() == 0) {
+      evalable.insert(p.first);
+      rank.insert(make_pair(nodescore[p.first], p.first));
+    }
     t[p.first] = p.second.second.size();
   }
 
@@ -580,11 +599,17 @@ void gen_dep_table(map<nodeid_t, int> &t, set<nodeid_t> &evalable) {
   #endif
 }
 
-void update_evalable(nodeid_t n, map<nodeid_t, int> &t, set<nodeid_t> &evalable)
+void update_evalable(nodeid_t n, map<nodeid_t, int> &t,
+                     set<nodeid_t> &evalable,
+                     multimap<unsigned long, nodeid_t> &rank)
 {
   evalable.erase(n);
-  for (auto s : schunk[n])
-    if (--t[s] == 0) evalable.insert(s);
+  for (auto s : schunk[n]) {
+    if (--t[s] == 0) {
+      rank.insert(make_pair(nodescore[s], s));
+      evalable.insert(s);
+    }
+  }
 }
 
 void gen_cluster(nodeid_t c) {
@@ -603,14 +628,26 @@ void log_trans() {
 
   map<nodeid_t, int> depcount;
   set<nodeid_t> evalable;
-  gen_dep_table(depcount, evalable);
+  multimap<unsigned long, nodeid_t> rank;
+  gen_dep_table(depcount, evalable, rank);
 
   // TODO: Include counter values when we do this.
   while (!evalable.empty()) {
-    nodeid_t n = *(evalable.begin());
+    nodeid_t n;
+    do {
+      auto it = prev(rank.end());
+      n = it->second;
+      if (!evalable.count(n)) {
+        rank.erase(it);
+      }
+      #ifdef DEBUG_TRANS
+      if (evalable.count(n))
+        cout << "Next cluster: " << n << ", " << it->first << endl;
+      #endif
+    } while (!evalable.count(n));
 
     gen_cluster(n);
-    update_evalable(n, depcount, evalable);
+    update_evalable(n, depcount, evalable, rank);
   }
 
   pop_time();
@@ -623,10 +660,39 @@ void shift_bcs() {
   pop_time();
 }
 
+void compute_scores() {
+  push_time("compute_scores");
+
+  const unsigned MAX_DEPTH(10);
+
+  for (nodeid_t i = 0; i < nodes.size(); ++i) {
+    // Points for being in essential set of high-impact short-circuiting nodes.
+    set<nodeid_t> sc;
+    if (scs.count(i) && bc_sc[i])
+      for (auto e : scs[i].second)
+        dep_set(sc, e, MAX_DEPTH);
+
+    for (auto n : sc) nodescore[n] += bc_sc[i];
+
+    // Points for having a highly-beneficial bypass chunk
+    if (bc_suc[i]) {
+      set<nodeid_t> pred;
+      dep_set(pred, i, MAX_DEPTH);
+      for (auto p : pred)
+        nodescore[p] += bc_suc[i];
+    }
+  }
+
+  pop_time();
+}
+
 void chdl::advance_trans(cdomain_handle_t cd) {
   const unsigned DYN_TRANS_INTERVAL(100000);
 
   if (now[0] % DYN_TRANS_INTERVAL == 0) {
+    // Compute the combined codegen scores
+    compute_scores();
+
     // Clear the execbuf.
     exb.clear();
 
@@ -656,7 +722,7 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   print_time(vcdout);
   for (unsigned i = 0; i < max; ++i) {
     advance_trans(0);
-    print_taps(vcdout, e);
+    // print_taps(vcdout, e);
     print_time(vcdout);
   }
   print_time(vcdout);
