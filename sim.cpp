@@ -208,27 +208,15 @@ void find_rcpy() {
 void dep_set(set<nodeid_t> &s, nodeid_t n, int max_depth = -1) {
   static map<nodeid_t, set<nodeid_t> > ds;
 
+  s.insert(n);
+
   if (max_depth == 0) return;
 
   if (ds.count(n)) {
     for (auto &x : ds[n]) s.insert(x);
   } else {
-    #if 0
-    set<nodeid_t> frontier;
-    frontier.insert(n);
+    ds[n].insert(n);
 
-    while (frontier.size() && max_depth--) {
-      set<nodeid_t> next_frontier, &dsn(ds[n]);
-      for (auto n : frontier) {
-        s.insert(n);
-        dsn.insert(n);
-        for (auto src : nodes[n]->src)
-          next_frontier.insert(src);
-      }
-
-      frontier = next_frontier;
-    }
-    #endif
     for (auto src : nodes[n]->src) {
       set<nodeid_t> new_el;
       dep_set(new_el, src, max_depth - 1);
@@ -238,14 +226,17 @@ void dep_set(set<nodeid_t> &s, nodeid_t n, int max_depth = -1) {
         ds[n].insert(x);
       }
     }
-      
   }
+
+  #ifdef DEBUG_TRANS
+  cout << "Dep set for " << n << ": " << ds[n].size() << " nodes." << endl;
+  #endif
 }
 
 void find_scs() {
   push_time("find_scs");
 
-  const unsigned DEPTH_LIMIT(10), MIN_SCS_SIZE(10);
+  const unsigned DEPTH_LIMIT(100), MIN_SCS_SIZE(10);
 
   // First, build a successor table.
   for (nodeid_t n = 0; n < nodes.size(); ++n)
@@ -508,6 +499,8 @@ void clusterize_scs() {
 void init_bcs() {
   push_time("init_bcs");
 
+  const unsigned SUC_THRESHOLD(20);
+
   // Space for the node scores.
   nodescore.resize(nodes.size());
 
@@ -523,7 +516,7 @@ void init_bcs() {
     }
 
     // Successor
-    if (schunk.count(i)) bc_suc.push_back(schunk[i].size());
+    if (schunk.count(i) > SUC_THRESHOLD) bc_suc.push_back(schunk[i].size());
     else bc_suc.push_back(0);
   }
 
@@ -663,7 +656,7 @@ void shift_bcs() {
 void compute_scores() {
   push_time("compute_scores");
 
-  const unsigned MAX_DEPTH(10);
+  const unsigned MAX_DEPTH(100);
 
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
     // Points for being in essential set of high-impact short-circuiting nodes.
@@ -725,7 +718,6 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
     // print_taps(vcdout, e);
     print_time(vcdout);
   }
-  print_time(vcdout);
 
   call_final_funcs();
 
