@@ -123,6 +123,7 @@ map<nodeid_t, pair<set<nodeid_t>, set<nodeid_t> > > scs;
 //  Clusters (output node, countained nodes, input nodes)
 map<nodeid_t, pair<set<nodeid_t>, set<nodeid_t> > > clusters;
 map<nodeid_t, nodeid_t> rclusters;
+map<nodeid_t, vector<nodeid_t> > cluster_order;
 
 //  Chunk of successor clusters for each cluster
 map<nodeid_t, set<nodeid_t> > schunk;
@@ -369,6 +370,50 @@ void find_clusters() {
   pop_time();
 }
 
+void find_cluster_orders() {
+  push_time("find_cluster_orders");
+  
+  // Build yet another node successor table.
+  map<nodeid_t, set<nodeid_t> > succ;
+  for (nodeid_t n = 0; n < nodes.size(); ++n)
+    for (auto s : nodes[n]->src)
+      succ[s].insert(n);
+
+  for (auto &c : clusters) {
+    map<nodeid_t, int> depcount;
+    for (auto n : c.second.first)
+      for (auto s : succ[n])
+        ++depcount[s];
+
+    set<nodeid_t> can_push;
+    for (auto n : c.second.first)
+      if (depcount[n] == 0)
+        can_push.insert(n);
+
+    while (!can_push.empty()) {
+      nodeid_t n(*can_push.begin());
+      cluster_order[c.first].push_back(n);
+      can_push.erase(n);
+      for (auto s : succ[n])
+        if (--depcount[s] == 0 && c.second.first.count(s))
+          can_push.insert(s);
+    }
+  
+    #ifdef DEBUG_TRANS
+    if (cluster_order[c.first].size() != c.second.first.size()) {
+      cout << "ERROR: Cluster size mismatch!" << endl;
+      for (auto x : cluster_order[c.first]) cout << ' ' << x;
+      cout << " vs ";
+      for (auto x : c.second.first) cout << ' ' << x;
+      cout << endl;
+      abort();
+    }
+    #endif
+  }
+
+  pop_time();
+}
+
 void find_succ() {
   push_time("find_succ");
 
@@ -497,6 +542,9 @@ void chdl::init_trans() {
   // Perform exclusive N-clustering, starting with SC nodes in s
   find_clusters();
 
+  // Find valid eval orders for clusters.
+  find_cluster_orders();
+
   // Compute successor chunks for each cluster.
   find_succ();
 
@@ -540,10 +588,11 @@ void update_evalable(nodeid_t n, map<nodeid_t, int> &t, set<nodeid_t> &evalable)
 }
 
 void gen_cluster(nodeid_t c) {
-  for (auto n : clusters[c].first) {
+  for (auto n : cluster_order[c]) {
     #ifdef DEBUG_TRANS
     cout << "Gen evaluate " << n << endl;
     #endif
+
     nodes[n]->gen_eval(e, exb, v);
     nodes[n]->gen_store_result(exb, v, v);
   }
