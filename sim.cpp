@@ -124,7 +124,7 @@ map<nodeid_t, pair<set<nodeid_t>, set<nodeid_t> > > scs;
 map<nodeid_t, pair<set<nodeid_t>, set<nodeid_t> > > clusters;
 map<nodeid_t, nodeid_t> rclusters;
 
-//  Successor chunks
+//  Chunk of successor clusters for each cluster
 map<nodeid_t, set<nodeid_t> > schunk;
 
 //  Benefit counters for short-circuiting and successor-to-unchanged
@@ -375,7 +375,6 @@ void find_succ() {
   // Find successor cluster sets for each cluster.
   for (auto &c : clusters)
     for (auto i : c.second.second)
-
       schunk[i].insert(c.first);
 
   #ifdef DEBUG_TRANS
@@ -482,6 +481,12 @@ void init_bcs() {
 }
 
 void chdl::init_trans() {
+  // Resize our node buffer.
+  v.resize(nodes.size());
+
+  // e just returns a value from v:
+  e = [](nodeid_t n) { return v[n]; };
+
   // Find valid register copy order.
   find_rcpy();
 
@@ -507,39 +512,105 @@ evaluator_t &chdl::trans_evaluator() {
   return e;
 }
 
+void reg_trans() {
+  push_time("reg_trans");
+
+  for (auto r : rcpy)
+    static_cast<regimpl*>(nodes[r])->gen_tick(e, exb, v, v);
+
+  pop_time();
+}
+
+void gen_dep_table(map<nodeid_t, int> &t, set<nodeid_t> &evalable) {
+  for (auto &p : clusters) {
+    if (p.second.second.size() == 0) evalable.insert(p.first);
+    t[p.first] = p.second.second.size();
+  }
+
+  #ifdef DEBUG_TRANS
+  cout << "Initial evalable nodes: " << evalable.size() << endl;
+  #endif
+}
+
+void update_evalable(nodeid_t n, map<nodeid_t, int> &t, set<nodeid_t> &evalable)
+{
+  evalable.erase(n);
+  for (auto s : schunk[n])
+    if (--t[s] == 0) evalable.insert(s);
+}
+
+void gen_cluster(nodeid_t c) {
+  for (auto n : clusters[c].first) {
+    #ifdef DEBUG_TRANS
+    cout << "Gen evaluate " << n << endl;
+    #endif
+    nodes[n]->gen_eval(e, exb, v);
+    nodes[n]->gen_store_result(exb, v, v);
+  }
+}
+
+void log_trans() {
+  push_time("log_trans");
+
+  map<nodeid_t, int> depcount;
+  set<nodeid_t> evalable;
+  gen_dep_table(depcount, evalable);
+
+  // TODO: Include counter values when we do this.
+  while (!evalable.empty()) {
+    nodeid_t n = *(evalable.begin());
+
+    gen_cluster(n);
+    update_evalable(n, depcount, evalable);
+  }
+
+  pop_time();
+}
+
+void shift_bcs() {
+  push_time("shift_bcs");
+  for (auto &x : bc_sc) x >>= 1;
+  for (auto &x : bc_suc) x >>= 1;
+  pop_time();
+}
+
 void chdl::advance_trans(cdomain_handle_t cd) {
-  // TODO
-  // Is it time to re-evaluate yet?
+  const unsigned DYN_TRANS_INTERVAL(100000);
+
+  if (now[0] % DYN_TRANS_INTERVAL == 0) {
+    // Clear the execbuf.
+    exb.clear();
+
+    // Translate the registers.
+    reg_trans();
+
+    // Translate the logic.
+    log_trans();
+
+    // Finish off the translation with a ret instruction
+    exb.push((char)0xc3);
+
+    // Shift the counter values
+    shift_bcs();
+  }
+
+  // Run the execbuf; one cycle of evaluation.
+  exb();
+
+  ++now[0];
 }
 
 void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   init_trans();
 
-  // TODO
-  #if 0  
-
   print_vcd_header(vcdout);
   print_time(vcdout);
-  for (unsigned i = 0; i < max && !stop; ++i) {
-    for (unsigned cd = 0; cd < tickables().size(); ++cd) {
-      if (i % tick_intervals()[cd] == tick_intervals()[cd] - 1) {
-        if ((i & 1) == 0) {
-          l0[cd]();
-          if (cd == 0) print_taps(vcdout, e0[cd]);
-          r0[cd]();
-          ++now[cd];
-        } else {
-          l1[cd]();
-          if (cd == 0) print_taps(vcdout, e1[cd]);
-          r1[cd]();
-          ++now[cd];
-        }
-        
-      }
-      print_time(vcdout);
-    }
+  for (unsigned i = 0; i < max; ++i) {
+    advance_trans(0);
+    print_taps(vcdout, e);
+    print_time(vcdout);
   }
-  #endif
+  print_time(vcdout);
 
   call_final_funcs();
 
