@@ -26,8 +26,8 @@ namespace chdl {
     }
 
     // Return a handle that can be used to fix up a value later
-    template <typename T> char *push_future() {
-      char *prev_pos(pos);
+    template <typename T> int push_future() {
+      int prev_pos(pos - buf);
       for (unsigned i = 0; i < sizeof(T); ++i) push(char(0));
       return prev_pos;
     }
@@ -35,13 +35,15 @@ namespace chdl {
     // Fix up a value.
     void push(char *ptr, char val) { *ptr = val; }
 
-    template <typename T> void push(char *ptr, T x_in) {
+    template <typename T> void push(int offset, T x_in) {
       unsigned long x((unsigned long)x_in);
       for (unsigned i = 0; i < sizeof(x_in); ++i) {
-        push(ptr + i, char(x & 0xff));
+        push(buf + offset + i, char(x & 0xff));
         x >>= 8;
       }
     }
+
+    int get_pos() { return pos - buf; }
 
   private:
     void reallocate(size_t sz);

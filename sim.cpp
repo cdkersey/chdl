@@ -131,9 +131,6 @@ map<nodeid_t, vector<nodeid_t> > cluster_order;
 //  Chunk of successor clusters for each cluster
 map<nodeid_t, set<nodeid_t> > schunk;
 
-//  Benefit counters for short-circuiting and successor-to-unchanged
-vector<unsigned long> bc_sc, bc_suc, nodescore;
-
 // The default node buffer.
 static nodebuf_t v;
 
@@ -142,6 +139,10 @@ static evaluator_t e;
 
 // The default exec buffer.
 execbuf exb;
+
+// Cluster address tables
+map<nodeid_t, int> implptr;
+map<nodeid_t, set<int> > fixup;
 
 // The stopwatch collection
 vector<pair<string, double> > times;
@@ -233,15 +234,21 @@ void dep_set(set<nodeid_t> &s, nodeid_t n, int max_depth = -1) {
   #endif
 }
 
-void find_scs() {
-  push_time("find_scs");
-
-  const unsigned DEPTH_LIMIT(100), MIN_SCS_SIZE(10);
+void find_succ_nodes() {
+  push_time("find_succ_nodes");
 
   // First, build a successor table.
   for (nodeid_t n = 0; n < nodes.size(); ++n)
     for (auto s : nodes[n]->src)
       succ[s].insert(n);
+
+  pop_time();
+}
+
+void find_scs() {
+  push_time("find_scs");
+
+  const unsigned DEPTH_LIMIT(100), MIN_SCS_SIZE(10);
 
   // Find all nand inputs and tristate enables and their associated nodes
   // Also find the gates that will be performing the short circuiting.
@@ -323,6 +330,8 @@ void find_clusters() {
 
   // This is a bottom-up algorithm. Start with single-node clusters.
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
+    if (dynamic_cast<regimpl*>(nodes[i])) continue; // No regs in clusters.
+
     set<nodeid_t> inputs;
     for (auto x : nodes[i]->src) inputs.insert(x);
     clusters[i] = make_pair(set<nodeid_t>{i}, inputs);
@@ -496,42 +505,6 @@ void clusterize_scs() {
   pop_time();
 }
 
-void init_bcs() {
-  push_time("init_bcs");
-
-  const unsigned SUC_THRESHOLD(20);
-
-  // Space for the node scores.
-  nodescore.resize(nodes.size());
-
-  for (nodeid_t i = 0; i < nodes.size(); ++i) {
-    // Short circuit set.
-    if (scs.count(i)) {
-      if (scs[i].second.size() >= scs[i].first.size())
-        bc_sc.push_back(0);
-      else
-        bc_sc.push_back(scs[i].first.size() - scs[i].second.size());
-    } else {
-      bc_sc.push_back(0);
-    }
-
-    // Successor
-    if (schunk.count(i) > SUC_THRESHOLD) bc_suc.push_back(schunk[i].size());
-    else bc_suc.push_back(0);
-  }
-
-
-  #ifdef DEBUG_TRANS
-  cout << "Initial benefit counters:" << endl;
-  for (nodeid_t i = 0; i < nodes.size(); ++i) {
-    if (bc_sc[i]) cout << "  sc[" << i << "]: " << bc_sc[i] << endl;
-    if (bc_suc[i]) cout << "  suc[" << i << "]: " << bc_suc[i] << endl;
-  }
-  #endif
-
-  pop_time();
-}
-
 void chdl::init_trans() {
   // Resize our node buffer.
   v.resize(nodes.size());
@@ -539,14 +512,13 @@ void chdl::init_trans() {
   // e just returns a value from v:
   e = [](nodeid_t n) { return v[n]; };
 
+  // A lot of our analyses depend on this.
+  find_succ_nodes();
+
   // Find valid register copy order.
   find_rcpy();
 
-  // Find depth-limited short circuit sets and essential sets for each node
-  // Select a set of candidate short circuit nodes
-  find_scs();
-
-  // Perform exclusive N-clustering, starting with SC nodes in s
+  // Perform exclusive N-clustering, starting with SC nodes
   find_clusters();
 
   // Find valid eval orders for clusters.
@@ -554,35 +526,17 @@ void chdl::init_trans() {
 
   // Compute successor chunks for each cluster.
   find_succ();
-
-  // Convert short circuit node sets to clusters (wholly contained clusters)
-  clusterize_scs();
-
-  // Set initial benefit counter values for each node to short circuit set sizes
-  // Set initial benefit counter values for each successor chunk to chunk sizes
-  init_bcs();
 }
 
 evaluator_t &chdl::trans_evaluator() {
   return e;
 }
 
-void reg_trans() {
-  push_time("reg_trans");
-
-  for (auto r : rcpy)
-    static_cast<regimpl*>(nodes[r])->gen_tick(e, exb, v, v);
-
-  pop_time();
-}
-
-void gen_dep_table(map<nodeid_t, int> &t, set<nodeid_t> &evalable,
-                   multimap<unsigned long, nodeid_t> &rank)
+void gen_dep_table(map<nodeid_t, int> &t, set<nodeid_t> &evalable)
 {
   for (auto &p : clusters) {
     if (p.second.second.size() == 0) {
       evalable.insert(p.first);
-      rank.insert(make_pair(nodescore[p.first], p.first));
     }
     t[p.first] = p.second.second.size();
   }
@@ -593,87 +547,112 @@ void gen_dep_table(map<nodeid_t, int> &t, set<nodeid_t> &evalable,
 }
 
 void update_evalable(nodeid_t n, map<nodeid_t, int> &t,
-                     set<nodeid_t> &evalable,
-                     multimap<unsigned long, nodeid_t> &rank)
+                     set<nodeid_t> &evalable)
 {
   evalable.erase(n);
   for (auto s : schunk[n]) {
-    if (--t[s] == 0) {
-      rank.insert(make_pair(nodescore[s], s));
+    if (--t[s] == 0)
       evalable.insert(s);
-    }
   }
 }
 
-void gen_cluster(nodeid_t c) {
-  for (auto n : cluster_order[c]) {
-    #ifdef DEBUG_TRANS
-    cout << "Gen evaluate " << n << endl;
-    #endif
+// Translate a specific register
+void trans_reg(nodeid_t r) {
+  regimpl* rp(static_cast<regimpl*>(nodes[r]));
 
-    nodes[n]->gen_eval(e, exb, v);
-    nodes[n]->gen_store_result(exb, v, v);
+  exb.push(char(0x48)); // mov &q, %rbx
+  exb.push(char(0xbb));
+  exb.push((void*)&v[r]);
+
+  exb.push(char(0x8b)); // mov (%rbx), %eax
+  exb.push(char(0x03));
+
+  exb.push(char(0x48)); // mov &d, %rbx
+  exb.push(char(0xbb));
+  exb.push((void*)&v[rp->d]);
+
+  exb.push(char(0x8b)); // mov (%rbx), %ecx
+  exb.push(char(0x0b));
+
+  exb.push(char(0x85)); // test %eax, %ecx
+  exb.push(char(0xc1));
+
+  exb.push(char(0x0f)); // je finish
+  exb.push(char(0x84));
+  int skip_offset(exb.push_future<unsigned>());
+
+  exb.push(char(0x89)); // mov %ecx, (%rbx)
+  exb.push(char(0x0b));
+
+  unsigned offset_count = 2;
+  for (auto c : schunk[r]) {
+    exb.push(char(0xe8)); // callq (successor)
+    fixup[c].insert(exb.push_future<unsigned>());
+    offset_count += 5;
   }
+
+  exb.push(skip_offset, offset_count);
+}
+
+// Translate a specific cluster
+void trans_cluster(nodeid_t c) {
+  implptr[c] = exb.get_pos();
+
+  exb.push(char(0x48)); // mov &out, %rbx
+  exb.push(char(0xbb));
+  exb.push((void*)&v[c]);
+
+  exb.push(char(0x89)); // mov %ecx, (%rbx)
+  exb.push(char(0x0b));
+
+  // Translate the gates, leaving the output in %eax
+  for (auto x : cluster_order[c]) {
+    nodes[x]->gen_eval(e, exb, v);
+    nodes[x]->gen_store_result(exb, v, v);
+  }
+
+  exb.push(char(0x85)); // test %eax, %ecx
+  exb.push(char(0xc1));
+
+  exb.push(char(0x0f)); // je finish
+  exb.push(char(0x84));
+  int skip_offset(exb.push_future<unsigned>());
+
+
+  unsigned offset_count(0);
+  for (auto s : schunk[c]) {
+    exb.push(char(0xe8)); // callq (successor)
+    fixup[s].insert(exb.push_future<unsigned>());
+    offset_count += 5;
+  }
+
+  exb.push(char(0xc3));
+}
+
+void reg_trans() {
+  push_time("reg_trans");
+
+  for (auto r : rcpy)
+    trans_reg(r);
+
+  pop_time();
 }
 
 void log_trans() {
   push_time("log_trans");
 
-  map<nodeid_t, int> depcount;
-  set<nodeid_t> evalable;
-  multimap<unsigned long, nodeid_t> rank;
-  gen_dep_table(depcount, evalable, rank);
+  for (auto &c : clusters)
+    trans_cluster(c.first);
 
-  // TODO: Include counter values when we do this.
-  while (!evalable.empty()) {
-    nodeid_t n;
-    do {
-      auto it = prev(rank.end());
-      n = it->second;
-      if (!evalable.count(n)) {
-        rank.erase(it);
-      }
-      #ifdef DEBUG_TRANS
-      if (evalable.count(n))
-        cout << "Next cluster: " << n << ", " << it->first << endl;
-      #endif
-    } while (!evalable.count(n));
-
-    gen_cluster(n);
-    update_evalable(n, depcount, evalable, rank);
-  }
-
-  pop_time();
-}
-
-void shift_bcs() {
-  push_time("shift_bcs");
-  for (auto &x : bc_sc) x >>= 1;
-  for (auto &x : bc_suc) x >>= 1;
-  pop_time();
-}
-
-void compute_scores() {
-  push_time("compute_scores");
-
-  const unsigned MAX_DEPTH(100);
-
-  for (nodeid_t i = 0; i < nodes.size(); ++i) {
-    // Points for being in essential set of high-impact short-circuiting nodes.
-    set<nodeid_t> sc;
-    if (scs.count(i) && bc_sc[i])
-      for (auto e : scs[i].second)
-        dep_set(sc, e, MAX_DEPTH);
-
-    for (auto n : sc) nodescore[n] += bc_sc[i];
-
-    // Points for having a highly-beneficial bypass chunk
-    if (bc_suc[i]) {
-      set<nodeid_t> pred;
-      dep_set(pred, i, MAX_DEPTH);
-      for (auto p : pred)
-        nodescore[p] += bc_suc[i];
+  // Fix up fixups
+  for (auto &f : fixup) {
+    if (!implptr.count(f.first)) {
+      cout << "ERROR: cluster " << f.first << " not in implptr table" << endl;
+      abort();
     }
+
+    for (auto p : f.second)
+      exb.push(p, unsigned(implptr[f.first] - p - 1));
   }
 
   pop_time();
@@ -683,27 +662,22 @@ void chdl::advance_trans(cdomain_handle_t cd) {
   const unsigned DYN_TRANS_INTERVAL(100000);
 
   if (now[0] % DYN_TRANS_INTERVAL == 0) {
-    // Compute the combined codegen scores
-    compute_scores();
-
     // Clear the execbuf.
     exb.clear();
 
     // Translate the registers.
     reg_trans();
 
+    // Return. The logic gates are all subroutines.
+    exb.push(char(0xc3));
+
     // Translate the logic.
     log_trans();
 
-    // Finish off the translation with a ret instruction
-    exb.push((char)0xc3);
-
-    // Shift the counter values
-    shift_bcs();
   }
 
   // Run the execbuf; one cycle of evaluation.
-  exb();
+  // exb();
 
   ++now[0];
 }
@@ -715,7 +689,7 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   print_time(vcdout);
   for (unsigned i = 0; i < max; ++i) {
     advance_trans(0);
-    // print_taps(vcdout, e);
+    print_taps(vcdout, e);
     print_time(vcdout);
   }
 
