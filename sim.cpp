@@ -114,8 +114,16 @@ void dump(nodebuf_t x) {
   cout << endl;
 }
 
+// Logic-layer of each node, size of each logic layer
+map<nodeid_t, int> ll;
+vector<nodeid_t> ll_size;
+
+ // location in TC of beginning and current pos in logic layer call bufs
+vector<int> ll_offset, ll_base_offset;
+vector<char*> ll_buf, ll_pos;
+
 // ...
-vector<unsigned> visited;
+vector<unsigned> visited, regtmp, eval_cyc;
 
 //  Register copy order
 vector<nodeid_t> rcpy;
@@ -146,6 +154,7 @@ execbuf exb;
 // Cluster address tables
 map<nodeid_t, int> implptr;
 map<nodeid_t, set<int> > fixup;
+map<int, set<int> > ll_fixup;
 
 // The stopwatch collection
 vector<pair<string, double> > times;
@@ -390,6 +399,40 @@ void find_clusters() {
   pop_time();
 }
 
+void find_logic_layers() {
+  push_time("find_logic_layers");
+
+  int cur_ll(0);
+  set<nodeid_t> frontier;
+  get_reg_q_nodes(frontier);
+  get_mem_q_nodes(frontier);
+
+  // Simple dataflow algorithm. Automatically assigns max possible layer to each
+  // node.
+  while (!frontier.empty()) {
+    set<nodeid_t> next_frontier;
+    for (auto x : frontier) {
+      ll[x] = cur_ll;
+      for (auto c : schunk[x])
+        next_frontier.insert(c);
+    }
+    frontier = next_frontier;
+    cur_ll++;
+  }
+
+  // Determine the logic layer sizes by counting.
+  ll_size.resize(cur_ll);
+  for (auto &p : ll) ++ll_size[p.second];
+
+  #ifdef DEBUG_TRANS
+  cout << "Logic layers:" << endl;
+  for (unsigned l = 0; l < ll_size.size(); ++l)
+    cout << l << ": " << ll_size[l] << endl;
+  #endif
+
+  pop_time();
+}
+
 void find_cluster_orders() {
   push_time("find_cluster_orders");
   
@@ -512,6 +555,8 @@ void chdl::init_trans() {
   // Resize our node buffer.
   v.resize(nodes.size());
   visited.resize(nodes.size());
+  regtmp.resize(nodes.size());
+  eval_cyc.resize(nodes.size());
 
   // e just returns a value from v:
   e = [](nodeid_t n) { return v[n]; };
@@ -530,6 +575,9 @@ void chdl::init_trans() {
 
   // Compute successor chunks for each cluster.
   find_succ();
+
+  // Find logic layer for each cluster
+  find_logic_layers();
 }
 
 evaluator_t &chdl::trans_evaluator() {
@@ -560,6 +608,7 @@ void update_evalable(nodeid_t n, map<nodeid_t, int> &t,
   }
 }
 
+
 // Translate a specific register
 void trans_reg(nodeid_t r) {
   regimpl* rp(static_cast<regimpl*>(nodes[r]));
@@ -580,7 +629,7 @@ void trans_reg(nodeid_t r) {
 
   exb.push(char(0x48)); // mov &d, %rbx
   exb.push(char(0xbb));
-  exb.push((void*)&v[rp->d]);
+  exb.push((void*)&regtmp[rp->d]);
 
   exb.push(char(0x8b)); // mov (%rbx), %ecx
   exb.push(char(0x0b));
@@ -650,8 +699,75 @@ void trans_cluster(nodeid_t c) {
 void reg_trans() {
   push_time("reg_trans");
 
+  // Preamble: RDI contains the cycle!
+  exb.push(char(0x48)); // mov &now[0], %rbx
+  exb.push(char(0xbb));
+  exb.push((void*)&now[0]);
+
+  exb.push(char(0x48)); // mov (%rbx),%rdi
+  exb.push(char(0x8b));
+  exb.push(char(0x3b));
+
   for (auto r : rcpy)
     trans_reg(r);
+
+  pop_time();
+}
+
+void llbuf_trans() {
+  push_time("llbuf_trans");
+
+  // Call each ll buffer.
+  for (unsigned i = 0; i < ll_size.size(); ++i) {
+    exb.push(char(0xe8)); // callq (successor)
+    ll_fixup[i].insert(exb.push_future<unsigned>());
+  }
+
+  // Return. The ll buffers have already been called.
+  exb.push(char(0xc3));
+
+  // Generate the LL buffers themselves
+  ll_buf.resize(ll_size.size());
+  ll_pos.resize(ll_size.size());
+  ll_offset.resize(ll_size.size());
+  ll_base_offset.resize(ll_size.size());
+  for (unsigned i = 0; i < ll_size.size(); ++i) {
+    ll_base_offset[i] = exb.get_pos(); 
+
+    // Preamble. Put a return on yourself
+    exb.push(char(0x48)); // movq &ll_pos[i],%rbx
+    exb.push(char(0xbb));
+    exb.push((void*)&ll_pos[i]);
+
+    exb.push(char(0x48)); // mov (%rbx),%rax
+    exb.push(char(0x8b));
+    exb.push(char(0x03));
+
+    exb.push(char(0xc6)); // movb 0xc3,(%rax)
+    exb.push(char(0x00));
+    exb.push(char(0xc3));
+
+    exb.push(char(0x48)); // movq &ll_buf[i],%rax
+    exb.push(char(0xb8));
+    exb.push((void*)&ll_buf[i]);
+
+    exb.push(char(0x48)); // movq (%rax),%rax
+    exb.push(char(0x8b));
+    exb.push(char(0x00));
+
+    exb.push(char(0x48)); // movq %rax,(%rbx)
+    exb.push(char(0x89));
+    exb.push(char(0x03));
+
+    ll_offset[i] = exb.get_pos(); 
+    for (unsigned j = 0; j < ll_size[i]; ++j) {
+      // Set aside enough space for a call.
+      exb.push(char(0));
+      exb.push(unsigned(0));
+    }
+    // Enough space for a final ret.
+    exb.push(char(0));
+  }
 
   pop_time();
 }
@@ -673,6 +789,11 @@ void log_trans() {
       exb.push(p, unsigned(implptr[f.first] - p - 4));
   }
 
+  for (auto &f : ll_fixup) {
+    for (auto p : f.second)
+      exb.push(p, unsigned(ll_base_offset[f.first] - p - 4));
+  }
+
   pop_time();
 }
 
@@ -686,11 +807,15 @@ void chdl::advance_trans(cdomain_handle_t cd) {
     // Translate the registers.
     reg_trans();
 
-    // Return. The logic gates are all subroutines.
-    exb.push(char(0xc3));
+    // Add the logic layer buffers
+    llbuf_trans();
 
     // Translate the logic.
     log_trans();
+
+    // We're through with the code generation. Initialize ll_buf values.
+    for (unsigned i = 0; i < ll_size.size(); ++i)
+      ll_buf[i] = ll_pos[i] = exb.buf + ll_offset[i];
 
     // Evaluate initial values for v.
     for (unsigned i = 0; i < nodes.size(); ++i)
@@ -703,6 +828,10 @@ void chdl::advance_trans(cdomain_handle_t cd) {
   cout << "visited: ";
   for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << visited[i];
   cout << endl;
+
+  // Ugh. Copy all of the values into regtmp now that it's clear this won't
+  // perform no matter what we do.
+  for (nodeid_t i = 0; i < nodes.size(); ++i) regtmp[i] = v[i];
 
   // Run the execbuf; one cycle of evaluation.
   exb();

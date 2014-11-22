@@ -45,7 +45,6 @@ namespace chdl {
 
     int get_pos() { return pos - buf; }
 
-  private:
     void reallocate(size_t sz);
 
     char *buf, *pos, *end;
