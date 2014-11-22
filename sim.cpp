@@ -18,6 +18,7 @@ using namespace chdl;
 using namespace std;
 
 #define DEBUG_TRANS
+//#define INC_VISITED
 
 vector<cycle_t> chdl::now{0};
 static void reset_now() { now = vector<cycle_t>(1); }
@@ -123,7 +124,7 @@ vector<int> ll_offset, ll_base_offset;
 vector<char*> ll_buf, ll_pos;
 
 // ...
-vector<unsigned> visited, regtmp, eval_cyc;
+vector<unsigned> visited, eval_cyc;
 
 //  Register copy order
 vector<nodeid_t> rcpy;
@@ -338,7 +339,7 @@ void find_scs() {
 void find_clusters() {
   push_time("find_clusters");
 
-  const unsigned CLUSTER_INPUTS(3), MERGE_ITERATIONS(10);
+  const unsigned CLUSTER_INPUTS(6), MERGE_ITERATIONS(25);
 
   // This is a bottom-up algorithm. Start with single-node clusters.
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
@@ -555,8 +556,7 @@ void chdl::init_trans() {
   // Resize our node buffer.
   v.resize(nodes.size());
   visited.resize(nodes.size());
-  regtmp.resize(nodes.size());
-  eval_cyc.resize(nodes.size());
+  eval_cyc.resize(nodes.size(), -1);
 
   // e just returns a value from v:
   e = [](nodeid_t n) { return v[n]; };
@@ -578,6 +578,12 @@ void chdl::init_trans() {
 
   // Find logic layer for each cluster
   find_logic_layers();
+
+  // Size all of the logic layer centric things
+  ll_buf.resize(ll_size.size());
+  ll_pos.resize(ll_size.size());
+  ll_offset.resize(ll_size.size());
+  ll_base_offset.resize(ll_size.size());
 }
 
 evaluator_t &chdl::trans_evaluator() {
@@ -608,17 +614,100 @@ void update_evalable(nodeid_t n, map<nodeid_t, int> &t,
   }
 }
 
+size_t trans_gencall(nodeid_t n) {
+    // The following code generates code which generates (that is not a typo)
+    // a call to a cluster evaluation. The generated machine code is:
+    // 0x48 0xb8 [8B call dest] ff d0. This code is placed at ll_pos[i], after
+    // which ll_pos[i] is incremented. This code is skipped if the value at
+    // eval_cyc[n] is not equal to the value in %rdi.
+
+    // if (%rdi == eval_cyc[n]) skip
+    exb.push(char(0x48)); // mov &eval_cyc[n], %rax
+    exb.push(char(0xb8));
+    exb.push((void*)&eval_cyc[n]);
+
+    exb.push(char(0x8b)); // mov (%rax),%ebx
+    exb.push(char(0x18));
+
+    exb.push(char(0x39)); // cmp %ebx,%edi
+    exb.push(char(0xdf));
+                                                                      // Byte 14
+    exb.push(char(0x74)); // je 53 (skip rest of impl)
+    exb.push(char(53));
+
+    // eval_cyc[n] = %edi
+    exb.push(char(0x89)); // mov %edi,(%rax)
+    exb.push(char(0x38));
+
+    // pos = ll_pos[ll[n]];
+    exb.push(char(0x48)); // mov &ll_pos[ll[n]], %rbx
+    exb.push(char(0xbb));
+    exb.push((void*)&ll_pos[ll[n]]);
+                                                                      // Byte 28
+    exb.push(char(0x48)); // mov (%rbx),%rax
+    exb.push(char(0x8b));
+    exb.push(char(0x03));
+
+    // *(short*)pos = 0xb848
+    exb.push(char(0x66)); // movw 0xb848,(%rax)
+    exb.push(char(0xc7)); 
+    exb.push(char(0x00));
+    exb.push(short(0xb848));
+
+    // pos += 2
+    exb.push(char(0x48)); // add 2,%rax
+    exb.push(char(0x83));
+    exb.push(char(0xc0));
+    exb.push(char(0x02));
+
+    // *(void*)pos = NODEIMPLFUNC
+    exb.push(char(0x48)); // mov NODEIMPLFUNC, %rcx    
+    exb.push(char(0xb9));
+    fixup[n].insert(exb.push_future<void*>());
+
+    exb.push(char(0x48)); // mov %rcx,(%rax)
+    exb.push(char(0x89));
+    exb.push(char(0x08));
+                                                                      // Byte 53
+    // pos += 8
+    exb.push(char(0x48)); // add 8,%rax
+    exb.push(char(0x83));
+    exb.push(char(0xc0));
+    exb.push(char(0x08));
+
+    // *(short*)pos = 0xd0ff
+    exb.push(char(0x66)); // movw 0xb848,(%rax)
+    exb.push(char(0xc7));
+    exb.push(char(0x00));
+    exb.push(short(0xd0ff));
+
+    // pos += 2
+    exb.push(char(0x48)); // add 2,%rax
+    exb.push(char(0x83));
+    exb.push(char(0xc0));
+    exb.push(char(0x02));
+
+    // ll_pos[ll[n]] = pos
+    exb.push(char(0x48)); // mov %rax,(%rbx)
+    exb.push(char(0x89));
+    exb.push(char(0x03));
+
+  return 69; // Return size of call in bytes
+}
+
 
 // Translate a specific register
 void trans_reg(nodeid_t r) {
   regimpl* rp(static_cast<regimpl*>(nodes[r]));
 
+  #ifdef INC_VISITED
   exb.push(char(0x48)); // mov &visited[r], %rbx
   exb.push(char(0xbb));
   exb.push((void*)&visited[r]);
 
   exb.push(char(0xff)); // incl (%rbx)
   exb.push(char(0x03));
+  #endif
 
   exb.push(char(0x48)); // mov &q, %rdx
   exb.push(char(0xba));
@@ -629,7 +718,7 @@ void trans_reg(nodeid_t r) {
 
   exb.push(char(0x48)); // mov &d, %rbx
   exb.push(char(0xbb));
-  exb.push((void*)&regtmp[rp->d]);
+  exb.push((void*)&v[rp->d]);
 
   exb.push(char(0x8b)); // mov (%rbx), %ecx
   exb.push(char(0x0b));
@@ -646,9 +735,7 @@ void trans_reg(nodeid_t r) {
 
   unsigned offset_count = 2;
   for (auto c : schunk[r]) {
-    exb.push(char(0xe8)); // callq (successor)
-    fixup[c].insert(exb.push_future<unsigned>());
-    offset_count += 5;
+    offset_count += trans_gencall(c);
   }
 
   exb.push(skip_offset, offset_count);
@@ -658,12 +745,14 @@ void trans_reg(nodeid_t r) {
 void trans_cluster(nodeid_t c) {
   implptr[c] = exb.get_pos();
 
+  #ifdef INC_VISITED
   exb.push(char(0x48)); // mov &visited[r], %rbx
   exb.push(char(0xbb));
   exb.push((void*)&visited[c]);
 
   exb.push(char(0xff)); // incl (%rbx)
   exb.push(char(0x03));
+  #endif
 
   exb.push(char(0x48)); // mov &out, %rbx
   exb.push(char(0xbb));
@@ -688,9 +777,7 @@ void trans_cluster(nodeid_t c) {
 
   unsigned offset_count(0);
   for (auto s : schunk[c]) {
-    exb.push(char(0xe8)); // callq (successor)
-    fixup[s].insert(exb.push_future<unsigned>());
-    offset_count += 5;
+    offset_count += trans_gencall(s);
   }
 
   exb.push(char(0xc3));
@@ -727,10 +814,6 @@ void llbuf_trans() {
   exb.push(char(0xc3));
 
   // Generate the LL buffers themselves
-  ll_buf.resize(ll_size.size());
-  ll_pos.resize(ll_size.size());
-  ll_offset.resize(ll_size.size());
-  ll_base_offset.resize(ll_size.size());
   for (unsigned i = 0; i < ll_size.size(); ++i) {
     ll_base_offset[i] = exb.get_pos(); 
 
@@ -762,8 +845,8 @@ void llbuf_trans() {
     ll_offset[i] = exb.get_pos(); 
     for (unsigned j = 0; j < ll_size[i]; ++j) {
       // Set aside enough space for a call.
-      exb.push(char(0));
       exb.push(unsigned(0));
+      exb.push((void*)0);
     }
     // Enough space for a final ret.
     exb.push(char(0));
@@ -777,22 +860,6 @@ void log_trans() {
 
   for (auto &c : clusters)
     trans_cluster(c.first);
-
-  // Fix up fixups
-  for (auto &f : fixup) {
-    if (!implptr.count(f.first)) {
-      cout << "ERROR: cluster " << f.first << " not in implptr table" << endl;
-      abort();
-    }
-
-    for (auto p : f.second)
-      exb.push(p, unsigned(implptr[f.first] - p - 4));
-  }
-
-  for (auto &f : ll_fixup) {
-    for (auto p : f.second)
-      exb.push(p, unsigned(ll_base_offset[f.first] - p - 4));
-  }
 
   pop_time();
 }
@@ -817,21 +884,38 @@ void chdl::advance_trans(cdomain_handle_t cd) {
     for (unsigned i = 0; i < ll_size.size(); ++i)
       ll_buf[i] = ll_pos[i] = exb.buf + ll_offset[i];
 
+    // Fix up fixups
+    for (auto &f : fixup) {
+      if (!implptr.count(f.first)) {
+        cout << "ERROR: cluster " << f.first << " not in implptr table" << endl;
+        abort();
+      }
+
+      for (auto p : f.second)
+        exb.push(p, (void*)(implptr[f.first] + exb.buf));
+    }
+
+    for (auto &f : ll_fixup) {
+      for (auto p : f.second)
+        exb.push(p, unsigned(ll_base_offset[f.first] - p - 4));
+    }
+
     // Evaluate initial values for v.
     for (unsigned i = 0; i < nodes.size(); ++i)
       v[i] = nodes[i]->eval(default_evaluator(0));
   }
 
+  #if 0
   cout << now[0] << ':';
   for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << v[i];
   cout << endl;
   cout << "visited: ";
   for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << visited[i];
   cout << endl;
-
-  // Ugh. Copy all of the values into regtmp now that it's clear this won't
-  // perform no matter what we do.
-  for (nodeid_t i = 0; i < nodes.size(); ++i) regtmp[i] = v[i];
+  cout << "last cycle: ";
+  for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << eval_cyc[i];
+  cout << endl;
+  #endif
 
   // Run the execbuf; one cycle of evaluation.
   exb();
@@ -843,12 +927,12 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   init_trans();
 
   print_vcd_header(vcdout);
-  print_time(vcdout);
   for (unsigned i = 0; i < max; ++i) {
-    advance_trans(0);
-    print_taps(vcdout, e);
-    print_time(vcdout);
+    //print_time(vcdout);
+    //print_taps(vcdout, e);
+     advance_trans(0);
   }
+  //print_time(vcdout);
 
   call_final_funcs();
 
