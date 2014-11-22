@@ -33,12 +33,12 @@ namespace chdl {
     }
 
     // Fix up a value.
-    void push(char *ptr, char val) { *ptr = val; }
+    void push(int offset, char val) { buf[offset] = val; }
 
     template <typename T> void push(int offset, T x_in) {
       unsigned long x((unsigned long)x_in);
       for (unsigned i = 0; i < sizeof(x_in); ++i) {
-        push(buf + offset + i, char(x & 0xff));
+        push(offset + i, char(x & 0xff));
         x >>= 8;
       }
     }

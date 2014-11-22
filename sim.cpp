@@ -114,6 +114,9 @@ void dump(nodebuf_t x) {
   cout << endl;
 }
 
+// ...
+vector<unsigned> visited;
+
 //  Register copy order
 vector<nodeid_t> rcpy;
 
@@ -508,6 +511,7 @@ void clusterize_scs() {
 void chdl::init_trans() {
   // Resize our node buffer.
   v.resize(nodes.size());
+  visited.resize(nodes.size());
 
   // e just returns a value from v:
   e = [](nodeid_t n) { return v[n]; };
@@ -560,12 +564,19 @@ void update_evalable(nodeid_t n, map<nodeid_t, int> &t,
 void trans_reg(nodeid_t r) {
   regimpl* rp(static_cast<regimpl*>(nodes[r]));
 
-  exb.push(char(0x48)); // mov &q, %rbx
+  exb.push(char(0x48)); // mov &visited[r], %rbx
   exb.push(char(0xbb));
+  exb.push((void*)&visited[r]);
+
+  exb.push(char(0xff)); // incl (%rbx)
+  exb.push(char(0x03));
+
+  exb.push(char(0x48)); // mov &q, %rdx
+  exb.push(char(0xba));
   exb.push((void*)&v[r]);
 
-  exb.push(char(0x8b)); // mov (%rbx), %eax
-  exb.push(char(0x03));
+  exb.push(char(0x8b)); // mov (%rdx), %eax
+  exb.push(char(0x02));
 
   exb.push(char(0x48)); // mov &d, %rbx
   exb.push(char(0xbb));
@@ -574,15 +585,15 @@ void trans_reg(nodeid_t r) {
   exb.push(char(0x8b)); // mov (%rbx), %ecx
   exb.push(char(0x0b));
 
-  exb.push(char(0x85)); // test %eax, %ecx
+  exb.push(char(0x39)); // cmp %eax, %ecx
   exb.push(char(0xc1));
 
   exb.push(char(0x0f)); // je finish
   exb.push(char(0x84));
   int skip_offset(exb.push_future<unsigned>());
 
-  exb.push(char(0x89)); // mov %ecx, (%rbx)
-  exb.push(char(0x0b));
+  exb.push(char(0x89)); // mov %ecx, (%rdx)
+  exb.push(char(0x0a));
 
   unsigned offset_count = 2;
   for (auto c : schunk[r]) {
@@ -598,6 +609,13 @@ void trans_reg(nodeid_t r) {
 void trans_cluster(nodeid_t c) {
   implptr[c] = exb.get_pos();
 
+  exb.push(char(0x48)); // mov &visited[r], %rbx
+  exb.push(char(0xbb));
+  exb.push((void*)&visited[c]);
+
+  exb.push(char(0xff)); // incl (%rbx)
+  exb.push(char(0x03));
+
   exb.push(char(0x48)); // mov &out, %rbx
   exb.push(char(0xbb));
   exb.push((void*)&v[c]);
@@ -611,7 +629,7 @@ void trans_cluster(nodeid_t c) {
     nodes[x]->gen_store_result(exb, v, v);
   }
 
-  exb.push(char(0x85)); // test %eax, %ecx
+  exb.push(char(0x39)); // cmp %eax, %ecx
   exb.push(char(0xc1));
 
   exb.push(char(0x0f)); // je finish
@@ -652,7 +670,7 @@ void log_trans() {
     }
 
     for (auto p : f.second)
-      exb.push(p, unsigned(implptr[f.first] - p - 1));
+      exb.push(p, unsigned(implptr[f.first] - p - 4));
   }
 
   pop_time();
@@ -674,10 +692,20 @@ void chdl::advance_trans(cdomain_handle_t cd) {
     // Translate the logic.
     log_trans();
 
+    // Evaluate initial values for v.
+    for (unsigned i = 0; i < nodes.size(); ++i)
+      v[i] = nodes[i]->eval(default_evaluator(0));
   }
 
+  cout << now[0] << ':';
+  for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << v[i];
+  cout << endl;
+  cout << "visited: ";
+  for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << visited[i];
+  cout << endl;
+
   // Run the execbuf; one cycle of evaluation.
-  // exb();
+  exb();
 
   ++now[0];
 }
