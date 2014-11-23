@@ -18,7 +18,7 @@ using namespace chdl;
 using namespace std;
 
 #define DEBUG_TRANS
-//#define INC_VISITED
+// #define INC_VISITED
 
 vector<cycle_t> chdl::now{0};
 static void reset_now() { now = vector<cycle_t>(1); }
@@ -758,7 +758,7 @@ void trans_cluster(nodeid_t c) {
   exb.push(char(0xbb));
   exb.push((void*)&v[c]);
 
-  exb.push(char(0x89)); // mov %ecx, (%rbx)
+  exb.push(char(0x8b)); // mov (%rbx),%ecx
   exb.push(char(0x0b));
 
   // Translate the gates, leaving the output in %eax
@@ -774,11 +774,12 @@ void trans_cluster(nodeid_t c) {
   exb.push(char(0x84));
   int skip_offset(exb.push_future<unsigned>());
 
-
   unsigned offset_count(0);
   for (auto s : schunk[c]) {
     offset_count += trans_gencall(s);
   }
+
+  exb.push(skip_offset, offset_count);
 
   exb.push(char(0xc3));
 }
@@ -930,7 +931,7 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   for (unsigned i = 0; i < max; ++i) {
     //print_time(vcdout);
     //print_taps(vcdout, e);
-     advance_trans(0);
+    advance_trans(0);
   }
   //print_time(vcdout);
 
