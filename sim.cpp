@@ -115,6 +115,9 @@ void dump(nodebuf_t x) {
   cout << endl;
 }
 
+// The non-register tickables that must be called by the translator.
+vector<tickable*> trans_tickables;
+
 // Logic-layer of each node, size of each logic layer
 map<nodeid_t, int> ll;
 vector<nodeid_t> ll_size;
@@ -355,6 +358,8 @@ void find_clusters() {
     for (auto &c : clusters) {
       // For each input cluster
       for (auto d : c.second.second) {
+        if (dynamic_cast<regimpl*>(nodes[d])) continue; // Sorry, no regs.
+
         // All successors have to be in the cluster already.
         bool not_in_cluster(false);
         for (auto x : succ[d]) {
@@ -552,6 +557,17 @@ void clusterize_scs() {
   pop_time();
 }
 
+void copy_tickables() {
+  push_time("copy_tickables");
+
+  for (auto t : tickables()[0]) {
+    if (dynamic_cast<regimpl*>(t)) continue; // Regs need not apply
+    trans_tickables.push_back(t);
+  }
+
+  pop_time();
+}
+
 void chdl::init_trans() {
   // Resize our node buffer.
   v.resize(nodes.size());
@@ -560,6 +576,9 @@ void chdl::init_trans() {
 
   // e just returns a value from v:
   e = [](nodeid_t n) { return v[n]; };
+
+  // We have an array of non-register tickables. Fill it.
+  copy_tickables();
 
   // A lot of our analyses depend on this.
   find_succ_nodes();
@@ -898,6 +917,8 @@ void chdl::advance_trans(cdomain_handle_t cd) {
     // Evaluate initial values for v.
     for (unsigned i = 0; i < nodes.size(); ++i)
       v[i] = nodes[i]->eval(default_evaluator(0));
+
+    push_time("sim");
   }
 
   #if 0
@@ -923,11 +944,13 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
 
   print_vcd_header(vcdout);
   for (unsigned i = 0; i < max; ++i) {
-    //print_time(vcdout);
-    //print_taps(vcdout, e);
+    print_time(vcdout);
+    print_taps(vcdout, e);
     advance_trans(0);
   }
-  //print_time(vcdout);
+  print_time(vcdout);
+
+  pop_time();
 
   call_final_funcs();
 
