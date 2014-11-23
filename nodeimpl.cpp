@@ -118,6 +118,9 @@ extern "C" { unsigned nodeimpl_call_eval(nodeimpl *p, evaluator_t *e); }
 
 // By default, just call the eval function using nodeimpl_call_eval()
 void nodeimpl::gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from) {
+  b.push(char(0x57)); // push %rdi
+  b.push(char(0x51)); // push %rcx
+
   b.push(char(0x48)); // mov this, %rdi
   b.push(char(0xbf));
   b.push(this);
@@ -132,6 +135,9 @@ void nodeimpl::gen_eval(evaluator_t &e, execbuf &b, nodebuf_t &from) {
 
   b.push(char(0xff)); // callq *%rbx
   b.push(char(0xd3));
+
+  b.push(char(0x59)); // pop %rcx
+  b.push(char(0x5f)); // pop %rdi
 }
 
 void nodeimpl::gen_store_result(execbuf &b, nodebuf_t &from, nodebuf_t &to) {

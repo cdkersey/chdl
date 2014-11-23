@@ -346,7 +346,8 @@ void find_clusters() {
 
   // This is a bottom-up algorithm. Start with single-node clusters.
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
-    if (dynamic_cast<regimpl*>(nodes[i])) continue; // No regs in clusters.
+    if (!dynamic_cast<nandimpl*>(nodes[i]) &&
+          !dynamic_cast<invimpl*>(nodes[i])) continue; // No non-logic
 
     set<nodeid_t> inputs;
     for (auto x : nodes[i]->src) inputs.insert(x);
@@ -358,7 +359,8 @@ void find_clusters() {
     for (auto &c : clusters) {
       // For each input cluster
       for (auto d : c.second.second) {
-        if (dynamic_cast<regimpl*>(nodes[d])) continue; // Sorry, no regs.
+        if (!dynamic_cast<nandimpl*>(nodes[d]) &&
+              !dynamic_cast<invimpl*>(nodes[d])) continue; // No non-logic
 
         // All successors have to be in the cluster already.
         bool not_in_cluster(false);
@@ -797,6 +799,35 @@ void trans_cluster(nodeid_t c) {
   exb.push(char(0xc3));
 }
 
+void trans_eval(nodeid_t n) {
+  cout << "trans eval " << n << endl;
+
+  exb.push(char(0x48)); // mov &out, %rbx
+  exb.push(char(0xbb));
+  exb.push((void*)&v[n]);
+
+  exb.push(char(0x8b)); // mov (%rbx),%ecx
+  exb.push(char(0x0b));
+
+  nodes[n]->gen_eval(e, exb, v);
+  nodes[n]->gen_store_result(exb, v, v);
+
+  exb.push(char(0x39)); // cmp %eax, %ecx
+  exb.push(char(0xc1));
+
+  exb.push(char(0x0f)); // je finish
+  exb.push(char(0x84));
+  int skip_offset(exb.push_future<unsigned>());
+
+  unsigned offset_count(0);
+  for (auto s : schunk[n]) {
+    cout << "  successor " << s << endl;
+    offset_count += trans_gencall(s);
+  }
+
+  exb.push(skip_offset, offset_count);
+}
+
 void reg_trans() {
   push_time("reg_trans");
 
@@ -811,6 +842,11 @@ void reg_trans() {
 
   for (auto r : rcpy)
     trans_reg(r);
+
+  // For everything not a register in level 0, evaluate.
+  for (nodeid_t n = 0; n < nodes.size(); ++n)
+    if (ll.count(n) && ll[n] == 0 && !dynamic_cast<regimpl*>(nodes[n]))
+      trans_eval(n);
 
   pop_time();
 }
@@ -933,8 +969,12 @@ void chdl::advance_trans(cdomain_handle_t cd) {
   cout << endl;
   #endif
 
+  for (auto t : trans_tickables) t->tock(e);
+
   // Run the execbuf; one cycle of evaluation.
   exb();
+
+  for (auto t : trans_tickables) t->tick(e);
 
   ++now[0];
 }

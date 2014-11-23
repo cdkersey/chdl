@@ -26,6 +26,9 @@ extern "C" {
 void tickable::gen_pre_tick(evaluator_t &e, execbuf &b,
                             nodebuf_t &from, nodebuf_t &to)
 {
+  b.push(char(0x57)); // push %rdi
+  b.push(char(0x51)); // push %rcx
+
   b.push(char(0x48)); // mov this, %rdi
   b.push(char(0xbf));
   b.push(this);
@@ -40,11 +43,17 @@ void tickable::gen_pre_tick(evaluator_t &e, execbuf &b,
 
   b.push(char(0xff)); // callq *%rbx
   b.push(char(0xd3));
+
+  b.push(char(0x59)); // pop %rcx
+  b.push(char(0x5f)); // pop %rdi
 }
 
 void tickable::gen_tick(evaluator_t &e, execbuf &b,
                         nodebuf_t &from, nodebuf_t &to)
 {
+  b.push(char(0x57)); // push %rdi
+  b.push(char(0x51)); // push %rcx
+
   b.push(char(0x48)); // mov this, %rdi
   b.push(char(0xbf));
   b.push(this);
@@ -59,11 +68,17 @@ void tickable::gen_tick(evaluator_t &e, execbuf &b,
 
   b.push(char(0xff)); // callq *%rbx
   b.push(char(0xd3));
+
+  b.push(char(0x59)); // pop %rcx
+  b.push(char(0x5f)); // pop %rdi
 }
 
 void tickable::gen_tock(evaluator_t &e, execbuf &b,
                         nodebuf_t &from, nodebuf_t &to)
 {
+  b.push(char(0x57)); // push %rdi
+  b.push(char(0x51)); // push %rcx
+
   b.push(char(0x48)); // mov this, %rdi
   b.push(char(0xbf));
   b.push(this);
@@ -78,11 +93,17 @@ void tickable::gen_tock(evaluator_t &e, execbuf &b,
 
   b.push(char(0xff)); // callq *%rbx
   b.push(char(0xd3));
+
+  b.push(char(0x5f)); // pop %rdi
+  b.push(char(0x59)); // pop %rcx
 }
 
 void tickable::gen_post_tock(evaluator_t &e, execbuf &b,
                              nodebuf_t &from, nodebuf_t &to)
 {
+  b.push(char(0x57)); // push %rdi
+  b.push(char(0x51)); // push %rcx
+
   b.push(char(0x48)); // mov this, %rdi
   b.push(char(0xbf));
   b.push(this);
@@ -97,6 +118,9 @@ void tickable::gen_post_tock(evaluator_t &e, execbuf &b,
 
   b.push(char(0xff)); // callq *%rbx
   b.push(char(0xd3));
+
+  b.push(char(0x5f)); // pop %rdi
+  b.push(char(0x59)); // pop %rcx
 }
 
 CHDL_REGISTER_RESET(reset_tickables);
