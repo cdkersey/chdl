@@ -619,7 +619,7 @@ size_t trans_gencall(nodeid_t n) {
     // a call to a cluster evaluation. The generated machine code is:
     // 0x48 0xb8 [8B call dest] ff d0. This code is placed at ll_pos[i], after
     // which ll_pos[i] is incremented. This code is skipped if the value at
-    // eval_cyc[n] is not equal to the value in %rdi.
+    // eval_cyc[n] is equal to the value in %rdi.
 
     // if (%rdi == eval_cyc[n]) skip
     exb.push(char(0x48)); // mov &eval_cyc[n], %rax
@@ -632,8 +632,8 @@ size_t trans_gencall(nodeid_t n) {
     exb.push(char(0x39)); // cmp %ebx,%edi
     exb.push(char(0xdf));
                                                                       // Byte 14
-    exb.push(char(0x74)); // je 53 (skip rest of impl)
-    exb.push(char(53));
+    exb.push(char(0x74)); // je 47 (skip rest of impl)
+    exb.push(char(47));
 
     // eval_cyc[n] = %edi
     exb.push(char(0x89)); // mov %edi,(%rax)
@@ -643,61 +643,53 @@ size_t trans_gencall(nodeid_t n) {
     exb.push(char(0x48)); // mov &ll_pos[ll[n]], %rbx
     exb.push(char(0xbb));
     exb.push((void*)&ll_pos[ll[n]]);
-                                                                      // Byte 28
+
     exb.push(char(0x48)); // mov (%rbx),%rax
     exb.push(char(0x8b));
     exb.push(char(0x03));
-
+                                                                      // Byte 31
     // *(short*)pos = 0xb848
     exb.push(char(0x66)); // movw 0xb848,(%rax)
     exb.push(char(0xc7)); 
     exb.push(char(0x00));
     exb.push(short(0xb848));
 
-    // pos += 2
-    exb.push(char(0x48)); // add 2,%rax
-    exb.push(char(0x83));
-    exb.push(char(0xc0));
-    exb.push(char(0x02));
-
     // *(void*)pos = NODEIMPLFUNC
     exb.push(char(0x48)); // mov NODEIMPLFUNC, %rcx    
     exb.push(char(0xb9));
     fixup[n].insert(exb.push_future<void*>());
 
-    exb.push(char(0x48)); // mov %rcx,(%rax)
+    exb.push(char(0x48)); // mov %rcx,2(%rax)
     exb.push(char(0x89));
-    exb.push(char(0x08));
-                                                                      // Byte 53
-    // pos += 8
-    exb.push(char(0x48)); // add 8,%rax
-    exb.push(char(0x83));
-    exb.push(char(0xc0));
-    exb.push(char(0x08));
-
+    exb.push(char(0x48));
+    exb.push(char(0x02));
+                                                                      // Byte 50
     // *(short*)pos = 0xd0ff
-    exb.push(char(0x66)); // movw 0xb848,(%rax)
+    exb.push(char(0x66)); // movw 0xd0ff,10(%rax)
     exb.push(char(0xc7));
-    exb.push(char(0x00));
+    exb.push(char(0x40));
+    exb.push(char(0x0a));
     exb.push(short(0xd0ff));
 
-    // pos += 2
+    // pos += 12
     exb.push(char(0x48)); // add 2,%rax
     exb.push(char(0x83));
     exb.push(char(0xc0));
-    exb.push(char(0x02));
-
+    exb.push(char(12));
+                                                                      // Byte 60
     // ll_pos[ll[n]] = pos
     exb.push(char(0x48)); // mov %rax,(%rbx)
     exb.push(char(0x89));
     exb.push(char(0x03));
 
-  return 69; // Return size of call in bytes
+    return 63; // Return size of call in bytes
 }
 
 
 // Translate a specific register
 void trans_reg(nodeid_t r) {
+  implptr[r] = exb.get_pos();
+
   regimpl* rp(static_cast<regimpl*>(nodes[r]));
 
   #ifdef INC_VISITED
@@ -739,6 +731,8 @@ void trans_reg(nodeid_t r) {
   }
 
   exb.push(skip_offset, offset_count);
+
+  // TODO exb.push(char(0xc3));
 }
 
 // Translate a specific cluster
@@ -831,15 +825,15 @@ void llbuf_trans() {
     exb.push(char(0x00));
     exb.push(char(0xc3));
 
-    exb.push(char(0x48)); // movq &ll_buf[i],%rax
+    exb.push(char(0x48)); // mov &ll_buf[i],%rax
     exb.push(char(0xb8));
     exb.push((void*)&ll_buf[i]);
 
-    exb.push(char(0x48)); // movq (%rax),%rax
+    exb.push(char(0x48)); // mov (%rax),%rax
     exb.push(char(0x8b));
     exb.push(char(0x00));
 
-    exb.push(char(0x48)); // movq %rax,(%rbx)
+    exb.push(char(0x48)); // mov %rax,(%rbx)
     exb.push(char(0x89));
     exb.push(char(0x03));
 
