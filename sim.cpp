@@ -19,6 +19,7 @@ using namespace std;
 
 #define DEBUG_TRANS
 // #define INC_VISITED
+#define NO_VCD
 
 vector<cycle_t> chdl::now{0};
 static void reset_now() { now = vector<cycle_t>(1); }
@@ -914,7 +915,7 @@ void log_trans() {
   pop_time();
 }
 
-void chdl::advance_trans(cdomain_handle_t cd) {
+void advance_trans(ostream &vcdout) {
   const unsigned DYN_TRANS_INTERVAL(100000);
 
   if (now[0] % DYN_TRANS_INTERVAL == 0) {
@@ -971,6 +972,10 @@ void chdl::advance_trans(cdomain_handle_t cd) {
 
   for (auto t : trans_tickables) t->tock(e);
 
+  #ifndef NO_VCD 
+  print_taps(vcdout, e);
+  #endif
+
   // Run the execbuf; one cycle of evaluation.
   exb();
 
@@ -984,9 +989,10 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
 
   print_vcd_header(vcdout);
   for (unsigned i = 0; i < max; ++i) {
+    #ifndef NO_VCD
     print_time(vcdout);
-    print_taps(vcdout, e);
-    advance_trans(0);
+    #endif
+    advance_trans(vcdout);
   }
   print_time(vcdout);
 

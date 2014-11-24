@@ -23,7 +23,6 @@ namespace chdl {
 
   evaluator_t &trans_evaluator();
   void init_trans();
-  void advance_trans(cdomain_handle_t cd);
   void recompute_logic_trans(cdomain_handle_t cd);
   void pre_tick_trans(cdomain_handle_t cd);
   void tick_trans(cdomain_handle_t cd);
