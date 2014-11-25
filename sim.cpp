@@ -19,7 +19,8 @@ using namespace std;
 
 #define DEBUG_TRANS
 // #define INC_VISITED
-#define NO_VCD
+// #define NO_VCD
+// #define FINAL_REPORT
 
 vector<cycle_t> chdl::now{0};
 static void reset_now() { now = vector<cycle_t>(1); }
@@ -224,16 +225,18 @@ void find_rcpy() {
 
 // Recursively find all nodes that a node n depends on.
 void dep_set(set<nodeid_t> &s, nodeid_t n, int max_depth = -1) {
-  static map<nodeid_t, set<nodeid_t> > ds;
+  //static map<nodeid_t, set<nodeid_t> > ds;
+  //static map<nodeid_t, int> depth;
 
   s.insert(n);
 
-  if (max_depth == 0) return;
+  //if (max_depth == 0) return;
 
-  if (ds.count(n)) {
-    for (auto &x : ds[n]) s.insert(x);
-  } else {
-    ds[n].insert(n);
+  //if (ds.count(n) && depth[n] >= max_depth) {
+  //  for (auto &x : ds[n]) s.insert(x);
+  //} else {
+  //  depth[n] = max_depth;
+  //  ds[n].insert(n);
 
     for (auto src : nodes[n]->src) {
       set<nodeid_t> new_el;
@@ -241,13 +244,13 @@ void dep_set(set<nodeid_t> &s, nodeid_t n, int max_depth = -1) {
       
       for (auto x : new_el) {
         s.insert(x);
-        ds[n].insert(x);
+  //      ds[n].insert(x);
       }
     }
-  }
+  //}
 
   #ifdef DEBUG_TRANS
-  cout << "Dep set for " << n << ": " << ds[n].size() << " nodes." << endl;
+  // cout << "Dep set for " << n << ": " << ds[n].size() << " nodes." << endl;
   #endif
 }
 
@@ -265,7 +268,7 @@ void find_succ_nodes() {
 void find_scs() {
   push_time("find_scs");
 
-  const unsigned DEPTH_LIMIT(100), MIN_SCS_SIZE(10);
+  const unsigned DEPTH_LIMIT(5), MIN_SCS_SIZE(10);
 
   // Find all nand inputs and tristate enables and their associated nodes
   // Also find the gates that will be performing the short circuiting.
@@ -288,6 +291,7 @@ void find_scs() {
 
   // For each nand input and tristate enable, find its short circuiting set.
   for (auto &p : sc_nodes) {
+    cout << "Finding scs for " << p.first << endl;
     // n is the enable/node for which we're finding the short circuiting set.
     nodeid_t n(p.first);
     set<nodeid_t> s(p.second);
@@ -348,7 +352,8 @@ void find_clusters() {
   // This is a bottom-up algorithm. Start with single-node clusters.
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
     if (!dynamic_cast<nandimpl*>(nodes[i]) &&
-          !dynamic_cast<invimpl*>(nodes[i])) continue; // No non-logic
+        !dynamic_cast<invimpl*>(nodes[i]) &&
+        !dynamic_cast<tristateimpl*>(nodes[i])) continue; // No non-logic
 
     set<nodeid_t> inputs;
     for (auto x : nodes[i]->src) inputs.insert(x);
@@ -361,7 +366,8 @@ void find_clusters() {
       // For each input cluster
       for (auto d : c.second.second) {
         if (!dynamic_cast<nandimpl*>(nodes[d]) &&
-              !dynamic_cast<invimpl*>(nodes[d])) continue; // No non-logic
+            !dynamic_cast<invimpl*>(nodes[d]) &&
+	    !dynamic_cast<tristateimpl*>(nodes[d])) continue; // No non-logic
 
         // All successors have to be in the cluster already.
         bool not_in_cluster(false);
@@ -916,7 +922,7 @@ void log_trans() {
 }
 
 void advance_trans(ostream &vcdout) {
-  const unsigned DYN_TRANS_INTERVAL(100000);
+  const unsigned DYN_TRANS_INTERVAL(10000000);
 
   if (now[0] % DYN_TRANS_INTERVAL == 0) {
     // Clear the execbuf.
@@ -955,20 +961,11 @@ void advance_trans(ostream &vcdout) {
     for (unsigned i = 0; i < nodes.size(); ++i)
       v[i] = nodes[i]->eval(default_evaluator(0));
 
+    // An initial tick for tickables.
+    for (auto t : trans_tickables) t->tick(e);
+
     push_time("sim");
   }
-
-  #if 0
-  cout << now[0] << ':';
-  for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << v[i];
-  cout << endl;
-  cout << "visited: ";
-  for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << visited[i];
-  cout << endl;
-  cout << "last cycle: ";
-  for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << eval_cyc[i];
-  cout << endl;
-  #endif
 
   for (auto t : trans_tickables) t->tock(e);
 
@@ -1002,7 +999,21 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
 
   cout << "Stopwatch values:" << endl;
   for (auto &p : times)
-    cout << "  " << p.first << ": " << p.second << "ms" << endl;    
+    cout << "  " << p.first << ": " << p.second << "ms" << endl;
+
+  #if FINAL_REPORT
+  cout << now[0] << ':';
+  for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << v[i];
+  cout << endl;
+  cout << "visited: ";
+  for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << visited[i];
+  cout << endl;
+  cout << "last cycle: ";
+  for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << eval_cyc[i];
+  cout << endl;
+  #endif
+
+
 }
 
 void chdl::recompute_logic_trans(cdomain_handle_t cd) {
