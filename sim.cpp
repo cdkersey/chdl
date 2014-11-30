@@ -683,8 +683,8 @@ size_t trans_gencall(nodeid_t n) {
     //exb.push(char(0x00));
     //exb.push(short(0xb848));
 
-    // *(void*)pos = NODEIMPLFUNC
-    exb.push(char(0x48)); // mov NODEIMPLFUNC, %rcx    
+    // *(void*)pos = CLUSTERIMPLFUNC
+    exb.push(char(0x48)); // mov CLUSTERIMPLFUNC, %rcx
     exb.push(char(0xb9));
     fixup[n].insert(exb.push_future<void*>());
 
@@ -700,7 +700,7 @@ size_t trans_gencall(nodeid_t n) {
     //exb.push(short(0xd0ff));
 
     // pos += 8
-    exb.push(char(0x48)); // add 2,%rax
+    exb.push(char(0x48)); // add 8,%rax
     exb.push(char(0x83));
     exb.push(char(0xc0));
     exb.push(char(8));
@@ -746,21 +746,23 @@ void trans_reg(nodeid_t r) {
   exb.push(char(0x39)); // cmp %eax, %ecx
   exb.push(char(0xc1));
 
-  exb.push(char(0x0f)); // je finish
-  exb.push(char(0x84));
-  int skip_offset(exb.push_future<unsigned>());
+  int skip_offset;
+  if (!schunk[r].empty()) {
+    exb.push(char(0x0f)); // je finish
+    exb.push(char(0x84));
+    skip_offset = (exb.push_future<unsigned>());
+  }
 
   exb.push(char(0x89)); // mov %ecx, (%rdx)
   exb.push(char(0x0a));
 
-  unsigned offset_count = 2;
-  for (auto c : schunk[r]) {
-    offset_count += trans_gencall(c);
+  if (!schunk[r].empty()) {
+    unsigned offset_count = 2;
+     for (auto c : schunk[r])
+      offset_count += trans_gencall(c);
+
+    exb.push(skip_offset, offset_count);
   }
-
-  exb.push(skip_offset, offset_count);
-
-  // TODO exb.push(char(0xc3));
 }
 
 // Translate a specific cluster
@@ -789,19 +791,21 @@ void trans_cluster(nodeid_t c) {
     nodes[x]->gen_store_result(exb, v, v);
   }
 
-  exb.push(char(0x39)); // cmp %eax, %ecx
-  exb.push(char(0xc1));
+  if (!schunk[c].empty()) {
+    exb.push(char(0x39)); // cmp %eax, %ecx
+    exb.push(char(0xc1));
 
-  exb.push(char(0x0f)); // je finish
-  exb.push(char(0x84));
-  int skip_offset(exb.push_future<unsigned>());
+    exb.push(char(0x0f)); // je finish
+    exb.push(char(0x84));
+    int skip_offset(exb.push_future<unsigned>());
 
-  unsigned offset_count(0);
-  for (auto s : schunk[c]) {
-    offset_count += trans_gencall(s);
+    unsigned offset_count(0);
+    for (auto s : schunk[c]) {
+      offset_count += trans_gencall(s);
+    }
+
+    exb.push(skip_offset, offset_count);
   }
-
-  exb.push(skip_offset, offset_count);
 
   exb.push(char(0xc3));
 }
@@ -847,7 +851,7 @@ void reg_trans() {
   exb.push(char(0x8b));
   exb.push(char(0x3b));
 
-  for (auto r : rcpy)
+   for (auto r : rcpy)
     trans_reg(r);
 
   // For everything not a register in level 0, evaluate.
@@ -861,6 +865,9 @@ void reg_trans() {
 void llbuf_trans() {
   push_time("llbuf_trans");
 
+  // There should be no need to call each of these in turn. Instead, just
+  // Eecute them directly.
+  #if 0
   // Call each ll buffer.
   for (unsigned i = 0; i < ll_size.size(); ++i) {
     exb.push(char(0xe8)); // callq (successor)
@@ -869,6 +876,7 @@ void llbuf_trans() {
 
   // Return. The ll buffers have already been called.
   exb.push(char(0xc3));
+  #endif
 
   // Generate the LL buffers themselves
   for (unsigned i = 0; i < ll_size.size(); ++i) {
@@ -882,14 +890,14 @@ void llbuf_trans() {
     exb.push(char(0x8b));
     exb.push(char(0x03));
     
-    exb.push(char(0x48)); // mov $0,(%rax)
+    exb.push(char(0x48)); // movq $0,(%rax)
     exb.push(char(0xc7));
     exb.push(char(0x00));
     exb.push(unsigned(0));
     
     // Reset ll_pos[i] to ll_buf[i]
     exb.push(char(0x48)); // mov &ll_buf[i],%rax
-    exb.push(char(0xa1));
+    exb.push(char(0xb8));
     exb.push((void*)&ll_buf[i]);
 
     exb.push(char(0x48)); // mov (%rax),%rax
@@ -899,7 +907,7 @@ void llbuf_trans() {
     exb.push(char(0x48)); // mov %rax,(%rbx)
     exb.push(char(0x89));
     exb.push(char(0x03));
-    
+
     // Call all of the items in the queue
     exb.push(char(0x48)); // top: mov (%rax),%rbx
     exb.push(char(0x8b));
@@ -915,8 +923,8 @@ void llbuf_trans() {
     exb.push(char(0x50)); //      push %rax
     exb.push(char(0x53)); //      push %rbx
   
-    exb.push(char(0xff)); //      call *(%rbx)
-    exb.push(char(0x13));
+    exb.push(char(0xff)); //      call *%rbx
+    exb.push(char(0xd3));
 
     exb.push(char(0x5b)); //      pop %rbx
     exb.push(char(0x58)); //      pop %rax
@@ -928,10 +936,10 @@ void llbuf_trans() {
     
     exb.push(char(0xeb)); //      jmp top
     exb.push(char(0xec));
-   
+
     ll_offset[i] = exb.get_pos(); 
   }
-    
+
   exb.push(char(0xc3));
 
   pop_time();
@@ -963,7 +971,7 @@ void advance_trans(ostream &vcdout) {
     log_trans();
 
     // We're through with the code generation. Initialize ll_buf values.
-    ll_bufs.resize(ll_size.size());
+    ll_bufs.resize(ll_size.size() + 1);
     for (unsigned i = 0; i < ll_size.size(); ++i) {
       ll_bufs[i].resize(ll_size[i] + 1);
       ll_buf[i] = ll_pos[i] = (char*)&ll_bufs[i][0];
@@ -1003,6 +1011,15 @@ void advance_trans(ostream &vcdout) {
 
   // Run the execbuf; one cycle of evaluation.
   exb();
+  
+  #if 0
+  cout << "Cyc " << now[0] << endl;
+  for (unsigned i = 0; i < v.size(); ++i) cout << ' ' << v[i];
+  cout << endl;
+  for (unsigned i = 0; i < ll_buf.size(); ++i)
+    for (unsigned j = 0; *(unsigned long *)&ll_buf[i][j*8]; ++j)
+      cout << "ll_buf[" << i << "][" << j << "] = 0x" << hex << *(unsigned long *)&ll_buf[i][j*8] << dec << endl << ';';
+  #endif
 
   for (auto t : trans_tickables) t->tick(e);
 
