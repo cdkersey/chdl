@@ -19,7 +19,7 @@ using namespace std;
 
 #define DEBUG_TRANS
 // #define INC_VISITED
-// #define NO_VCD
+#define NO_VCD
 // #define FINAL_REPORT
 
 vector<cycle_t> chdl::now{0};
@@ -126,6 +126,7 @@ vector<nodeid_t> ll_size;
 
  // location in TC of beginning and current pos in logic layer call bufs
 vector<int> ll_offset, ll_base_offset;
+vector<vector<char*> > ll_bufs;
 vector<char*> ll_buf, ll_pos;
 
 // ...
@@ -659,9 +660,9 @@ size_t trans_gencall(nodeid_t n) {
 
     exb.push(char(0x39)); // cmp %ebx,%edi
     exb.push(char(0xdf));
-                                                                      // Byte 14
-    exb.push(char(0x74)); // je 47 (skip rest of impl)
-    exb.push(char(47));
+
+    exb.push(char(0x74)); // je 35 (skip rest of impl)
+    exb.push(char(35));
 
     // eval_cyc[n] = %edi
     exb.push(char(0x89)); // mov %edi,(%rax)
@@ -675,42 +676,41 @@ size_t trans_gencall(nodeid_t n) {
     exb.push(char(0x48)); // mov (%rbx),%rax
     exb.push(char(0x8b));
     exb.push(char(0x03));
-                                                                      // Byte 31
+
     // *(short*)pos = 0xb848
-    exb.push(char(0x66)); // movw 0xb848,(%rax)
-    exb.push(char(0xc7)); 
-    exb.push(char(0x00));
-    exb.push(short(0xb848));
+    //exb.push(char(0x66)); // movw 0xb848,(%rax)
+    //exb.push(char(0xc7)); 
+    //exb.push(char(0x00));
+    //exb.push(short(0xb848));
 
     // *(void*)pos = NODEIMPLFUNC
     exb.push(char(0x48)); // mov NODEIMPLFUNC, %rcx    
     exb.push(char(0xb9));
     fixup[n].insert(exb.push_future<void*>());
 
-    exb.push(char(0x48)); // mov %rcx,2(%rax)
+    exb.push(char(0x48)); // mov %rcx,(%rax)
     exb.push(char(0x89));
-    exb.push(char(0x48));
-    exb.push(char(0x02));
-                                                                      // Byte 50
-    // *(short*)pos = 0xd0ff
-    exb.push(char(0x66)); // movw 0xd0ff,10(%rax)
-    exb.push(char(0xc7));
-    exb.push(char(0x40));
-    exb.push(char(0x0a));
-    exb.push(short(0xd0ff));
+    exb.push(char(0x08));
 
-    // pos += 12
+    // *(short*)pos = 0xd0ff
+    //exb.push(char(0x66)); // movw 0xd0ff,10(%rax)
+    //exb.push(char(0xc7));
+    //exb.push(char(0x40));
+    //exb.push(char(0x0a));
+    //exb.push(short(0xd0ff));
+
+    // pos += 8
     exb.push(char(0x48)); // add 2,%rax
     exb.push(char(0x83));
     exb.push(char(0xc0));
-    exb.push(char(12));
-                                                                      // Byte 60
+    exb.push(char(8));
+
     // ll_pos[ll[n]] = pos
     exb.push(char(0x48)); // mov %rax,(%rbx)
     exb.push(char(0x89));
     exb.push(char(0x03));
 
-    return 63; // Return size of call in bytes
+    return 51; // Return size of call in bytes
 }
 
 
@@ -872,42 +872,67 @@ void llbuf_trans() {
 
   // Generate the LL buffers themselves
   for (unsigned i = 0; i < ll_size.size(); ++i) {
-    ll_base_offset[i] = exb.get_pos(); 
-
-    // Preamble. Put a return on yourself
-    exb.push(char(0x48)); // movq &ll_pos[i],%rbx
+    ll_base_offset[i] = exb.get_pos();
+    // Place a null pointer after all the other pointers in the ll queue
+    exb.push(char(0x48)); // mov &ll_pos[i],%rbx
     exb.push(char(0xbb));
     exb.push((void*)&ll_pos[i]);
 
     exb.push(char(0x48)); // mov (%rbx),%rax
     exb.push(char(0x8b));
     exb.push(char(0x03));
-
-    exb.push(char(0xc6)); // movb 0xc3,(%rax)
+    
+    exb.push(char(0x48)); // mov $0,(%rax)
+    exb.push(char(0xc7));
     exb.push(char(0x00));
-    exb.push(char(0xc3));
-
+    exb.push(unsigned(0));
+    
+    // Reset ll_pos[i] to ll_buf[i]
     exb.push(char(0x48)); // mov &ll_buf[i],%rax
-    exb.push(char(0xb8));
+    exb.push(char(0xa1));
     exb.push((void*)&ll_buf[i]);
 
     exb.push(char(0x48)); // mov (%rax),%rax
     exb.push(char(0x8b));
     exb.push(char(0x00));
-
+    
     exb.push(char(0x48)); // mov %rax,(%rbx)
     exb.push(char(0x89));
     exb.push(char(0x03));
+    
+    // Call all of the items in the queue
+    exb.push(char(0x48)); // top: mov (%rax),%rbx
+    exb.push(char(0x8b));
+    exb.push(char(0x18));
 
+    exb.push(char(0x48)); //      test %rbx,%rbx
+    exb.push(char(0x85));
+    exb.push(char(0xdb));
+    
+    exb.push(char(0x74)); //      jz finish
+    exb.push(char(0x0c));
+
+    exb.push(char(0x50)); //      push %rax
+    exb.push(char(0x53)); //      push %rbx
+  
+    exb.push(char(0xff)); //      call *(%rbx)
+    exb.push(char(0x13));
+
+    exb.push(char(0x5b)); //      pop %rbx
+    exb.push(char(0x58)); //      pop %rax
+    
+    exb.push(char(0x48)); //      add $8,%rax
+    exb.push(char(0x83));
+    exb.push(char(0xc0));
+    exb.push(char(0x08));
+    
+    exb.push(char(0xeb)); //      jmp top
+    exb.push(char(0xec));
+   
     ll_offset[i] = exb.get_pos(); 
-    for (unsigned j = 0; j < ll_size[i]; ++j) {
-      // Set aside enough space for a call.
-      exb.push(unsigned(0));
-      exb.push((void*)0);
-    }
-    // Enough space for a final ret.
-    exb.push(char(0));
   }
+    
+  exb.push(char(0xc3));
 
   pop_time();
 }
@@ -938,8 +963,11 @@ void advance_trans(ostream &vcdout) {
     log_trans();
 
     // We're through with the code generation. Initialize ll_buf values.
-    for (unsigned i = 0; i < ll_size.size(); ++i)
-      ll_buf[i] = ll_pos[i] = exb.buf + ll_offset[i];
+    ll_bufs.resize(ll_size.size());
+    for (unsigned i = 0; i < ll_size.size(); ++i) {
+      ll_bufs[i].resize(ll_size[i] + 1);
+      ll_buf[i] = ll_pos[i] = (char*)&ll_bufs[i][0];
+    }
 
     // Fix up fixups
     for (auto &f : fixup) {
