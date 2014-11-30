@@ -16,14 +16,14 @@ void tristateimpl::connect(node in, node enable) {
 }
 
 bool tristateimpl::eval(evaluator_t &e) {
-  unsigned nDriven(0);
+  // unsigned nDriven(0);
   bool rval(true);
   for (unsigned i = 0; i < src.size(); i += 2) {
-    if (e(src[i + 1])) { ++nDriven; rval = e(src[i]); }
+    if (e(src[i + 1])) return e(src[i]); // { ++nDriven; rval = e(src[i]); }
   }
   // assert(nDriven <= 1);
-  if (nDriven > 1) std::abort(); // A tri-state node must have exactly 1 driver
-  return rval;
+  // if (nDriven > 1) std::abort(); // A tri-state node must have exactly 1 driver
+  // return rval;
 }
 
 void tristateimpl::print(ostream &os) {

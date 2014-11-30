@@ -11,6 +11,8 @@
 #include "regimpl.h"
 #include "trisimpl.h"
 #include "gatesimpl.h"
+#include "nodeimpl.h"
+#include "litimpl.h"
 #include "memory.h"
 #include "stopwatch.h"
 
@@ -348,8 +350,13 @@ void find_scs() {
 void find_clusters() {
   push_time("find_clusters");
 
-  const unsigned CLUSTER_INPUTS(6), MERGE_ITERATIONS(25);
+  const unsigned CLUSTER_INPUTS(5), MERGE_ITERATIONS(25);
 
+  // Outputs and d nodes break clusters too.
+  set<nodeid_t> out_and_d;
+  get_reg_d_nodes(out_and_d);
+  get_tap_nodes(out_and_d);
+  
   // This is a bottom-up algorithm. Start with single-node clusters.
   for (nodeid_t i = 0; i < nodes.size(); ++i) {
     if (!dynamic_cast<nandimpl*>(nodes[i]) &&
@@ -367,9 +374,11 @@ void find_clusters() {
       // For each input cluster
       for (auto d : c.second.second) {
         if (!dynamic_cast<nandimpl*>(nodes[d]) &&
-            !dynamic_cast<invimpl*>(nodes[d]) &&
-	    !dynamic_cast<tristateimpl*>(nodes[d])) continue; // No non-logic
+            !dynamic_cast<invimpl*>(nodes[d])) continue; // No non-logic or tris
 
+        // Can't merge in something that is an output or register input
+	if (out_and_d.count(d)) continue;
+	
         // All successors have to be in the cluster already.
         bool not_in_cluster(false);
         for (auto x : succ[d]) {
@@ -599,9 +608,11 @@ void chdl::init_trans() {
   // Perform exclusive N-clustering, starting with SC nodes
   find_clusters();
 
+  #if 0
   // Find valid eval orders for clusters.
   find_cluster_orders();
-
+  #endif
+  
   // Compute successor chunks for each cluster.
   find_succ();
 
@@ -648,18 +659,21 @@ size_t trans_gencall(nodeid_t n) {
     // a call to a cluster evaluation. The generated machine code is:
     // 0x48 0xb8 [8B call dest] ff d0. This code is placed at ll_pos[i], after
     // which ll_pos[i] is incremented. This code is skipped if the value at
-    // eval_cyc[n] is equal to the value in %rdi.
+    // eval_cyc[n] is equal to the value in %edi.
 
     // if (%rdi == eval_cyc[n]) skip
     exb.push(char(0x48)); // mov &eval_cyc[n], %rax
     exb.push(char(0xb8));
     exb.push((void*)&eval_cyc[n]);
 
-    exb.push(char(0x8b)); // mov (%rax),%ebx
-    exb.push(char(0x18));
+    exb.push(char(0x3b)); // cmp (%rax),%edi
+    exb.push(char(0x38));
 
-    exb.push(char(0x39)); // cmp %ebx,%edi
-    exb.push(char(0xdf));
+    // exb.push(char(0x8b)); // mov (%rax),%ebx
+    // exb.push(char(0x18));
+
+    // exb.push(char(0x39)); // cmp %ebx,%edi
+    // exb.push(char(0xdf));
 
     exb.push(char(0x74)); // je 35 (skip rest of impl)
     exb.push(char(35));
@@ -710,7 +724,7 @@ size_t trans_gencall(nodeid_t n) {
     exb.push(char(0x89));
     exb.push(char(0x03));
 
-    return 51; // Return size of call in bytes
+    return /*51*/49; // Return size of call in bytes
 }
 
 
@@ -765,6 +779,84 @@ void trans_reg(nodeid_t r) {
   }
 }
 
+unsigned gen_tt_internal(nodeid_t out, map<nodeid_t, unsigned> &inputs) {
+  if (inputs.count(out)) return inputs[out];
+
+  auto &s(nodes[out]->src);
+  
+  if (dynamic_cast<nandimpl*>(nodes[out])) {
+    return ~(gen_tt_internal(s[0], inputs) & gen_tt_internal(s[1], inputs));
+  } else if (dynamic_cast<invimpl*>(nodes[out])) {
+    return ~(gen_tt_internal(s[0], inputs));
+  } else if (dynamic_cast<litimpl*>(nodes[out])) {
+    #ifdef DEBUG_TRANS
+    cout << "Lit in cluster! Strange." << endl;
+    #endif
+    return nodes[out]->eval(default_evaluator(0)) ? 0xffffffff : 0x00000000;
+  } else {
+    cout << "Error: node " << out << " neither inverter nor nand." << endl;
+    abort();
+  }
+}
+
+unsigned gen_tt(nodeid_t out, vector<nodeid_t> &inputs) {
+  // Create the basic truth tables.
+  vector<unsigned> pattern = {0xaaaaaaaa,
+			      0xcccccccc,
+			      0xf0f0f0f0,
+			      0xff00ff00,
+			      0xffff0000 };
+
+  map<nodeid_t, unsigned> inputmap;
+  
+  for (unsigned i = 0; i < inputs.size(); ++i)
+    inputmap[inputs[i]] = pattern[i];
+
+  unsigned tt = gen_tt_internal(out, inputmap);
+
+  #ifdef DEBUG_TRANS
+  cout << "Truth table for cluster " << out << ": " << hex << tt << dec << endl;
+  #endif
+  
+  return tt;
+}
+
+void trans_tt(vector<nodeid_t> &inputs,  unsigned tt) {
+  // Clear %ecx
+  exb.push(char(0x31)); // xor %ecx,%ecx
+  exb.push(char(0xc9));
+  
+  // Load inputs into bits of %ecx
+  for (int i = 0; i < inputs.size(); ++i) {
+    if (i != 0) {
+      exb.push(char(0xd1)); // shl %ecx
+      exb.push(char(0xe1));
+    }
+    
+    exb.push(char(0x48)); // mov &v[inputs[i]], %rax
+    exb.push(char(0xb8));
+    exb.push((void*)&v[inputs[inputs.size() - i - 1]]);
+
+    if (i == 0) {
+      exb.push(char(0x8b)); // mov (%rax), %ecx
+      exb.push(char(0x08));
+    } else {
+      exb.push(char(0x0b)); // or (%rax),%ecx
+      exb.push(char(0x08));
+    }
+  }
+
+  exb.push(char(0xb8)); // mov TRUTHTABLE_BITS, %eax
+  exb.push(tt);
+
+  exb.push(char(0xd3)); // shr %cl,%eax
+  exb.push(char(0xe8));
+  
+  exb.push(char(0x83)); // and $1,%eax
+  exb.push(char(0xe0));
+  exb.push(char(0x01));
+}
+
 // Translate a specific cluster
 void trans_cluster(nodeid_t c) {
   implptr[c] = exb.get_pos();
@@ -782,22 +874,67 @@ void trans_cluster(nodeid_t c) {
   exb.push(char(0xbb));
   exb.push((void*)&v[c]);
 
-  exb.push(char(0x8b)); // mov (%rbx),%ecx
-  exb.push(char(0x0b));
+  exb.push(char(0x8b)); // mov (%rbx),%edx
+  exb.push(char(0x13));
 
   // Translate the gates, leaving the output in %eax
-  for (auto x : cluster_order[c]) {
-    nodes[x]->gen_eval(e, exb, v);
-    nodes[x]->gen_store_result(exb, v, v);
+  if (clusters[c].first.size() == 1) {
+    cout << "Single gate.\n";
+
+    // Might be slightly faster not to use truth tables for single-gate chunks.
+    auto &s(nodes[c]->src);
+    if (dynamic_cast<nandimpl*>(nodes[c])) {
+      exb.push(char(0x48)); // mov &v[src[0]],%rcx
+      exb.push(char(0xb9));
+      exb.push((void*)&v[s[0]]);
+
+      exb.push(char(0x8b)); // mov (%rcx),%ecx
+      exb.push(char(0x09));
+      
+      exb.push(char(0x48)); // mov &v[src[1]],%rax
+      exb.push(char(0xb8));
+      exb.push((void*)&v[s[1]]);
+      
+      exb.push(char(0x8b)); // mov (%rax),%eax
+      exb.push(char(0x00));
+      
+      exb.push(char(0x21)); // and %ecx,%eax
+      exb.push(char(0xc8));
+
+      exb.push(char(0x83)); // xor $1,%eax
+      exb.push(char(0xf0));
+      exb.push(char(0x01));
+    } else if (dynamic_cast<invimpl*>(nodes[c])) {
+      exb.push(char(0x48)); // mov %v[src[0]],%rax
+      exb.push(char(0xb8));
+      exb.push((void*)&v[s[0]]);
+      
+      exb.push(char(0x8b)); // mov (%rax),%eax
+      exb.push(char(0x00));
+      
+      exb.push(char(0x83)); // xor $1,%eax
+      exb.push(char(0xf0));
+      exb.push(char(0x01));
+    } else {
+      cout << "SINGLE GATE NEITHER NAND NOR INV!\n";
+      nodes[c]->gen_eval(e, exb, v);
+    }
+  } else {
+    vector<nodeid_t> in_v;
+    for (auto &i : clusters[c].second) in_v.push_back(i);
+    trans_tt(in_v, gen_tt(c, in_v));
   }
 
   if (!schunk[c].empty()) {
-    exb.push(char(0x39)); // cmp %eax, %ecx
-    exb.push(char(0xc1));
+    exb.push(char(0x39)); // cmp %eax, %edx
+    exb.push(char(0xc2));
 
     exb.push(char(0x0f)); // je finish
     exb.push(char(0x84));
     int skip_offset(exb.push_future<unsigned>());
+
+    exb.push(char(0x89)); // mov %eax,(%rbx) // Store new result if changed.
+    exb.push(char(0x03));
 
     unsigned offset_count(0);
     for (auto s : schunk[c]) {
@@ -805,6 +942,9 @@ void trans_cluster(nodeid_t c) {
     }
 
     exb.push(skip_offset, offset_count);
+  } else {
+    exb.push(char(0x89)); // mov %eax,(%rbx) // Store new result if changed.
+    exb.push(char(0x03));
   }
 
   exb.push(char(0xc3));
@@ -842,13 +982,12 @@ void trans_eval(nodeid_t n) {
 void reg_trans() {
   push_time("reg_trans");
 
-  // Preamble: RDI contains the cycle!
+  // Preamble: %edi contains the cycle!
   exb.push(char(0x48)); // mov &now[0], %rbx
   exb.push(char(0xbb));
   exb.push((void*)&now[0]);
 
-  exb.push(char(0x48)); // mov (%rbx),%rdi
-  exb.push(char(0x8b));
+  exb.push(char(0x8b)); // mov (%rbx),%edi
   exb.push(char(0x3b));
 
    for (auto r : rcpy)
@@ -864,19 +1003,6 @@ void reg_trans() {
 
 void llbuf_trans() {
   push_time("llbuf_trans");
-
-  // There should be no need to call each of these in turn. Instead, just
-  // Eecute them directly.
-  #if 0
-  // Call each ll buffer.
-  for (unsigned i = 0; i < ll_size.size(); ++i) {
-    exb.push(char(0xe8)); // callq (successor)
-    ll_fixup[i].insert(exb.push_future<unsigned>());
-  }
-
-  // Return. The ll buffers have already been called.
-  exb.push(char(0xc3));
-  #endif
 
   // Generate the LL buffers themselves
   for (unsigned i = 0; i < ll_size.size(); ++i) {
@@ -918,15 +1044,13 @@ void llbuf_trans() {
     exb.push(char(0xdb));
     
     exb.push(char(0x74)); //      jz finish
-    exb.push(char(0x0c));
+    exb.push(char(0x0a));
 
     exb.push(char(0x50)); //      push %rax
-    exb.push(char(0x53)); //      push %rbx
   
     exb.push(char(0xff)); //      call *%rbx
     exb.push(char(0xd3));
 
-    exb.push(char(0x5b)); //      pop %rbx
     exb.push(char(0x58)); //      pop %rax
     
     exb.push(char(0x48)); //      add $8,%rax
@@ -935,7 +1059,7 @@ void llbuf_trans() {
     exb.push(char(0x08));
     
     exb.push(char(0xeb)); //      jmp top
-    exb.push(char(0xec));
+    exb.push(char(0xee));
 
     ll_offset[i] = exb.get_pos(); 
   }
