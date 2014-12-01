@@ -20,7 +20,7 @@ using namespace chdl;
 using namespace std;
 
 #define DEBUG_TRANS
-// #define INC_VISITED
+#define INC_VISITED
 #define NO_VCD
 // #define FINAL_REPORT
 
@@ -112,7 +112,7 @@ void chdl::run(ostream &vcdout, function<bool()> end_condition,
 void dump(nodebuf_t x) {
   unsigned col = 0;
   for (auto v : x) {
-    if (col && (col % 32 == 0)) cout << endl;
+    if (col && (col % 32) == 0) cout << endl;
     col++;
     cout << ' ' << v;
   }
@@ -125,6 +125,9 @@ vector<tickable*> trans_tickables;
 // Logic-layer of each node, size of each logic layer
 map<nodeid_t, int> ll;
 vector<nodeid_t> ll_size;
+
+// Static clusters for each logic layer
+map<int, set<nodeid_t> > static_clusters;
 
  // location in TC of beginning and current pos in logic layer call bufs
 vector<int> ll_offset, ll_base_offset;
@@ -624,6 +627,13 @@ void chdl::init_trans() {
   ll_pos.resize(ll_size.size());
   ll_offset.resize(ll_size.size());
   ll_base_offset.resize(ll_size.size());
+
+  // Evaluate initial values for v.
+  for (unsigned i = 0; i < nodes.size(); ++i)
+    v[i] = nodes[i]->eval(default_evaluator(0));
+
+  // An initial tick for tickables.
+  for (auto t : trans_tickables) t->tick(e);
 }
 
 evaluator_t &chdl::trans_evaluator() {
@@ -814,7 +824,7 @@ unsigned gen_tt(nodeid_t out, vector<nodeid_t> &inputs) {
 
   unsigned tt = gen_tt_internal(out, inputmap);
 
-  #ifdef DEBUG_TRANS
+  #if 0
   cout << "Truth table for cluster " << out << ": " << hex << tt << dec << endl;
   #endif
   
@@ -858,9 +868,14 @@ void trans_tt(vector<nodeid_t> &inputs,  unsigned tt) {
 }
 
 // Translate a specific cluster
-void trans_cluster(nodeid_t c) {
-  implptr[c] = exb.get_pos();
+void trans_cluster(nodeid_t c, bool stat = false) {
+  if (!stat) implptr[c] = exb.get_pos();
 
+  set<nodeid_t> non_stat_succ;
+  for (auto s : schunk[c])
+    if (!static_clusters[ll[c]+1].count(s))
+      non_stat_succ.insert(s);
+  
   #ifdef INC_VISITED
   exb.push(char(0x48)); // mov &visited[r], %rbx
   exb.push(char(0xbb));
@@ -879,8 +894,6 @@ void trans_cluster(nodeid_t c) {
 
   // Translate the gates, leaving the output in %eax
   if (clusters[c].first.size() == 1) {
-    cout << "Single gate.\n";
-
     // Might be slightly faster not to use truth tables for single-gate chunks.
     auto &s(nodes[c]->src);
     if (dynamic_cast<nandimpl*>(nodes[c])) {
@@ -925,7 +938,7 @@ void trans_cluster(nodeid_t c) {
     trans_tt(in_v, gen_tt(c, in_v));
   }
 
-  if (!schunk[c].empty()) {
+  if (!non_stat_succ.empty()) {
     exb.push(char(0x39)); // cmp %eax, %edx
     exb.push(char(0xc2));
 
@@ -937,7 +950,7 @@ void trans_cluster(nodeid_t c) {
     exb.push(char(0x03));
 
     unsigned offset_count(0);
-    for (auto s : schunk[c]) {
+    for (auto s : non_stat_succ) {
       offset_count += trans_gencall(s);
     }
 
@@ -947,7 +960,7 @@ void trans_cluster(nodeid_t c) {
     exb.push(char(0x03));
   }
 
-  exb.push(char(0xc3));
+  if (!stat) exb.push(char(0xc3));
 }
 
 void trans_eval(nodeid_t n) {
@@ -1003,10 +1016,14 @@ void reg_trans() {
 
 void llbuf_trans() {
   push_time("llbuf_trans");
-
+  
   // Generate the LL buffers themselves
   for (unsigned i = 0; i < ll_size.size(); ++i) {
     ll_base_offset[i] = exb.get_pos();
+    // First, generate code for all of the static clusters in this level.
+    for (auto c : static_clusters[i])
+      trans_cluster(c, true);
+    
     // Place a null pointer after all the other pointers in the ll queue
     exb.push(char(0x48)); // mov &ll_pos[i],%rbx
     exb.push(char(0xbb));
@@ -1078,10 +1095,42 @@ void log_trans() {
   pop_time();
 }
 
+void find_static_clusters() {
+  push_time("find_static_clusters");
+  const unsigned CYC_THRESHOLD(100), SUC_THRESHOLD(1), VIS_THRESHOLD(3000);
+
+  unsigned count(0);
+  for (auto &p : ll) {
+    nodeid_t n(p.first);
+    int l(p.second);
+    unsigned cyc(eval_cyc[n]);
+    unsigned suc(schunk[n].size());
+    for (auto x : schunk[n]) if (static_clusters[l + 1].count(x)) --suc;
+    if (l && cyc != ~0 && now[0] - cyc < CYC_THRESHOLD && cyc != ~0 && suc < SUC_THRESHOLD && visited[n] > VIS_THRESHOLD) {
+      if (!static_clusters[l].count(n)) ++count;
+      static_clusters[l].insert(n);
+    }
+  }
+  
+  visited.clear(); visited.resize(nodes.size());
+  
+  cout << count << " new static clusters." << endl;
+  pop_time();
+}
+
 void advance_trans(ostream &vcdout) {
-  const unsigned DYN_TRANS_INTERVAL(10000000);
+  const unsigned DYN_TRANS_INTERVAL(10000);
 
   if (now[0] % DYN_TRANS_INTERVAL == 0) {
+    if (now[0]) pop_time();
+
+    // Don't fix up anything we've already fixed.
+    fixup.clear();
+    ll_fixup.clear();
+    
+    // Find clusters to implement static
+    find_static_clusters();
+    
     // Clear the execbuf.
     exb.clear();
 
@@ -1117,12 +1166,9 @@ void advance_trans(ostream &vcdout) {
         exb.push(p, unsigned(ll_base_offset[f.first] - p - 4));
     }
 
-    // Evaluate initial values for v.
-    for (unsigned i = 0; i < nodes.size(); ++i)
-      v[i] = nodes[i]->eval(default_evaluator(0));
-
-    // An initial tick for tickables.
-    for (auto t : trans_tickables) t->tick(e);
+    // Clear the eval cycles. We want everything to re-evaluate since some
+    // static nodes may have become dynamic.
+    for (auto &t : eval_cyc) t = ~0;
 
     push_time("sim");
   }
