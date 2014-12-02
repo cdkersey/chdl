@@ -100,11 +100,15 @@ void chdl::run(ostream &vcdout, function<bool()> end_condition,
   print_vcd_header(vcdout);
   print_time(vcdout);
   do {
+    #ifndef NO_VCD
     print_taps(vcdout, e);
+    #endif
     for (unsigned j = 0; j < ti.size(); ++j)
       if (sim_time()%ti[j] == 0) advance(j, e);
     memo.clear();
+    #ifndef NO_VCD
     print_time(vcdout);
+    #endif
   } while (!end_condition());
 
   call_final_funcs();
@@ -1107,9 +1111,9 @@ void log_trans() {
 
 void find_static_clusters() {
   push_time("find_static_clusters");
-  #if 0
+  #if 1
 
-  const unsigned REMOVE_FRACTION(2), SSCORE_THRESHOLD(10000);
+  const unsigned REMOVE_FRACTION(2), SSCORE_THRESHOLD(5000);
 
   #if 1
   // Inefficient.
@@ -1120,6 +1124,8 @@ void find_static_clusters() {
   random_shuffle(sc.begin(), sc.end());
   for (unsigned i = 0; i < sc.size()/REMOVE_FRACTION; ++i)
     static_clusters[ll[sc[i]]].erase(sc[i]);
+  #else
+  static_clusters.clear();
   #endif
 
   unsigned count(0);
