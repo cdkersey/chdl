@@ -379,6 +379,10 @@ void find_clusters() {
   for (unsigned iter = 0; iter < MERGE_ITERATIONS; ++iter) {
     // For each cluster
     for (auto &c : clusters) {
+      // No non-logic or tristate nodes in clusters with logic
+      if (!dynamic_cast<nandimpl*>(nodes[c.first]) &&
+          !dynamic_cast<invimpl*>(nodes[c.first])) continue;
+
       // For each input cluster
       for (auto d : c.second.second) {
         if (!dynamic_cast<nandimpl*>(nodes[d]) &&
@@ -932,7 +936,7 @@ void trans_cluster(nodeid_t c, bool stat = false) {
       exb.push(char(0xf0));
       exb.push(char(0x01));
     } else if (dynamic_cast<invimpl*>(nodes[c])) {
-      exb.push(char(0x48)); // mov %v[src[0]],%rax
+      exb.push(char(0x48)); // mov &v[src[0]],%rax
       exb.push(char(0xb8));
       exb.push((void*)&v[s[0]]);
       
@@ -942,8 +946,37 @@ void trans_cluster(nodeid_t c, bool stat = false) {
       exb.push(char(0x83)); // xor $1,%eax
       exb.push(char(0xf0));
       exb.push(char(0x01));
+    } else if (dynamic_cast<tristateimpl*>(nodes[c])) {
+      auto &s(nodes[c]->src);
+      for (unsigned i = 0; i < s.size(); i += 2) {
+        exb.push(char(0x48)); // movabs &v[src[i]],%rax
+        exb.push(char(0xb8));
+        exb.push((void*)&v[s[i]]);
+
+        exb.push(char(0x8b)); // mov (%rax),%eax
+	exb.push(char(0x00));
+
+        exb.push(char(0x85)); // test %eax,%eax
+	exb.push(char(0xc0));
+
+	exb.push(char(0x74)); // jz next
+	exb.push(char(i == (s.size() - 2) ? 12 : 16));
+
+	exb.push(char(0x48)); // movabs %v[src[i+1]],%rax
+	exb.push(char(0xb8));
+	exb.push((void*)&v[s[i+1]]);
+
+	exb.push(char(0x8b)); // mov (%rax),%eax
+	exb.push(char(0x00));
+
+	if (i != s.size() - 2) {
+	  exb.push(char(0x48)); // rex.W jmp end
+          exb.push(char(0xeb));
+          exb.push(short((s.size()-i-2)*32 - 4));
+	}
+      }
     } else {
-      cout << "SINGLE GATE NEITHER NAND NOR INV!\n";
+      cout << "Single gate of mystery type.\n";
       nodes[c]->gen_eval(e, exb, v);
     }
   } else {
@@ -1252,7 +1285,7 @@ void chdl::run_trans(std::ostream &vcdout, bool &stop, cycle_t max) {
   for (auto &p : times)
     cout << "  " << p.first << ": " << p.second << "ms" << endl;
 
-  #if FINAL_REPORT
+  #ifdef FINAL_REPORT
   cout << now[0] << ':';
   for (unsigned i = 0; i < nodes.size(); ++i) cout << ' ' << v[i];
   cout << endl;
