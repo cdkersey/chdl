@@ -2,6 +2,7 @@
 #include <functional>
 #include <vector>
 #include <map>
+#include <algorithm>
 
 #include "sim.h"
 #include "tickable.h"
@@ -872,9 +873,16 @@ void trans_cluster(nodeid_t c, bool stat = false) {
   if (!stat) implptr[c] = exb.get_pos();
 
   set<nodeid_t> non_stat_succ;
-  for (auto s : schunk[c])
-    if (!static_clusters[ll[c]+1].count(s))
-      non_stat_succ.insert(s);
+  for (auto s : schunk[c]) {
+    bool statsucc(false);
+    for (unsigned l = ll[c] + 1; l < ll_size.size(); ++l) {
+      if (static_clusters[l].count(s)) {
+        statsucc = true;
+        break;
+      }
+    }
+    if (!statsucc) non_stat_succ.insert(s);
+  }
   
   #ifdef INC_VISITED
   exb.push(char(0x48)); // mov &visited[r], %rbx
@@ -889,21 +897,16 @@ void trans_cluster(nodeid_t c, bool stat = false) {
   exb.push(char(0xbb));
   exb.push((void*)&v[c]);
 
-  exb.push(char(0x8b)); // mov (%rbx),%edx
-  exb.push(char(0x13));
+  if (!stat || !non_stat_succ.empty()) {
+    exb.push(char(0x8b)); // mov (%rbx),%edx
+    exb.push(char(0x13));
+  }
 
   // Translate the gates, leaving the output in %eax
   if (clusters[c].first.size() == 1) {
     // Might be slightly faster not to use truth tables for single-gate chunks.
     auto &s(nodes[c]->src);
     if (dynamic_cast<nandimpl*>(nodes[c])) {
-      exb.push(char(0x48)); // mov &v[src[0]],%rcx
-      exb.push(char(0xb9));
-      exb.push((void*)&v[s[0]]);
-
-      exb.push(char(0x8b)); // mov (%rcx),%ecx
-      exb.push(char(0x09));
-      
       exb.push(char(0x48)); // mov &v[src[1]],%rax
       exb.push(char(0xb8));
       exb.push((void*)&v[s[1]]);
@@ -911,6 +914,13 @@ void trans_cluster(nodeid_t c, bool stat = false) {
       exb.push(char(0x8b)); // mov (%rax),%eax
       exb.push(char(0x00));
       
+      exb.push(char(0x48)); // mov &v[src[0]],%rcx
+      exb.push(char(0xb9));
+      exb.push((void*)&v[s[0]]);
+
+      exb.push(char(0x8b)); // mov (%rcx),%ecx
+      exb.push(char(0x09));
+
       exb.push(char(0x21)); // and %ecx,%eax
       exb.push(char(0xc8));
 
@@ -1097,24 +1107,44 @@ void log_trans() {
 
 void find_static_clusters() {
   push_time("find_static_clusters");
-  const unsigned CYC_THRESHOLD(100), SUC_THRESHOLD(1), VIS_THRESHOLD(3000);
+  #if 0
+
+  const unsigned REMOVE_FRACTION(2), SSCORE_THRESHOLD(10000);
+
+  #if 1
+  // Inefficient.
+  vector<nodeid_t> sc;
+  for (auto &p : static_clusters)
+    for (auto &q : p.second)
+      sc.push_back(q);
+  random_shuffle(sc.begin(), sc.end());
+  for (unsigned i = 0; i < sc.size()/REMOVE_FRACTION; ++i)
+    static_clusters[ll[sc[i]]].erase(sc[i]);
+  #endif
 
   unsigned count(0);
+  map<nodeid_t, int> sscore;
   for (auto &p : ll) {
     nodeid_t n(p.first);
     int l(p.second);
-    unsigned cyc(eval_cyc[n]);
-    unsigned suc(schunk[n].size());
-    for (auto x : schunk[n]) if (static_clusters[l + 1].count(x)) --suc;
-    if (l && cyc != ~0 && now[0] - cyc < CYC_THRESHOLD && cyc != ~0 && suc < SUC_THRESHOLD && visited[n] > VIS_THRESHOLD) {
-      if (!static_clusters[l].count(n)) ++count;
-      static_clusters[l].insert(n);
+    unsigned vis(visited[n]);
+ 
+    if (l)
+      for (auto &s : schunk[n])
+        sscore[s] += vis;
+  }
+
+  for (auto &p : sscore) {
+    if (p.second > SSCORE_THRESHOLD) {
+      static_clusters[ll[p.first]].insert(p.first);
+      ++count;
     }
   }
   
   visited.clear(); visited.resize(nodes.size());
   
   cout << count << " new static clusters." << endl;
+  #endif
   pop_time();
 }
 
