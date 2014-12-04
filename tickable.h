@@ -17,10 +17,10 @@ namespace chdl {
     tickable() { tickables()[cur_clock_domain()].push_back(this); }
     ~tickable();
 
-    virtual void pre_tick(cdomain_handle_t cd) {}
-    virtual void tick(cdomain_handle_t cd) {}
-    virtual void tock(cdomain_handle_t cd) {}
-    virtual void post_tock(cdomain_handle_t cd) {}
+    virtual void pre_tick(cdomain_handle_t) {}
+    virtual void tick(cdomain_handle_t) {}
+    virtual void tock(cdomain_handle_t) {}
+    virtual void post_tock(cdomain_handle_t) {}
 
     cdomain_handle_t cd;
   };
