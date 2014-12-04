@@ -41,7 +41,7 @@ static void clear_nodes() {
 }
 CHDL_REGISTER_RESET(clear_nodes);
 
-bool litimpl::eval(cdomain_handle_t cd) { return val; }
+bool litimpl::eval(cdomain_handle_t) { return val; }
 
 void litimpl::print(ostream &out) {
   if (undef)  out << "  litX " << id << endl;
