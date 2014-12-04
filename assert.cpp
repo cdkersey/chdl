@@ -17,7 +17,7 @@ struct assertion_t : public tickable {
   assertion_t(string &s, const node &n): message(s), x(n) { gtap(n); }
 
   void tick(cdomain_handle_t cd);
-  void tock(cdomain_handle_t cd) {}
+  void tock(cdomain_handle_t) {}
 
   node x;
   string message;
