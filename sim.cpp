@@ -17,7 +17,7 @@ CHDL_REGISTER_RESET(reset_now);
 
 cycle_t chdl::sim_time(cdomain_handle_t cd) { return now[cd]; }
 
-cycle_t chdl::advance(unsigned threads, cdomain_handle_t cd) {
+cycle_t chdl::advance(unsigned /* threads */, cdomain_handle_t cd) {
   for (auto &t : tickables()[cd]) t->pre_tick(cd);
   for (auto &t : tickables()[cd]) t->tick(cd);
   for (auto &t : tickables()[cd]) t->tock(cd);

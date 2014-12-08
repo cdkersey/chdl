@@ -12,12 +12,12 @@ namespace chdl {
     regimpl(node d);
     ~regimpl();
 
-    bool eval(cdomain_handle_t cd);
+    bool eval(cdomain_handle_t);
     void print(std::ostream &out);
     void print_vl(std::ostream &out);
 
     void tick(cdomain_handle_t cd) { next_q = nodes[d]->eval(cd); }
-    void tock(cdomain_handle_t cd) { q = next_q; }
+    void tock(cdomain_handle_t) { q = next_q; }
 
     node d;
 

@@ -69,7 +69,7 @@ void memory::tick(cdomain_handle_t cd) {
       wrdata[i] = nodes[d[i]]->eval(cd);
 }
 
-void memory::tock(cdomain_handle_t cd) {
+void memory::tock(cdomain_handle_t) {
   if (sync)
     for (unsigned i = 0; i < q.size(); ++i)
       for (unsigned j = 0; j < d.size(); ++j)

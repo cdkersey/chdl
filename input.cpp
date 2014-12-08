@@ -20,14 +20,14 @@ class inputimpl : public nodeimpl {
   public:
     inputimpl(string n, int i=-1): nodeimpl(), name(n), pos(i) {}
     
-    bool eval(cdomain_handle_t cd) {
+    bool eval(cdomain_handle_t) {
       cerr << "Attempted to simulate a design with unassociated inputs."
            << endl;
       abort();
     }
 
-    void print(ostream &out) {}
-    void print_vl(ostream &out) {}
+    void print(ostream &) {}
+    void print_vl(ostream &) {}
 
   private:
     string name;         // Name of input in input map

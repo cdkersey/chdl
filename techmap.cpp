@@ -287,7 +287,7 @@ void insert_reg_inverters(set<int> inv, map<nodeid_t, set<nodeid_t>> &sm) {
   }
 }
 
-void insert_tris_inverters(set<int> inv, map<nodeid_t, set<nodeid_t>> &sm) {
+void insert_tris_inverters(set<int> inv, map<nodeid_t, set<nodeid_t>>&) {
   if (inv.empty()) return;
 
   // Replace inputs x with Inv(Inv(x))
