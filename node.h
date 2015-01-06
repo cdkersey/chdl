@@ -13,6 +13,8 @@ namespace chdl {
 
   const nodeid_t NO_NODE(~nodeid_t(0));
 
+  nodeid_t nodecount();
+
   class node {
   public:
     // Sets the default index to an improbable value so attempts to use this as
@@ -27,6 +29,8 @@ namespace chdl {
 
     node &operator=(const node &r);
     void change_net(nodeid_t i);
+
+    void check() { if (idx > nodecount()) abort(); }
 
   protected:
     nodeid_t idx;
