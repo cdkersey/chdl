@@ -30,7 +30,7 @@ namespace chdl {
     node &operator=(const node &r);
     void change_net(nodeid_t i);
 
-    void check() { if (idx > nodecount()) abort(); }
+    void check() { if (idx != NO_NODE && idx > nodecount()) abort(); }
 
   protected:
     nodeid_t idx;
