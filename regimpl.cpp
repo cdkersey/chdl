@@ -77,6 +77,13 @@ void chdl::get_reg_nodes(set<nodeid_t> &s) {
   }
 }
 
+void chdl::get_reg_q_nodes(set<nodeid_t> &s) {
+  for (size_t i = 0; i < nodes.size(); ++i) {
+    regimpl *r(dynamic_cast<regimpl*>(nodes[i]));
+    if (r) s.insert(r->id);
+  }
+}
+
 void chdl::get_reg_d_nodes(set<nodeid_t> &s) {
   for (size_t i = 0; i < nodes.size(); ++i) {
     regimpl *r(dynamic_cast<regimpl*>(nodes[i]));
