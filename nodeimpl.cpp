@@ -35,13 +35,15 @@ void nde(nodeid_t i, node *p) {
   if (node_dir()[i].empty()) node_dir().erase(i);
 }
 
+nodeid_t chdl::nodecount() { return nodes.size() - 1; }
+
 static void clear_nodes() {
   node_dir().clear();
   nodes.clear();
 }
 CHDL_REGISTER_RESET(clear_nodes);
 
-bool litimpl::eval(cdomain_handle_t cd) { return val; }
+bool litimpl::eval(cdomain_handle_t) { return val; }
 
 void litimpl::print(ostream &out) {
   if (undef)  out << "  litX " << id << endl;
@@ -54,11 +56,12 @@ void litimpl::print_vl(ostream &out) {
 
 node::node(): idx(nodes.size()) {
   new litimpl();
+  check();
   node_dir()[idx].insert(this);
 }
 
-node::node(nodeid_t i):    idx(i)            { node_dir()[idx].insert(this); }
-node::node(const node &r): idx(r.idx)        { node_dir()[idx].insert(this); }
+node::node(nodeid_t i):    idx(i)    { check(); node_dir()[idx].insert(this); }
+node::node(const node &r): idx(r.idx){ check(); node_dir()[idx].insert(this); }
 
 node::~node() { nde(idx, this); }
 
@@ -78,6 +81,8 @@ node &node::operator=(const node &r) {
   node_dir()[to].insert(this);
   idx = to;
 
+  check();
+
   return *this;
 }
 
@@ -85,6 +90,7 @@ void node::change_net(nodeid_t i) {
   nde(idx, this);
   node_dir()[i].insert(this);
   idx = i;
+  check();
 }
 
 void chdl::permute_nodes(map<nodeid_t, nodeid_t> x) {
