@@ -42,6 +42,43 @@ unsigned chdl::critpath() {
   return l;
 }
 
+// Emit a report showing the critical path length for each register node.
+void chdl::reg_critpaths(ostream &out) {
+  // For each node, find the longest path to it.                               
+  set<nodeid_t> frontier;
+  get_reg_q_nodes(frontier);
+  // get_mem_nodes(frontier);
+
+  map<nodeid_t, int> longestpath;
+
+  map<nodeid_t, set<nodeid_t> > succ;
+  for (nodeid_t n = 0; n < nodes.size(); ++n)
+    for (auto s : nodes[n]->src)
+      succ[s].insert(n);
+
+  unsigned pathlen(0);
+  while (!frontier.empty()) {
+    set<nodeid_t> next_frontier;
+
+    for (auto n : frontier) {
+      for (auto p : succ[n])
+        next_frontier.insert(p);
+
+      if (longestpath[n] < pathlen)
+        longestpath[n] = pathlen;
+    }
+
+    ++pathlen;
+    frontier = next_frontier;
+  }
+
+  set<nodeid_t> reg_d_nodes;
+  get_reg_d_nodes(reg_d_nodes);
+  for (auto d : reg_d_nodes) {
+    out << d << ", " << longestpath[d] << endl;
+  }
+}
+
 // Emit a report showing the location (in hierarchy) of top 10 longest paths
 void chdl::critpath_report(ostream &out) {
   out << "CHDL Critical Path Report" << endl;

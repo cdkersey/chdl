@@ -23,6 +23,7 @@ namespace chdl {
   bool cycdet();
 
   void critpath_report(std::ostream &);
+  void reg_critpaths(std::ostream &);
 };
 
 template <unsigned A, unsigned B>
