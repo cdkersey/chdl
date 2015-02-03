@@ -167,6 +167,12 @@ namespace chdl {
 
   // Perform an operation element-wise over an N-bit array.
   template <node (*op)(const node &, const node &)>
+    bvec<0> OpElementwise(const bvec<0> &a, const bvec<0> &b)
+  {
+    return bvec<0>();
+  }
+
+  template <node (*op)(const node &, const node &)>
     bvec<1> OpElementwise(const bvec<1> &a, const bvec<1> &b)
   {
     return bvec<1>{op(a[0], b[0])};
@@ -181,18 +187,23 @@ namespace chdl {
 
   // Perform an all-reduce type operation over the given operation to produce
   // a 1-bit result. Used to, say, construct N-input gates from a 2-input op.
-  template <node (*op)(const node &, const node &)>
+  template <node (*OP)(const node &, const node &), bool I>
+    node OpReduce(const bvec<0> &in)
+  { return Lit(I); }
+  
+  template <node (*op)(const node &, const node &), bool I>
     node OpReduce(const bvec<1> &in)
   { return in[0]; }
 
-  template <node (*op)(const node &, const node &), unsigned N>
+  template <node (*op)(const node &, const node &), bool I, unsigned N>
     node OpReduce(bvec<N> in)
   {
-    return op(OpReduce<op>(in[range<N/2,N-1>()]),
-              OpReduce<op>(in[range<0,N/2-1>()]));
+    return op(OpReduce<op, I>(in[range<N/2,N-1>()]),
+              OpReduce<op, I>(in[range<0,N/2-1>()]));
   }
 
   // Some common operations in element-wise form
+  static bvec<0> Not(const bvec<0> &in) { return bvec<0>(); }
   static bvec<1> Not(const bvec<1> &in) { return bvec<1>{!in[0]}; }
 
   template <unsigned N>
@@ -229,21 +240,21 @@ namespace chdl {
   // Those same operations in all-reduce form
   template <unsigned N> node AndN(const bvec<N> &in) {
     HIERARCHY_ENTER();
-    node r(OpReduce<And>(in));
+    node r(OpReduce<And, 1>(in));
     HIERARCHY_EXIT();
     return r;
   }
 
   template <unsigned N> node OrN (const bvec<N> &in) {
     HIERARCHY_ENTER();
-    node r(OpReduce< Or>(in));
+    node r(OpReduce< Or, 0>(in));
     HIERARCHY_EXIT();
     return r;
   }
 
   template <unsigned N> node XorN(const bvec<N> &in) {
     HIERARCHY_ENTER();
-    node r(OpReduce< Xor>(in));
+    node r(OpReduce< Xor, 0>(in));
     HIERARCHY_EXIT();
     return r;
   }
