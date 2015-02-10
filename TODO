@@ -1,24 +1,8 @@
 CHDL Near-term Roadmap
 ======================
 
-_ Remove statemachine and use cassign instead. It's no longer useful.
-_ Add cassign to the standard things in chdl.h
-
 _ Add gate transition matrices for power modeling.
   - N inputs -> 2^N x 2^N transition matrix
-
-_ Add tri-state support
-  . To .nand format (including in/out ports)
-    . in/out ports (called "inout")
-  . To technology mapper and .netl format (three-state buffers are positional
-    [non-commutative] 2-input gates)
-    . in/out ports for technology mapper
-    . technology mapper itself
-    . (external) .netl file reader
-  _ To verilog output (FPGA verified)
-
-_ A directory full of simple unit tests.
-  - One for each function exposed in a header file.
 
 _ Some sort of context management.
   . As a start, add a global state reset function. chdl::reset(). This will
@@ -41,6 +25,9 @@ _ Testing
       - Tests of optimization including number of gates and critical path.
       - Records of improvements to optimization (with nontrivial designs) over
         time.
+  _ A directory full of simple unit tests.
+    - One for each function exposed in a header file.
+
 
 _ Duplicate input removal:
   - For large multi-input and and or functions, remove duplicate inputs. The
@@ -71,9 +58,6 @@ _ "don't care" support
 
 _ Create a separate header for utility functions, integer math, etc.
   - like the int log2 functions
-
-_ Make mux use CLOG2, so input vectors don't have to involve powers of 2.
-  - this will enable better optimization.
 
 _ Fix handling of memory in vis.cpp
   - Currently the outputs are just unattached hexagons and the address nodes
@@ -109,16 +93,19 @@ _ Split off CHDL standard library as its own project.
 _ Make dead node elimination use the criterion that node objects exist for a
   given node id/nodeimpl. Make this give us things like taps and gtaps for
   free.
+  - Specifically, we shouldn't have to use gtaps anymore if we do DNE this way.
 
 Possible future features:
+  _ PamDC style structured data instead of aggregates.
   _ Change nand-based IR to industry-standard AIG (and/inverter graph)
     - This is implementation technology neutral, whereas our nand/inverter graph
       will, once optimized, not tmap to nor gates easily.
   _ Netlist reading
     - This is already well-handled externally. Should this be merged into CHDL?
-  _ Instantiation file/line number trace in hierarchy.
+  . Instantiation file/line number trace in hierarchy.
     - This would be difficult to do and may even require external processing,
       but will make critical path debugging much easier.
+    - Implemented but requires GCC and a #define
   _ Pass manager
     - Is there any reason to optimize in an order other than the one used by
       the optimize function?
