@@ -23,39 +23,8 @@ unsigned long toUint(vector<node> &v, cdomain_handle_t cd) {
   return r;
 }
 
-struct memory;
-
 // Set of all currently-existing memory objects.
 vector<memory *> memories;
-
-struct memory : public tickable {
-  memory(vector<node> &qa, vector<node> &d, vector<node> &da, node w,
-         string filename, bool sync, size_t &id);
-  ~memory() { cout << "Destructing a memory." << endl; }
-
-  vector<node> add_read_port(vector<node> &qa);
-
-  void tick(cdomain_handle_t cd);
-  void tock(cdomain_handle_t cd);
-
-  void print(ostream &out);
-  void print_vl(ostream &out);
-
-  node w;
-  vector<node> da, d;
-  vector<vector<node>> qa, q;
-
-  bool do_write;
-  vector<bool> wrdata;
-
-  size_t waddr;
-  vector<size_t> raddr;
-  vector<bool> contents;
-  vector<vector<bool>> rdval;
-  string filename;
-
-  bool sync;
-};
 
 void memory::tick(cdomain_handle_t cd) {
   do_write = nodes[w]->eval(cd);
@@ -166,25 +135,6 @@ void memory::print_vl(ostream &out) {
         << endl;
 }
 
-struct qnodeimpl : public nodeimpl {
-  qnodeimpl(memory *mem, unsigned port, unsigned idx):
-    mem(mem), port(port), idx(idx) {}
-
-  bool eval(cdomain_handle_t cd) {
-    if (mem->sync)
-      return mem->rdval[port][idx];
-    else
-      return mem->contents[toUint(mem->qa[port], cd)*mem->d.size() + idx];
-  }
-
-  void print(ostream &out) { if (port == 0 && idx == 0) mem->print(out); }
-  void print_vl(ostream &out) { if (port == 0 && idx == 0) mem->print_vl(out); }
-
-  unsigned port, idx;
-
-  memory *mem;
-};
-
 // Load a hex file.
 void load_contents(unsigned n, vector<bool> &contents, string filename) {
   ifstream in(filename.c_str());
@@ -250,6 +200,13 @@ vector<node> memory::add_read_port(vector<node> &qai) {
   return q[idx];
 }
 
+bool chdl::qnodeimpl::eval(cdomain_handle_t cd) {
+  if (mem->sync)
+    return mem->rdval[port][idx];
+  else
+    return mem->contents[toUint(mem->qa[port], cd)*mem->d.size() + idx];
+}
+
 void chdl::get_mem_nodes(set<nodeid_t> &s) {
   for (auto mp : memories) {
     memory &m(*mp);
@@ -278,6 +235,23 @@ size_t chdl::num_sram_bits() {
 static void reset_memories() {
   for (auto m : memories) delete m;
   memories.clear();
+}
+
+void chdl::get_mem_params(memory *&ptr, unsigned &bit,
+                          unsigned &port, unsigned &ports,
+                          unsigned &a, unsigned &d, nodeid_t n)
+{
+  qnodeimpl* p(dynamic_cast<qnodeimpl*>(nodes[n]));
+  if (!p) {
+    ptr = NULL;
+  } else {
+    bit = p->idx;
+    port = p->port;
+    ptr = p->mem;
+    ports = ptr->rdval.size();
+    a = ptr->qa[0].size();
+    d = ptr->d.size();
+  }
 }
 
 CHDL_REGISTER_RESET(reset_memories);
