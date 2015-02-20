@@ -219,10 +219,9 @@ void chdl::get_mem_nodes(set<nodeid_t> &s) {
 }
 
 void chdl::get_mem_q_nodes(set<nodeid_t> &s) {
-  for (auto m : memories)
-    for (unsigned i = 0; i < m->q.size(); ++i)
-      for (unsigned j = 0; j < m->q[i].size(); ++j)
-        s.insert(m->q[i][j]);
+  for (nodeid_t n = 0; n < nodes.size(); ++n)
+    if (dynamic_cast<qnodeimpl*>(nodes[n]))
+      s.insert(n);
 }
 
 size_t chdl::num_sram_bits() {
