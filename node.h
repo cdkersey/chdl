@@ -8,6 +8,8 @@
 #include <map>
 #include <set>
 
+#include <stdlib.h>
+
 namespace chdl {
   typedef unsigned long nodeid_t;
 
