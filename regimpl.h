@@ -19,6 +19,8 @@ namespace chdl {
     void tick(cdomain_handle_t cd) { next_q = nodes[d]->eval(cd); }
     void tock(cdomain_handle_t) { q = next_q; }
 
+    cdomain_handle_t cd;
+
     node d;
 
     bool q, next_q;

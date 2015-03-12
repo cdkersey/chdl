@@ -11,14 +11,18 @@
 using namespace chdl;
 using namespace std;
 
-regimpl::regimpl(node d): q(0), next_q(0), d(d) {}
+regimpl::regimpl(node d): q(0), next_q(0), d(d), cd(cur_clock_domain()) {}
 
 regimpl::~regimpl() {}
 
 bool regimpl::eval(cdomain_handle_t) { return q; }
 
 void regimpl::print(ostream &out) {
-  out << "  reg " << d << ' ' << id << endl;
+  if (cd == 0) {
+    out << "  reg " << d << ' ' << id << endl;
+  } else {
+    out << "  reg<" << cd << "> " << d << ' ' << id << endl;
+  }
 }
 
 void regimpl::print_vl(ostream &out) {
@@ -31,7 +35,11 @@ void regimpl::print_vl(ostream &out) {
         << "    end" << endl;
   }
 
-  out << "  always @ (posedge phi)" << endl;
+  if (cd == 0)
+    out << "  always @ (posedge phi)" << endl;
+  else
+    out << "  always @ (posedge phi" << cd << ')' << endl;
+
   if (reset_signal && level_trig_reset) {
     out << "  if (!reset)" << endl;
   }
