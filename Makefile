@@ -1,6 +1,5 @@
 PREFIX ?= /usr/local
 CXXFLAGS += -fPIC -std=c++11 -O2 #-g
-LDLIBS += -pthread
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o \

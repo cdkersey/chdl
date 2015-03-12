@@ -8,7 +8,6 @@ namespace chdl {
     tristatenode();
     tristatenode(nodeid_t id);
     void connect(node input, node enable);
-    operator node() { return node(idx); }
   };
 };
 
