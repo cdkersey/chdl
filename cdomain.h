@@ -14,6 +14,7 @@ namespace chdl {
   void set_clock_domain(cdomain_handle_t cd);
   cdomain_handle_t push_clock_domain(unsigned interval=1);
   cdomain_handle_t pop_clock_domain();
+  unsigned clock_domains(); // Return number of clock domains
 };
 
 #endif

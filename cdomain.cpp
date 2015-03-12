@@ -47,3 +47,5 @@ cdomain_handle_t chdl::pop_clock_domain() {
   cur_clock_domain() = *(cdomainstack().rbegin());
   return cur_clock_domain();
 }
+
+unsigned chdl::clock_domains() { return tickables().size(); }
