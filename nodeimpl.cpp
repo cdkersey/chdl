@@ -65,10 +65,9 @@ node::node(const node &r): idx(r.idx){ check(); node_dir()[idx].insert(this); }
 
 node::~node() { nde(idx, this); }
 
-node &node::operator=(const node &r) {
+const node &node::operator=(const node &r) const {
   nodeid_t from(idx), to(r.idx);
 
-  nde(from, this);
   if (from != NO_NODE && from != to) {
     for (auto x : node_dir()[from]) {
       node_dir()[to].insert(x);
@@ -78,11 +77,13 @@ node &node::operator=(const node &r) {
     node_dir().erase(from);
   }
 
-  node_dir()[to].insert(this);
-  idx = to;
-
   check();
 
+  return *this;
+}
+
+node &node::operator=(const node &r) {
+  *(const node *)this = r;
   return *this;
 }
 

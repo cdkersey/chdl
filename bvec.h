@@ -60,6 +60,12 @@ namespace chdl {
         return *this;
       }
 
+      const vec &operator=(const vec &r) const {
+	// This works because node has a const assignment operator.
+	for (unsigned i = 0; i < N; ++i) nodes[i] = r[i];
+	return *this;
+      }
+
       template <typename U> vec &operator=(const vec<N, U> &r) {
         for (unsigned i = 0; i < N; ++i) nodes[i] = r[i];
         return *this;

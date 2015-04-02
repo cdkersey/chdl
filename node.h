@@ -29,10 +29,14 @@ namespace chdl {
 
     operator nodeid_t() const { return idx; }
 
+    // Our weird overloaded assignment operator can actually be const, since we
+    // don't directly change the idx of this object through the this pointer.
+    const node &operator=(const node &r) const;
     node &operator=(const node &r);
+
     void change_net(nodeid_t i);
 
-    void check() { if (idx != NO_NODE && idx > nodecount()) abort(); }
+    void check() const { if (idx != NO_NODE && idx > nodecount()) abort(); }
 
   protected:
     nodeid_t idx;
