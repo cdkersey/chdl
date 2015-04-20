@@ -67,15 +67,31 @@ template <unsigned A, unsigned N>
   using namespace std;
 
   ifstream in(filename);
-  vector<unsigned long> contents;
+  vector<vector<bool> > contents(N);
 
   while (!!in) {
-    unsigned long x;
-    in >> hex >> x;
-    if (!!in) contents.push_back(x);
+    vector<bool> row;
+    char c;
+    while (!!in && (c = in.get()) != '\n') {
+      unsigned cval = (c >= 'a' && c <= 'f') ? (c - 'a' + 10) : (c - '0');
+      row.push_back(cval & 8);
+      row.push_back(cval & 4);
+      row.push_back(cval & 2);
+      row.push_back(cval & 1);
+    }
+
+    if (!in) break;
+    
+    for (unsigned i = 0; i < N; ++i)
+      contents[i].push_back(row[row.size() - 1 - i]);
   }
 
-  return LLRom<A, N>(a, contents);
+  map<set<int>, node> cache;
+
+  bvec<N> out;
+  for (unsigned i = 0; i < N; ++i)
+    out[i] = LLRom(a, contents[i], cache);
+  return out;
 }
 
 }
