@@ -127,7 +127,7 @@ namespace chdl {
   }
 
   // Create a binary integer literal with the given value
-  template <unsigned N> bvec<N> Lit(unsigned long val) {
+  template <unsigned N> bvec<N> Lit(unsigned long long val) {
     HIERARCHY_ENTER();
     bvec<N> r;
     for (size_t i = 0; i < N; ++i) r[i] = Lit((val>>i)&1);
