@@ -7,12 +7,12 @@ using namespace std;
 using namespace chdl;
 
 vector<vector<tickable*> > &chdl::tickables() {
-  static vector<vector<tickable*> > t{vector<tickable*>()};
+  static vector<vector<tickable*> > t(1);
   return t;
 }
 
 static void reset_tickables() {
-  tickables() = vector<vector<tickable*> >{vector<tickable*>()};
+  tickables() = vector<vector<tickable*> >(1);
 }
 
 CHDL_REGISTER_RESET(reset_tickables);
