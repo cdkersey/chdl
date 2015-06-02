@@ -125,6 +125,7 @@ tlibgate &tlibgate::operator=(const tlibgate &r) {
   if (i1) delete i1;
   if (r.i0) i0 = new tlibgate(*r.i0); else i0 = NULL;
   if (r.i1) i1 = new tlibgate(*r.i1); else i1 = NULL;
+  return *this;
 }
 
 tlibgate::~tlibgate() {
@@ -142,23 +143,25 @@ int tlibgate::get_size() const {
 }
 
 string tlibgate::dump() {
+  string r;
+
   if (t == INV) {
-    return "i" + i0->dump();
+    r =  "i" + i0->dump();
   } else if (t == REG) {
-    return "r" + i0->dump();
+    r = "r" + i0->dump();
   } else if (t == NAND) {
-    return "n" + i0->dump() + i1->dump();
+    r = "n" + i0->dump() + i1->dump();
   } else if (t == TRISTATE) {
-    return "t" + i0->dump() + i1->dump();
+    r = "t" + i0->dump() + i1->dump();
   } else if (t == HIGH) {
-    return "H";
+    r = "H";
   } else if (t == LOW) {
-    return "L";
+    r = "L";
   } else if (t == INPUT) {
-    string s("x");
-    s[0] = c;
-    return string(s);
+    r.push_back(c);
   }
+
+  return r;
 }
 
 bool tlibgate::match(nodeid_t n, int g, mapping &m) {
