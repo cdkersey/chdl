@@ -1,5 +1,5 @@
-CXXFLAGS += -std=c++11 -O2 -I../../
-LDFLAGS += -L../
+CXXFLAGS += -std=c++11 -O2 -I../..
+LDFLAGS += -L..
 LDLIBS += -lchdl
 
 TEST_RUNS = test_adder.run test_mult.run test_logic.run test_shift.run
