@@ -10,6 +10,7 @@
 #include "lit.h"
 #include "tickable.h"
 #include "nodeimpl.h"
+#include "sim.h"
 
 #include "hierarchy.h"
 
@@ -57,6 +58,8 @@ namespace chdl {
     void print_vl(std::ostream &out)
       { if (port == 0 && idx == 0) mem->print_vl(out); }
 
+    cycle_t t_cval;
+    bool cval;
     unsigned port, idx;
 
     memory *mem;

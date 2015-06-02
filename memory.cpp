@@ -201,10 +201,20 @@ vector<node> memory::add_read_port(vector<node> &qai) {
 }
 
 bool chdl::qnodeimpl::eval(cdomain_handle_t cd) {
-  if (mem->sync)
-    return mem->rdval[port][idx];
-  else
-    return mem->contents[toUint(mem->qa[port], cd)*mem->d.size() + idx];
+  bool new_cval;
+
+  if (t_cval != sim_time(cd)) {
+    t_cval = sim_time(cd);
+
+    if (mem->sync)
+      new_cval = mem->rdval[port][idx];
+    else
+      new_cval = mem->contents[toUint(mem->qa[port], cd)*mem->d.size() + idx];
+
+    cval = new_cval;
+  }
+
+  return cval;
 }
 
 void chdl::get_mem_nodes(set<nodeid_t> &s) {
