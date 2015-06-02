@@ -7,20 +7,17 @@ using namespace chdl;
 using namespace std;
 
 node chdl::Lit(char val) {
-  if (val == 0 || val == 1) {
-    HIERARCHY_ENTER();
-    node r((new litimpl(val))->id);
-    HIERARCHY_EXIT();
-    return r;
-  } else if (val == '0' || val == '1') {
-    HIERARCHY_ENTER();
-    node r((new litimpl(val == '1'))->id);
-    HIERARCHY_EXIT();
-    return r;
-  } else if (val == 'x' || val == 'X') {
-    HIERARCHY_ENTER();
-    node r((new litimpl())->id);
-    HIERARCHY_EXIT();
-    return r;
-  }    
+  nodeid_t r_id;
+
+  HIERARCHY_ENTER();
+
+  if (val == 0 || val == 1) r_id = (new litimpl(val))->id;
+  else if (val == '0' || val == '1') r_id = (new litimpl(val == '1'))->id;
+  else if (val == 'x' || val == 'X') r_id = (new litimpl())->id;
+
+  node r(r_id);
+
+  HIERARCHY_EXIT();
+
+  return r;
 }
