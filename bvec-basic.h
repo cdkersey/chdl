@@ -204,7 +204,7 @@ namespace chdl {
 
   // Some common operations in element-wise form
   static bvec<0> Not(const bvec<0> &in) { return bvec<0>(); }
-  static bvec<1> Not(const bvec<1> &in) { return bvec<1>{!in[0]}; }
+  static bvec<1> Not(const bvec<1> &in) { return bvec<1>(!in[0]); }
 
   template <unsigned N>
     bvec<N> Not(const bvec<N> &in)
