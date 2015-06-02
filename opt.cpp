@@ -95,6 +95,8 @@ bool is_and(nodeid_t n, nodeid_t &in0, nodeid_t &in1) {
 
     return true;
   }
+
+  return false;
 }
 
 node gen_or_blob_v(const vector<nodeid_t> &in, const hpath_t &path) {
