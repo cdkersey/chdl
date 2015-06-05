@@ -33,7 +33,9 @@ unsigned nGates(nodeid_t n) {
 }
 
 struct mapping {
-  int t;
+  mapping(): cd(0) {}
+
+  int t, cd;
   nodeid_t output;
   map<char, nodeid_t> input;
   set<nodeid_t> covered;
@@ -185,8 +187,12 @@ bool tlibgate::match(nodeid_t n, int g, mapping &m) {
     else    rval = i0->match(p->src[0], -1, m);
   } else if (t == REG) {
     regimpl *p(dynamic_cast<regimpl*>(nodes[n]));
-    if (!p) rval = false;
-    else    rval = i0->match(p->d, -1, m);
+    if (!p) {
+      rval = false;
+    } else {
+      m.cd = p->cd;
+      rval = i0->match(p->d, -1, m);
+    }
   } else if (t == TRISTATE) {
     if (g == -1) rval = false;
     else {
@@ -195,7 +201,7 @@ bool tlibgate::match(nodeid_t n, int g, mapping &m) {
         rval = false;
       else
         rval = i0->match(p->src[2*g], -1, m)
-               && i1->match(p->src[2*g + 1], -1, m);
+	    && i1->match(p->src[2*g + 1], -1, m);
     }
   } else if (t == NAND) {
     nandimpl *p(dynamic_cast<nandimpl*>(nodes[n]));
@@ -502,6 +508,7 @@ void chdl::techmap(ostream &out, const char* tlibFile) {
       while (!bestmaps[n].empty()) {
         mapping &m(bestmaps[n].front());
         out << "  " << tlib[m.t].second;
+	if (m.cd) out << '<' << m.cd << '>';
         for (auto x : m.input) {
           if (!tlib[m.t].first.seq) next_nodes.insert(x.second);
           out << ' ' << x.second;
