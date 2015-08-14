@@ -56,15 +56,21 @@ struct tlibgate {
   string dump();
 
   enum gtype { INV, REG, NAND, TRISTATE, INPUT, HIGH, LOW };
-  bool seq;
+  bool seq, aliased;
   gtype t;
-  char c;
+  char c, alias;
   tlibgate *i0, *i1;
 };
 
-tlibgate::tlibgate(): seq(false), i0(NULL), i1(NULL), c('x'), t(INPUT) {}
+tlibgate::tlibgate(): seq(false), aliased(false), i0(NULL), i1(NULL), c('x'), t(INPUT) {}
 
-tlibgate::tlibgate(string s, int *idx): seq(false) {
+tlibgate::tlibgate(string s, int *idx): seq(false), aliased(false) {
+  if (s[0] == '=') {
+    aliased = true;
+    alias = s[1];
+    s = s.substr(2);
+  }
+
   if (s.find("r") != string::npos) seq = true;
   c = s[0];
 
@@ -114,7 +120,9 @@ tlibgate::tlibgate(string s, int *idx): seq(false) {
   if (idx) ++*idx;
 }
 
-tlibgate::tlibgate(const tlibgate &r): t(r.t), c(r.c), seq(r.seq) {
+tlibgate::tlibgate(const tlibgate &r):
+  t(r.t), c(r.c), seq(r.seq), aliased(r.aliased), alias(r.alias)
+{
   if (r.i0) i0 = new tlibgate(*r.i0); else i0 = NULL;
   if (r.i1) i1 = new tlibgate(*r.i1); else i1 = NULL;
 }
@@ -123,6 +131,8 @@ tlibgate &tlibgate::operator=(const tlibgate &r) {
   t = r.t;
   c = r.c;
   seq = r.seq;
+  aliased = r.aliased;
+  alias = r.alias;
   if (i0) delete i0;
   if (i1) delete i1;
   if (r.i0) i0 = new tlibgate(*r.i0); else i0 = NULL;
@@ -147,18 +157,23 @@ int tlibgate::get_size() const {
 string tlibgate::dump() {
   string r;
 
+  if (aliased) {
+    r.push_back('=');
+    r.push_back(alias);
+  }
+
   if (t == INV) {
-    r =  "i" + i0->dump();
+    r += "i" + i0->dump();
   } else if (t == REG) {
-    r = "r" + i0->dump();
+    r += "r" + i0->dump();
   } else if (t == NAND) {
-    r = "n" + i0->dump() + i1->dump();
+    r += "n" + i0->dump() + i1->dump();
   } else if (t == TRISTATE) {
-    r = "t" + i0->dump() + i1->dump();
+    r += "t" + i0->dump() + i1->dump();
   } else if (t == HIGH) {
-    r = "H";
+    r += "H";
   } else if (t == LOW) {
-    r = "L";
+    r += "L";
   } else if (t == INPUT) {
     r.push_back(c);
   }
@@ -173,50 +188,62 @@ bool tlibgate::match(nodeid_t n, int g, mapping &m) {
   vector<nodeid_t> v;
   if (t != INPUT) v.push_back(n);
 
-  // Inputs are on the boundaries of components and match everything.
-  if (t == INPUT) {
-    if (m.input.find(c) != m.input.end()) {
-      rval = (m.input[c] == n);
+  bool alias_fail = false;
+  if (aliased) {
+    if (m.input.count(alias)) {
+      if (n != m.input[alias])
+        alias_fail = true;
     } else {
-      m.input[c] = n;
-      rval = true;
+      m.input[alias] = n;
     }
-  } else if (t == INV) {
-    invimpl *p(dynamic_cast<invimpl*>(nodes[n]));
-    if (!p) rval = false;
-    else    rval = i0->match(p->src[0], -1, m);
-  } else if (t == REG) {
-    regimpl *p(dynamic_cast<regimpl*>(nodes[n]));
-    if (!p) {
-      rval = false;
-    } else {
-      m.cd = p->cd;
-      rval = i0->match(p->d, -1, m);
-    }
-  } else if (t == TRISTATE) {
-    if (g == -1) rval = false;
-    else {
-      tristateimpl *p(dynamic_cast<tristateimpl*>(nodes[n]));
-      if (!p)
-        rval = false;
-      else
-        rval = i0->match(p->src[2*g], -1, m)
-	    && i1->match(p->src[2*g + 1], -1, m);
-    }
-  } else if (t == NAND) {
-    nandimpl *p(dynamic_cast<nandimpl*>(nodes[n]));
-    if (!p) rval = false;
-    else {
-      map<char, nodeid_t> bak(m.input);
-      rval = (i0->match(p->src[0], -1, m) && i1->match(p->src[1], -1, m));
-      if (!rval) {
-        m.input = bak;
-        rval = (i0->match(p->src[1], -1, m) && i1->match(p->src[0], -1, m));
+  }
+
+  if (!alias_fail) {
+    // Inputs are on the boundaries of components and match everything.
+    if (t == INPUT) {
+      if (m.input.count(c)) {
+        rval = (m.input[c] == n);
+      } else {
+        m.input[c] = n;
+        rval = true;
       }
+    } else if (t == INV) {
+      invimpl *p(dynamic_cast<invimpl*>(nodes[n]));
+      if (!p) rval = false;
+      else    rval = i0->match(p->src[0], -1, m);
+    } else if (t == REG) {
+      regimpl *p(dynamic_cast<regimpl*>(nodes[n]));
+      if (!p) {
+        rval = false;
+      } else {
+        m.cd = p->cd;
+        rval = i0->match(p->d, -1, m);
+      }
+    } else if (t == TRISTATE) {
+      if (g == -1) rval = false;
+      else {
+        tristateimpl *p(dynamic_cast<tristateimpl*>(nodes[n]));
+        if (!p)
+          rval = false;
+        else
+          rval = i0->match(p->src[2*g], -1, m)
+  	    && i1->match(p->src[2*g + 1], -1, m);
+      }
+    } else if (t == NAND) {
+      nandimpl *p(dynamic_cast<nandimpl*>(nodes[n]));
+      if (!p) rval = false;
+      else {
+        map<char, nodeid_t> bak(m.input);
+        rval = (i0->match(p->src[0], -1, m) && i1->match(p->src[1], -1, m));
+        if (!rval) {
+          m.input = bak;
+          rval = (i0->match(p->src[1], -1, m) && i1->match(p->src[0], -1, m));
+        }
+      }
+    } else if (t == HIGH || t == LOW) {
+      litimpl *p(dynamic_cast<litimpl*>(nodes[n]));
+      rval = (p && p->eval(0) == (t == HIGH));
     }
-  } else if (t == HIGH || t == LOW) {
-    litimpl *p(dynamic_cast<litimpl*>(nodes[n]));
-    rval = (p && p->eval(0) == (t == HIGH));
   }
 
   if (!rval) m.input = bak;
@@ -511,7 +538,8 @@ void chdl::techmap(ostream &out, const char* tlibFile) {
 	if (m.cd) out << '<' << m.cd << '>';
         for (auto x : m.input) {
           if (!tlib[m.t].first.seq) next_nodes.insert(x.second);
-          out << ' ' << x.second;
+          if (x.first >= '0' && x.first <= '9')
+            out << ' ' << x.second;
         }
         out << ' ' << n << endl;
         bestmaps[n].pop_front();

@@ -766,7 +766,8 @@ The TLIB format is used to define a technology library as a set of gates to be
 matched. Each line contains the name of a gate, followed by whitespace,
 followed by a polish expression for the NAND-inverter tree that matches that
 gate. This structure must be a tree in form, but leaf nodes (inputs) can
-represent the same input.
+represent the same input, and arbitrary internal or output nodes can be assigned
+as hidden inputs.
 
 As an example, let's write a 2-input XOR gate in TLIB format:
 
@@ -784,6 +785,25 @@ structure of the gate; a tree output in depth-first form:
       1   2   i   i
               |   |
               1   2
+
+An example using hidden inputs is a D flip-flop with a write enable, where input
+1 is a write enable:
+
+  =ArnnAi1n21
+
+Capital letters are used to indicate aliases; here '=A' declares that the output
+of the register is aliased to hidden input A. Its reappearance creates a cycle
+that could not otherwise be represented:
+
+            r----+
+            |    |
+            n    |
+           / \   |
+          n   n<-+
+         / \  |
+        2   1 i
+              |
+              1
 
 HDL Writer
 ----------
