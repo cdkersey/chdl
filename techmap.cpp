@@ -244,11 +244,12 @@ bool tlibgate::match(nodeid_t n, int g, mapping &m) {
       litimpl *p(dynamic_cast<litimpl*>(nodes[n]));
       rval = (p && p->eval(0) == (t == HIGH));
     }
+
+    if (rval) for (auto x : v) m.covered.insert(x);
   }
 
   if (!rval) m.input = bak;
-  else for (auto x : v) m.covered.insert(x);
-
+  
   return rval;
 }
 
@@ -530,14 +531,14 @@ void chdl::techmap(ostream &out, const char* tlibFile) {
     set<nodeid_t> next_nodes;
 
     for (auto n : nodes_to_map) {
-      if (nodes_mapped.find(n) != nodes_mapped.end()) continue;
+      if (nodes_mapped.count(n)) continue;
       nodes_mapped.insert(n);
       while (!bestmaps[n].empty()) {
         mapping &m(bestmaps[n].front());
         out << "  " << tlib[m.t].second;
 	if (m.cd) out << '<' << m.cd << '>';
         for (auto x : m.input) {
-          if (!tlib[m.t].first.seq) next_nodes.insert(x.second);
+          next_nodes.insert(x.second);
           if (x.first >= '0' && x.first <= '9')
             out << ' ' << x.second;
         }
