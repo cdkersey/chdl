@@ -527,6 +527,7 @@ void chdl::techmap(ostream &out, const char* tlibFile) {
   set<nodeid_t> nodes_to_map, nodes_mapped;
   get_reg_d_nodes(nodes_to_map);
   get_tap_nodes(nodes_to_map);
+  get_mem_nodes(nodes_to_map);
   while(!nodes_to_map.empty()) {
     set<nodeid_t> next_nodes;
 
