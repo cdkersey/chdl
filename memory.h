@@ -49,7 +49,7 @@ namespace chdl {
 
   struct qnodeimpl : public nodeimpl {
     qnodeimpl(memory *mem, unsigned port, unsigned idx):
-      mem(mem), port(port), idx(idx) {}
+      mem(mem), port(port), idx(idx), t_cval(0xffff), cval(0) {}
 
     bool eval(cdomain_handle_t cd);
 
