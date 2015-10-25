@@ -78,7 +78,7 @@ namespace chdl {
     vec<CLOG2(N), bvec<N>> mask;
     for (unsigned i = 0; i < CLOG2(N); ++i)
       for (unsigned j = 0; j < N; ++j)
-        mask[i][j] = Lit(j & (1 << i));
+        mask[i][j] = Lit((j & (1 << i)) != 0);
 
     bvec<CLOG2(N)> out;
     for (unsigned i = 0; i < CLOG2(N); ++i)
