@@ -4,6 +4,8 @@
 #include <iostream>
 #include <iomanip>
 #include <set>
+#include <random>
+#include <cstdint>
 
 #include "memory.h"
 #include "tickable.h"
@@ -161,6 +163,13 @@ memory::memory(
 {
   // Load contents from file
   if (filename != "") load_contents(di.size(), contents, filename);
+  else {
+    // Default SRAM contents: random bits; seed with pointer to take advantage
+    // of ASR.
+    minstd_rand m0((unsigned)reinterpret_cast<intptr_t>(this));
+    for (unsigned i = 0; i < contents.size(); ++i)
+      contents[i] = (m0() & 1);
+  }
 
   // Add the read port
   add_read_port(qai);
