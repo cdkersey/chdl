@@ -1,5 +1,6 @@
 PREFIX ?= /usr/local
-CXXFLAGS += -fPIC -std=c++11 -O2 #-g
+CHDL_INCLUDE ?= $(PREFIX)/include
+CXXFLAGS += -fPIC -std=c++11 -O2 -I$(CHDL_INCLUDE) #-g
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o \
@@ -17,7 +18,7 @@ HEADERS = adder.h analysis.h assert.h bus.h bvec-basic.h bvec-basic-op.h \
 all : libchdl.so
 
 libchdl.so : $(OBJS)
-	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	$(CXX) -shared $(LDFLAGS) -o $@ $^
 
 %.o : %.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c $<
@@ -32,4 +33,4 @@ uninstall:
 	rm -rf $(PREFIX)/lib/libchdl.so $(PREFIX)/include/chdl
 
 clean:
-	rm -f libchdl.so $(OBJS) *~ *\#
+	$(RM) libchdl.so $(OBJS) *~ *\#
