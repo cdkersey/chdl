@@ -57,7 +57,7 @@ template <unsigned N>
 template <unsigned N>
   void chdl::tap(std::string name, const bus<N> &vec, bool output)
 {
-  for (unsigned i = 0; i < N; ++i) tap(name, chdl::node(vec[i]), output);
+  for (unsigned i = 0; i < N; ++i) tap(name, vec[i], output);
 }
 
 template <unsigned N> void chdl::gtap(const chdl::bvec<N> &vec) {
