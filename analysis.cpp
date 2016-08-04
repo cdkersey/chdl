@@ -170,12 +170,17 @@ bool chdl::cycdet() {
   get_reg_nodes(s);
   get_mem_nodes(s);
 
+  map<nodeid_t, string> rtap;
+  get_tap_map(rtap);
+
   for (auto n : s) {
     set<nodeid_t> v;
     if (cycdet_internal(0, n, v, c, path)) {
       cout << "Cycle detected. Path:" << endl;
       for (auto n : path) {
-        cout << "  " << path_str(nodes[n]->path) << endl;
+        cout << "  " << path_str(nodes[n]->path);
+	if (rtap.count(n)) cout << " (" << rtap[n] << ')';
+	cout << endl;
       }
       return true;
     }

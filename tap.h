@@ -35,6 +35,8 @@ namespace chdl {
   void print_taps(std::ostream &out, cdomain_handle_t cd = 0);
   void print_vcd_header(std::ostream &out);
 
+  void get_tap_map(std::map<nodeid_t, std::string> &m);
+
   // Append the set of tap nodes to s. Do not clear s.
   void get_tap_nodes(std::set<nodeid_t> &s);
 };

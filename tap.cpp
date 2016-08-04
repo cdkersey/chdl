@@ -130,3 +130,10 @@ void chdl::get_tap_nodes(set<nodeid_t> &s) {
   for (auto t : ghost_taps)
     s.insert(t);
 }
+
+void chdl::get_tap_map(std::map<nodeid_t, std::string> &m) {
+  m.clear();
+  for (auto t : taps)
+    for (auto n : t.second)
+      m[n] = t.first;
+}
