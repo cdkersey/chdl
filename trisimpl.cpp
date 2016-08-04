@@ -22,8 +22,9 @@ bool tristateimpl::eval(cdomain_handle_t cd) {
     nodeimpl *pi(nodes[src[i]]), *pe(nodes[src[i+1]]);
     if (pe->eval(cd)) { ++nDriven; rval = pi->eval(cd); }
   }
-  // assert(nDriven <= 1);
-  if (nDriven > 1) std::abort(); // A tri-state node must have exactly 1 driver
+
+  // Arbitrary if multiple drivers.
+  if (nDriven > 1) rval = 0;
   return rval;
 }
 

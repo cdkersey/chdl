@@ -47,15 +47,15 @@ void chdl::gtap(node n) {
 
 void chdl::print_taps_vl_head(std::ostream &out) {
   for (auto t : taps)
-    if (output_taps.find(t.first) != output_taps.end())
+    if (output_taps.count(t.first) || io_taps.count(t.first))
       out << ',' << endl << "  " << t.first;
 }
 
 void chdl::print_taps_vl_body(std::ostream &out, bool print_non_output) {
   for (auto t : taps) {
-    if (output_taps.find(t.first) != output_taps.end())
+    if (output_taps.count(t.first))
       out << "  output ";
-    else if (io_taps.find(t.first) != io_taps.end())
+    else if (io_taps.count(t.first))
       out << "  inout ";
     else if (print_non_output)
       out << "  wire ";
