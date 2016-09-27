@@ -27,12 +27,19 @@ class inputimpl : public nodeimpl {
     }
 
     void print(ostream &) {}
-    void print_vl(ostream &) {}
+    void print_vl(ostream &);
 
   private:
     string name;         // Name of input in input map
     int pos;             // Position in vector in input map. -1 for no name
 };
+
+void inputimpl::print_vl(ostream &out) {
+  out << "  assign __x" << id << " = " << name;
+  if (inputs[name].size())
+    out << '[' << pos << ']';
+  out << ';' << endl;
+}
 
 node chdl::Input(std::string name) {
   inputimpl *n = new inputimpl(name, -1);
@@ -51,6 +58,8 @@ void chdl::print_inputs_vl_body(std::ostream &out) {
     if (in.second.size() > 1)
       out << '[' << in.second.size()-1 << ":0] ";
     out << in.first << ';' << endl;
+
+    #if 0
     if (in.second.size() > 1) {
       for (unsigned i = 0; i < in.second.size(); ++i) {
         out << "  assign __x" << in.second[i] << " = "
@@ -59,7 +68,8 @@ void chdl::print_inputs_vl_body(std::ostream &out) {
     } else {
       out << "  assign __x" << in.second[0] << " = "
           << in.first << ';' << endl;
-      }
+    }
+    #endif
   }
 }
 

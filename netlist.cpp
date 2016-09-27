@@ -46,7 +46,6 @@ void chdl::print_verilog(
     out << "  input reset;" << endl;
   }
   print_inputs_vl_body(out);
-  print_taps_vl_body(out);
 
   if (!reset_signal) {
     out << "  wire reset;" << endl;
@@ -62,6 +61,8 @@ void chdl::print_verilog(
       out << "  wire __x" << i << ';' << endl;
 
   for (nodeid_t i = 0; i < nodes.size(); ++i) nodes[i]->print_vl(out);
+
+  print_taps_vl_body(out);
 
   out << "endmodule" << endl;
 }
