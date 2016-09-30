@@ -26,7 +26,7 @@ void regimpl::print(ostream &out) {
 }
 
 void regimpl::print_vl(ostream &out) {
-  const bool reset_signal(false), level_trig_reset(false);
+  const bool reset_signal(true), level_trig_reset(true);
 
   if (!reset_signal) {
     out << "  initial" << endl
