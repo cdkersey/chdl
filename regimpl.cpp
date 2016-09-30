@@ -36,23 +36,26 @@ void regimpl::print_vl(ostream &out) {
   }
 
   if (cd == 0)
-    out << "  always @ (posedge phi)" << endl;
+    out << "  always @ (posedge phi";
   else
-    out << "  always @ (posedge phi" << cd << ')' << endl;
-
-  if (reset_signal && level_trig_reset) {
-    out << "  if (!reset)" << endl;
-  }
-  out << "    begin" << endl
-      << "      __x" << id << " <= " << "__x" << d << ';' << endl
-      << "    end" << endl;
+    out << "  always @ (posedge phi" << cd;
 
   if (reset_signal) {
-    out << "  always @ (posedge reset)" << endl
-        << "    begin" << endl
-        << "      __x" << id << " <= " << "0;" << endl
-        << "    end" << endl;
+    out << " or ";
+    if (!level_trig_reset) out << "posedge ";
+    out << "reset";
   }
+  
+  out << ')' << endl << "    begin" << endl;
+  
+  if (reset_signal)
+    out << "    if (reset) __x" << id << " <= 0;" << endl
+        << "    else if (phi) ";
+  else
+    out << "    ";
+  
+  out << "__x" << id << " <= " << "__x" << d << ';' << endl
+      << "    end" << endl;
 }
 
 node chdl::Reg(node d, bool val) {
