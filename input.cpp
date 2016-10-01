@@ -36,7 +36,7 @@ class inputimpl : public nodeimpl {
 
 void inputimpl::print_vl(ostream &out) {
   out << "  assign __x" << id << " = " << name;
-  if (inputs[name].size())
+  if (inputs[name].size() > 1)
     out << '[' << pos << ']';
   out << ';' << endl;
 }
