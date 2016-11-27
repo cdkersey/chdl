@@ -13,9 +13,9 @@ namespace chdl {
   template <typename T> node IngressFunc(const T &f);
   static node Ingress(bool &x);
   static node IngressAutoclear(bool &x);
-  template <unsigned N, typename T> void IngressInt(bvec<N> &b, const T &x);
+  template <unsigned N, typename T> void IngressInt(const bvec<N> &b, const T &x);
   template <unsigned N, typename T> bvec<N> IngressInt(const T &x);
-  template <unsigned N, typename T> void IngressIntFunc(bvec<N> &b, const T &x);
+  template <unsigned N, typename T> void IngressIntFunc(const bvec<N> &b, const T &x);
   template <unsigned N, typename T> bvec<N> IngressIntFunc(const T &x);
 
   template <typename T> class ingressimpl : public nodeimpl {
@@ -53,26 +53,26 @@ namespace chdl {
     return IngressFunc([&x](){ bool prevx(x); x = false; return prevx; });
   }
 
-  template <typename T> std::function<bool()> GetBit(unsigned bit, T &x) {
+  template <typename T> std::function<bool()> GetBit(unsigned bit, const T &x) {
     return std::function<bool()>([&x, bit](){ return bool((x >> bit)&1); });
   }
 
-  template <typename T> std::function<bool()> GetBitFunc(unsigned bit, T &x) {
+  template <typename T> std::function<bool()> GetBitFunc(unsigned bit, const T &x) {
     return std::function<bool()>([&x, bit](){ return bool((x() >> bit)&1); });
   }
 
-  template <unsigned N, typename T> void IngressInt(bvec<N> &b, T &x) {
+  template <unsigned N, typename T> void IngressInt(const bvec<N> &b, T &x) {
     for (unsigned i = 0; i < N; ++i)
       b[i] = IngressFunc(GetBit(i, x));
   }
 
-  template <unsigned N, typename T> void IngressIntFunc(bvec<N> &b, const T &x)
+  template <unsigned N, typename T> void IngressIntFunc(const bvec<N> &b, const T &x)
   {
     for (unsigned i = 0; i < N; ++i)
       b[i] = IngressFunc(GetBitFunc(i, x));
   }
 
-  template <unsigned N, typename T> bvec<N> IngressInt(T &x) {
+  template <unsigned N, typename T> bvec<N> IngressInt(const T &x) {
     bvec<N> r;
     IngressInt(r, x);
     return r;
