@@ -13,6 +13,7 @@ namespace chdl {
   template <typename T> node IngressFunc(const T &f);
   static node Ingress(bool &x);
   static node IngressAutoclear(bool &x);
+
   template <unsigned N, typename T> void IngressInt(const bvec<N> &b, T &x);
   template <unsigned N, typename T> bvec<N> IngressInt(const T &x);
   template <unsigned N, typename T> void IngressIntFunc(const bvec<N> &b, const T &x);
@@ -72,7 +73,7 @@ namespace chdl {
       b[i] = IngressFunc(GetBitFunc(i, x));
   }
 
-  template <unsigned N, typename T> bvec<N> IngressInt(T &x) {
+  template <unsigned N, typename T> bvec<N> IngressInt(const T &x) {
     bvec<N> r;
     IngressInt(r, x);
     return r;
