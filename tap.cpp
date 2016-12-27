@@ -8,7 +8,7 @@
 #include "cdomain.h"
 #include "tap.h"
 #include "nodeimpl.h"
-
+#include "printable.h"
 #include "hierarchy.h"
 
 #include "reset.h"
@@ -23,6 +23,77 @@ taps_t taps;
 set<string> output_taps, io_taps;
 vector<node> ghost_taps;
 
+struct tap_t : public printable {
+  tap_t() {}
+
+  tap_t(string name) : name(name) {
+    register_print_phase(PRINT_LANG_VERILOG, 9);
+    register_print_phase(PRINT_LANG_VERILOG, 200);
+  }
+
+  bool is_initial(print_lang l, print_phase p) {
+    if ((l == PRINT_LANG_VERILOG) && (p == 9 || p == 10 || p == 200))
+      return true;
+
+    if (p == 1100 && (output_taps.count(name) || l == PRINT_LANG_NETLIST) &&
+	!io_taps.count(name))
+      return true;
+
+    if (p == 1200 && io_taps.count(name)) return true;
+    
+    return false;
+  }
+
+  void print(ostream &out, print_lang l, print_phase p) {
+    if (l == PRINT_LANG_VERILOG) {
+      if (p == 9) {
+	if (io_taps.count(name)) {
+          out << "  inout ";
+	} else if (output_taps.count(name)) {
+	  out << "  output ";
+	}
+
+	if (io_taps.count(name) || output_taps.count(name)) {
+	  if (taps[name].size() > 1) {
+	    out << '[' << taps[name].size() - 1 << ":0] ";
+	  }
+          out << name << ';' << endl;
+        }
+      } else if (p == 10) {
+	out << "  wire ";
+	if (taps[name].size() > 1) {
+	  out << '[' << taps[name].size() - 1 << ":0] ";
+	}
+	out << name << ';' << endl;
+      } else if (p == 200) {
+	if (taps[name].size() == 1) {
+	  out << "  assign " << name << " = __x" << taps[name][0] << ';'
+	      << endl;
+	} else if (taps[name].size() > 1) {
+	  for (unsigned i = 0; i < taps[name].size(); ++i) {
+	    out << "  assign " << name << '[' << i << "] = __x" << taps[name][i]
+                << ';' << endl;
+	  }
+	}
+      } else if (p == 1100 || p == 1200) {
+	out << "  " << name;
+      }
+    } else if (l == PRINT_LANG_NETLIST && (p == 1100 || p == 1200)) {
+      out << "  " << name;
+      for (auto &n : taps[name]) out << ' ' << n;
+      out << endl;
+    }
+  }
+
+  void predecessors(print_lang l, print_phase p, set<printable *> &s) {
+    s.clear();
+  }
+
+  string name;
+};
+
+map<string, tap_t> tap_printers;
+
 static void reset_taps() {
   ghost_taps.clear();
   taps.clear();
@@ -33,11 +104,13 @@ CHDL_REGISTER_RESET(reset_taps);
 
 void chdl::tap(std::string name, tristatenode t, bool output) {
   taps[name].push_back(t);
+  if (!tap_printers.count(name)) tap_printers[name] = tap_t(name);
   if (output) io_taps.insert(name);
 }
 
 void chdl::tap(string name, node node, bool output) {
   taps[name].push_back(node);
+  if (!tap_printers.count(name)) tap_printers[name] = tap_t(name);
   if (output) output_taps.insert(name);
 }
 

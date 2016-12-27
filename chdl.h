@@ -30,4 +30,5 @@
 #include <chdl/ttable.h>
 #include <chdl/vis.h>
 #include <chdl/cdomain.h>
+#include <chdl/printable.h>
 #endif

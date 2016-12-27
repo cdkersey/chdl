@@ -2,8 +2,8 @@
 // pointers. This makes it easy to copy about and also to change the underlying
 // implementation. Any optimizations invalidate all still-in-use node objects,
 // and must only be called after the design has been fully entered.
-#ifndef __NODE_H
-#define __NODE_H
+#ifndef CHDL_NODE_H
+#define CHDL_NODE_H
 
 #include <map>
 #include <set>
