@@ -30,7 +30,7 @@ namespace chdl {
   {
     HIERARCHY_ENTER();
 
-    const unsigned P2N(1<<CLOG2(N)), A(P2N/2), B(N - A);
+    const unsigned P2N = (1<<CLOG2(N)), A = (P2N/2), B = (N - A);
 
     bvec<A> rin(in[range<0, A-1>()]);
     node rvalid;
