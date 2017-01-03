@@ -80,17 +80,13 @@ void memory::print_vl(ostream &out) {
     if (dead) dead_ports.insert(i);
   }
 
-  if (!sync) {
-    cerr << "Async RAM not currently supported in verilog. Use llmem." << endl;
-    exit(1);
-  }
-
   size_t words(1ul<<da.size()), bits(d.size());
   for (unsigned i = 0; i < qa.size(); ++i) {
     if (dead_ports.count(i)) continue;
     out << "  wire [" << qa[0].size()-1 << ":0] __mem_qa" << id << '_' << i
         << ';' << endl
-        << "  reg [" << bits-1 << ":0] __mem_q" << id << '_' << i <<  ';'
+        << "  " << (sync?"reg":"wire")
+        << " [" << bits-1 << ":0] __mem_q" << id << '_' << i <<  ';'
         << endl;
   }
 
@@ -98,20 +94,31 @@ void memory::print_vl(ostream &out) {
       << "  wire [" << bits-1 << ":0] __mem_d" << id << ';' << endl
       << "  wire __mem_w" << id << ';' << endl
       << "  reg [" << bits-1 << ":0] __mem_array" << id
-      << '[' << words-1 << ":0];" << endl
-      << "  always @(posedge phi)" << endl
+      << '[' << words-1 << ":0];" << endl;
+
+  if (!sync) {
+    for (unsigned i = 0; i < q.size(); ++i) {
+      out << "  assign __mem_q" << id << '_' << i << " = __mem_array"
+          << id << "[__mem_qa" << id << '_' << i << "];" << endl;
+    }
+  }
+
+  out << "  always @(posedge phi)" << endl
       << "    begin" << endl;
-  for (unsigned i = 0; i < q.size(); ++i) {
-    if (dead_ports.count(i)) continue;
-    out << "      __mem_q" << id << '_' << i
-        << " <= __mem_array" << id << "[__mem_qa" << id << '_' << i << "];"
-        << endl;
+
+  if (sync) {
+    for (unsigned i = 0; i < q.size(); ++i) {
+      if (dead_ports.count(i)) continue;
+      out << "      __mem_q" << id << '_' << i
+          << " <= __mem_array" << id << "[__mem_qa" << id << '_' << i << "];"
+          << endl;
+    }
   }
 
   out << "      if (__mem_w" << id << ") __mem_array" << id
       << "[__mem_da" << id << "] <= __mem_d" << id << ';' << endl
       << "  end" << endl;
-  
+
   out << "  assign __mem_w" << id << " = __x" << w << ';' << endl;
   for (unsigned j = 0; j < qa.size(); ++j) {
     if (dead_ports.count(j)) continue;
