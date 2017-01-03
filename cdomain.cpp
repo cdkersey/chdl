@@ -68,7 +68,8 @@ struct cdomain_t : public printable {
       out << "        end" << endl;
       out << "    end" << endl << endl;
     } else if (l == PRINT_LANG_VERILOG && p == 1000) {
-      out << "  phi" << id;
+      out << "  phi";
+      if (id > 0) out << id;
     }
   }
 
