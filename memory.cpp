@@ -69,6 +69,10 @@ void memory::print(ostream &out) {
 }
 
 void memory::print_vl(ostream &out) {
+  // Some FPGA toolchains need a synchronous read. This lets us run our designs
+  // on these FPGAs, albeit with degraded performance.
+  const bool PSEUDO_ASYNC = true;
+  
   set<unsigned> dead_ports; // HACK
   unsigned id(q[0][0]);
 
@@ -85,7 +89,7 @@ void memory::print_vl(ostream &out) {
     if (dead_ports.count(i)) continue;
     out << "  wire [" << qa[0].size()-1 << ":0] __mem_qa" << id << '_' << i
         << ';' << endl
-        << "  " << (sync?"reg":"wire")
+        << "  " << ((sync || PSEUDO_ASYNC)?"reg":"wire")
         << " [" << bits-1 << ":0] __mem_q" << id << '_' << i <<  ';'
         << endl;
   }
@@ -96,17 +100,18 @@ void memory::print_vl(ostream &out) {
       << "  reg [" << bits-1 << ":0] __mem_array" << id
       << '[' << words-1 << ":0];" << endl;
 
-  if (!sync) {
+  if (!sync && !PSEUDO_ASYNC) {
     for (unsigned i = 0; i < q.size(); ++i) {
       out << "  assign __mem_q" << id << '_' << i << " = __mem_array"
           << id << "[__mem_qa" << id << '_' << i << "];" << endl;
     }
   }
 
-  out << "  always @(posedge phi)" << endl
+  out << "  always @(" << (!sync && PSEUDO_ASYNC ? "pos" : "neg")
+      << "edge phi)" << endl
       << "    begin" << endl;
 
-  if (sync) {
+  if (sync || PSEUDO_ASYNC) {
     for (unsigned i = 0; i < q.size(); ++i) {
       if (dead_ports.count(i)) continue;
       out << "      __mem_q" << id << '_' << i
