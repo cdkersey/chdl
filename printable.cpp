@@ -124,12 +124,11 @@ struct top_level_printable : public printable {
         print_all(append, l, 1100);
         print_all(append, l, 1200);
 
-	out << "module chdl_design(" << endl;
+	out << "module chdl_design(reset";
 	for (unsigned i = 0; i < args.size(); ++i) {
-	  out << args[i];
-	  if (i != args.size() - 1) out << ',' << endl;
+          out << ',' << args[i];
 	}
-	out << endl << ");" << endl;
+	out << endl << ");" << endl << "  input reset;" << endl << "  wire reset;" << endl;
       } else if (p == 1) {
 	out << "endmodule" << endl;
       }
