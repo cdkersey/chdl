@@ -1,5 +1,5 @@
-#ifndef __CHDL_INGRESS_H
-#define __CHDL_INGRESS_H
+#ifndef CHDL_INGRESS_H
+#define CHDL_INGRESS_H
 
 #include "chdl.h"
 #include "nodeimpl.h"

@@ -1,5 +1,5 @@
-#ifndef __CHDL_EGRESS_H
-#define __CHDL_EGRESS_H
+#ifndef CHDL_EGRESS_H
+#define CHDL_EGRESS_H
 #include "nodeimpl.h"
 #include "cdomain.h"
 #include "tickable.h"
