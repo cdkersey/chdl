@@ -1,7 +1,6 @@
 #ifndef CHDL_INGRESS_H
 #define CHDL_INGRESS_H
 
-#include "chdl.h"
 #include "nodeimpl.h"
 #include "sim.h"
 #include "cdomain.h"
