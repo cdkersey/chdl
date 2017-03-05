@@ -19,6 +19,13 @@ void chdl::print_netlist(ostream &out) {
   print_tap_nodes(out);
   out << "inout" << endl;
   print_io_tap_nodes(out);
+
+  if (clock_domains() > 1) {
+    out << "clocks" << endl;
+    for (unsigned i = 0; i < clock_domains(); ++i)
+      out << "  " << i << ' ' << tick_intervals()[i] << endl;
+  }
+
   out << "design" << endl;
   for (nodeid_t i = 0; i < nodes.size(); ++i) nodes[i]->print(out);
 }
