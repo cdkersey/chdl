@@ -1,5 +1,9 @@
 Critical
 
+  Information on clock domain is not being included in syncram instances in
+  netlist. If a memory is clocked, which clock it uses is an important
+  attribute.
+
   Toggle flip-flops are being generated as flip-flops connected to reset to 1.
     - input->inv->reg->inv->output is indistinguishable by the technology
       mapping algorithm from x->reg->inv->x where x is the same node.
