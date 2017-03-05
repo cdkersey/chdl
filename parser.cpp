@@ -51,14 +51,21 @@ void chdl::parse(std::istream &in, parser_callback_base_t &cb) {
 
         type = get_instance_type(line);
 
+        while (line.peek() == ' ' || line.peek() == '\t') line.get();
+
         if (line.peek() == '<') {
           line.get();
 
           char c;
+          bool string_mode = false, delim_mode = false;
           params.push_back(string());
           while(!!line && (c = line.get()) != '>') {
-            if (c == ',') params.push_back(string());
+            if (!string_mode && c == ' ') params.push_back(string());
+            else if (!delim_mode && c == '\"') string_mode = !string_mode;
             else params.rbegin()->push_back(c);
+
+            if (string_mode && !delim_mode && c == '\\') delim_mode = true;
+            else delim_mode = false;
 	  }
 	}
 
