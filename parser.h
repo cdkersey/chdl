@@ -9,7 +9,7 @@
 
 namespace chdl {
   template <typename T, typename U>
-    void parse(std::istream in, T &header_func, U &instance_func);
+    void parse(std::istream &in, T header_func, U instance_func);
 
   struct parser_callback_base_t {
     virtual void call_header(
@@ -46,13 +46,13 @@ namespace chdl {
     U &instance_callback;
   };
 
-  void parse(std::istream in, parser_callback_base_t &cb);
+  void parse(std::istream &in, parser_callback_base_t &cb);
 
   template <typename T, typename U>
-    void parse(std::istream in, T &header_func, U &instance_func)
+    void parse(std::istream &in, T header_func, U instance_func)
   {
     parser_callback_t<T, U> cb(header_func, instance_func);
-    parse(cb);
+    parse(in, cb);
   }
 }
 
