@@ -1,6 +1,17 @@
 CHDL Near-term Roadmap
 ======================
 
+_ Re-organize this file based on the realities of the project; most of this 
+  would be nice but is not on the critical path to release.
+
+_ Move the netlist and Verilog emission code to the new printable.h API.
+
+_ Add a parser.h based netlist reader (.nand and .netl format).
+
+_ Integrate all of the CHDL-related projects into a single repo. This is a
+  single effort and despite logical divisions in functionality should be
+  organized as one.
+
 _ Some sort of context management.
   . As a start, add a global state reset function. chdl::reset(). This will
     enable unit tests.
@@ -22,9 +33,9 @@ _ Testing
       - Tests of optimization including number of gates and critical path.
       - Records of improvements to optimization (with nontrivial designs) over
         time.
-  _ A directory full of simple unit tests.
+  - A directory full of simple unit tests.
     - One for each function exposed in a header file.
-
+  - Tests that use the new console output feature to provide feedback.
 
 _ Duplicate input removal:
   - For large multi-input and and or functions, remove duplicate inputs. The
@@ -67,25 +78,6 @@ _ Create some documentation.
 
 _ Custom literal type overload with universal literal type class
   - Allows us to say "1_cl" instead of "Lit<N>(1)". A little more terse.
-
-_ Split off CHDL standard library as its own project.
-  - This includes all non-hardware-mappable objects, tests, and examples:
-    - LLRom, LLRam
-    - State machines
-
-    - Possibly including:
-      - Non-elementary gates
-      - vec, bvec, and bitwise operations
-      - Arithmetic and comparison
-
-    - Definitely not including
-      - Fundamental logic types:
-        - Nand (or and if we make the switch to AIG), Inverter
-        - Register
-        - Memory (synchronous and asynchronous SRAM and ROM)
-      - Basic optimizations
-      - Technology mapping
-      - Simulation interfaces (eval, tickable, nodeimpl)
 
 _ Make dead node elimination use the criterion that node objects exist for a
   given node id/nodeimpl. Make this give us things like taps and gtaps for
