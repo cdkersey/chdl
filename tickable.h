@@ -14,7 +14,8 @@ namespace chdl {
 
   class tickable {
   public:
-    tickable() { tickables()[cur_clock_domain()].push_back(this); }
+    tickable() : cd(cur_clock_domain())
+      { tickables()[cur_clock_domain()].push_back(this); }
     ~tickable();
 
     virtual void pre_tick(cdomain_handle_t) {}

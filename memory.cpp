@@ -71,7 +71,7 @@ void memory::print(ostream &out) {
 void memory::print_vl(ostream &out) {
   // Some FPGA toolchains need a synchronous read. This lets us run our designs
   // on these FPGAs, albeit with degraded performance.
-  const bool PSEUDO_ASYNC = true;
+  const bool PSEUDO_ASYNC = true && !sync;
   
   set<unsigned> dead_ports; // HACK
   unsigned id(q[0][0]);
@@ -107,9 +107,10 @@ void memory::print_vl(ostream &out) {
     }
   }
 
-  out << "  always @(" << (!sync && PSEUDO_ASYNC ? "pos" : "neg")
-      << "edge phi)" << endl
-      << "    begin" << endl;
+  out << "  always @(" << (!sync && PSEUDO_ASYNC ? "neg" : "pos")
+      << "edge phi";
+  if (cd != 0) out << cd;
+  out << ")" << endl << "    begin" << endl;
 
   if (sync || PSEUDO_ASYNC) {
     for (unsigned i = 0; i < q.size(); ++i) {
