@@ -4,6 +4,8 @@
 #include <iostream>
 #include <iomanip>
 #include <set>
+#include <random>
+#include <cstdint>
 
 #include "memory.h"
 #include "tickable.h"
@@ -67,6 +69,10 @@ void memory::print(ostream &out) {
 }
 
 void memory::print_vl(ostream &out) {
+  // Some FPGA toolchains need a synchronous read. This lets us run our designs
+  // on these FPGAs, albeit with degraded performance.
+  const bool PSEUDO_ASYNC = true && !sync;
+  
   set<unsigned> dead_ports; // HACK
   unsigned id(q[0][0]);
 
@@ -78,17 +84,13 @@ void memory::print_vl(ostream &out) {
     if (dead) dead_ports.insert(i);
   }
 
-  if (!sync) {
-    cerr << "Async RAM not currently supported in verilog. Use llmem." << endl;
-    exit(1);
-  }
-
   size_t words(1ul<<da.size()), bits(d.size());
   for (unsigned i = 0; i < qa.size(); ++i) {
     if (dead_ports.count(i)) continue;
     out << "  wire [" << qa[0].size()-1 << ":0] __mem_qa" << id << '_' << i
         << ';' << endl
-        << "  reg [" << bits-1 << ":0] __mem_q" << id << '_' << i <<  ';'
+        << "  " << ((sync || PSEUDO_ASYNC)?"reg":"wire")
+        << " [" << bits-1 << ":0] __mem_q" << id << '_' << i <<  ';'
         << endl;
   }
 
@@ -96,20 +98,33 @@ void memory::print_vl(ostream &out) {
       << "  wire [" << bits-1 << ":0] __mem_d" << id << ';' << endl
       << "  wire __mem_w" << id << ';' << endl
       << "  reg [" << bits-1 << ":0] __mem_array" << id
-      << '[' << words-1 << ":0];" << endl
-      << "  always @(posedge phi)" << endl
-      << "    begin" << endl;
-  for (unsigned i = 0; i < q.size(); ++i) {
-    if (dead_ports.count(i)) continue;
-    out << "      __mem_q" << id << '_' << i
-        << " <= __mem_array" << id << "[__mem_qa" << id << '_' << i << "];"
-        << endl;
+      << '[' << words-1 << ":0];" << endl;
+
+  if (!sync && !PSEUDO_ASYNC) {
+    for (unsigned i = 0; i < q.size(); ++i) {
+      out << "  assign __mem_q" << id << '_' << i << " = __mem_array"
+          << id << "[__mem_qa" << id << '_' << i << "];" << endl;
+    }
+  }
+
+  out << "  always @(" << (!sync && PSEUDO_ASYNC ? "neg" : "pos")
+      << "edge phi";
+  if (cd != 0) out << cd;
+  out << ")" << endl << "    begin" << endl;
+
+  if (sync || PSEUDO_ASYNC) {
+    for (unsigned i = 0; i < q.size(); ++i) {
+      if (dead_ports.count(i)) continue;
+      out << "      __mem_q" << id << '_' << i
+          << " <= __mem_array" << id << "[__mem_qa" << id << '_' << i << "];"
+          << endl;
+    }
   }
 
   out << "      if (__mem_w" << id << ") __mem_array" << id
       << "[__mem_da" << id << "] <= __mem_d" << id << ';' << endl
       << "  end" << endl;
-  
+
   out << "  assign __mem_w" << id << " = __x" << w << ';' << endl;
   for (unsigned j = 0; j < qa.size(); ++j) {
     if (dead_ports.count(j)) continue;
@@ -161,6 +176,13 @@ memory::memory(
 {
   // Load contents from file
   if (filename != "") load_contents(di.size(), contents, filename);
+  else {
+    // Default SRAM contents: random bits; seed with pointer to take advantage
+    // of ASR.
+    minstd_rand m0((unsigned)reinterpret_cast<intptr_t>(this));
+    for (unsigned i = 0; i < contents.size(); ++i)
+      contents[i] = (m0() & 1);
+  }
 
   // Add the read port
   add_read_port(qai);

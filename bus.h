@@ -7,6 +7,9 @@
 namespace chdl {
   template <unsigned N> class bus : public vec<N, tristatenode> {
    public:
+    bus() : vec<N, tristatenode>() {}
+    bus(const tristatenode &t): vec<N, tristatenode>(t) {}
+    
     operator bvec<N>() const {
       bvec<N> r;
       for (unsigned i = 0; i < N; ++i)

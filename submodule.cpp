@@ -5,7 +5,7 @@
 using namespace std;
 using namespace chdl;
 
-static vector<node> module_inputs, module_outputs;
+static vector<node> module_inputs, module_outputs, module_ios;
 
 class mnodeimpl : public nodeimpl {
   public:
@@ -34,6 +34,10 @@ namespace chdl {
     module_outputs.push_back(n);
     n = node((new mnodeimpl(m))->id);
   }
+
+  void __chdl_add_module_inout(module &m, node n) {
+    module_ios.push_back(n);
+  }
 }
 
 chdl::module::module(string name): name(name), first_output(true) {}
@@ -46,6 +50,9 @@ void chdl::module::print(std::ostream &out) {
   for (unsigned i = 0; i < o_sigs.size(); ++i)
     for (unsigned j = 0; j < o_sigs[i].size(); ++j)
       out << ' ' << o_sigs[i][j];
+  for (unsigned i = 0; i < io_sigs.size(); ++i)
+    for (unsigned j = 0; j < io_sigs[i].size(); ++j)
+      out << ' ' << io_sigs[i][j];
   out << endl;
 }
 
@@ -72,6 +79,16 @@ void chdl::module::print_vl(std::ostream &out) {
       out << ", __x" << o_sigs[i][0];
     }
   }
+  for (unsigned i = 0; i < io_sigs.size(); ++i) {
+    if (io_sigs[i].size() > 1) {
+      out << ", {__x" << io_sigs[i][io_sigs[i].size()-1];
+      for (int j = io_sigs[i].size()-2; j >= 0; --j)
+	out << ", __x" << io_sigs[i][j];
+      out << '}';
+    } else {
+      out << ", __x" << io_sigs[i][0];
+    }
+  }
   out << ");" << endl;
   ++seq;
 }
@@ -79,11 +96,18 @@ void chdl::module::print_vl(std::ostream &out) {
 void chdl::get_module_inputs(set<nodeid_t> &s) {
   for (unsigned i = 0; i < module_inputs.size(); ++i)
     s.insert(module_inputs[i]);
+  get_module_ios(s);
 }
 
 void chdl::get_module_outputs(set<nodeid_t> &s) {
   for (unsigned i = 0; i < module_outputs.size(); ++i)
     s.insert(module_outputs[i]);
+  get_module_ios(s);
+}
+
+void chdl::get_module_ios(set<nodeid_t> &s) {
+  for (unsigned i = 0; i < module_ios.size(); ++i)
+    s.insert(module_ios[i]);
 }
 
 module &chdl::Module(string name) {

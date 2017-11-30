@@ -1,5 +1,9 @@
 Critical
 
+  Toggle flip-flops are being generated as flip-flops connected to reset to 1.
+    - input->inv->reg->inv->output is indistinguishable by the technology
+      mapping algorithm from x->reg->inv->x where x is the same node.
+
   Arithmetic/logic have not been tested with non power-of-two widths.
     - Except Enc(), required by Statemachine. This one is guaranteed to work.
     - Log2 has been shown not to work.

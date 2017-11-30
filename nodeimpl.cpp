@@ -43,6 +43,11 @@ static void clear_nodes() {
 }
 CHDL_REGISTER_RESET(clear_nodes);
 
+void nodeimpl::print(ostream &out, print_lang l, print_phase p) {
+  if ((p == 10) && (l == PRINT_LANG_VERILOG))
+    out << "  wire __x" << id << ';' << endl;
+}
+
 bool litimpl::eval(cdomain_handle_t) { return val; }
 
 void litimpl::print(ostream &out) {
@@ -52,6 +57,19 @@ void litimpl::print(ostream &out) {
 
 void litimpl::print_vl(ostream &out) {
   out << "  assign __x" << id << " = " << val << ';' << endl;
+}
+
+void litimpl::print(std::ostream &out, print_lang l, print_phase p) {
+  nodeimpl::print(out, l, p);
+  
+  if (p = 100) {
+    if (l == PRINT_LANG_NETLIST) {
+      if (undef) out << "  litX " << id << endl;
+      else       out << "  lit" << val << ' ' << id << endl;
+    } else if (l == PRINT_LANG_VERILOG) {
+      out << "  assign __x" << id << " = " << val << ';' << endl;
+    }
+  }
 }
 
 node::node(): idx(nodes.size()) {
@@ -140,3 +158,14 @@ void chdl::get_dead_nodes(std::set<nodeid_t> &s) {
 
   cout << "Found " << s.size() << " dead nodes." << endl;
 }
+
+void chdl::nodeimpl::predecessors
+  (print_lang l, print_phase p, set<printable *> &s)
+{
+  s.clear();
+
+  if (p == 100)
+    for (auto &p : src)
+      s.insert(nodes[(nodeid_t)p]);
+}
+

@@ -41,7 +41,7 @@ namespace chdl {
     T Mux(bvec<CLOG2(N)> sel, const vec<N, T>&in)
   {
     HIERARCHY_ENTER();
-    const unsigned LSZ(1<<(CLOG2(N)-1)), RSZ(N - LSZ);
+    const unsigned LSZ = (1<<(CLOG2(N)-1)), RSZ = (N - LSZ);
     vec<LSZ, T> lv(in[range<0,LSZ-1>()]);
     vec<RSZ, T> rv(in[range<LSZ,N-1>()]);
     

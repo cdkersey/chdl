@@ -23,9 +23,9 @@ void chdl::print_netlist(ostream &out) {
   for (nodeid_t i = 0; i < nodes.size(); ++i) nodes[i]->print(out);
 }
 
-void chdl::print_verilog(const char* module_name, ostream &out) {
-  const bool reset_signal(false);
-
+void chdl::print_verilog(
+  const char* module_name, ostream &out, bool reset_signal
+) {
   out << "module " << module_name << '(' << endl << "  phi";
 
   for (unsigned cd = 1; cd < clock_domains(); ++cd)
@@ -46,7 +46,6 @@ void chdl::print_verilog(const char* module_name, ostream &out) {
     out << "  input reset;" << endl;
   }
   print_inputs_vl_body(out);
-  print_taps_vl_body(out);
 
   if (!reset_signal) {
     out << "  wire reset;" << endl;
@@ -62,6 +61,8 @@ void chdl::print_verilog(const char* module_name, ostream &out) {
       out << "  wire __x" << i << ';' << endl;
 
   for (nodeid_t i = 0; i < nodes.size(); ++i) nodes[i]->print_vl(out);
+
+  print_taps_vl_body(out);
 
   out << "endmodule" << endl;
 }

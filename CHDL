@@ -67,6 +67,7 @@ Contents
       - Tickables, pre_tick, tick, tock, post_tock
       - C++ Interoperability (Ingress/Egress)
       - Assertions
+      - Console Input and Output
     - Analysis
       - Cycle Detection
       - Critical Path Length
@@ -729,6 +730,13 @@ simulation runs for more than 128 cycles, an error message is printed:
     counter = Reg(counter + Lit<8>(1));
   
     ASSERT(!counter[7]);
+
+ Console Input and Output
+ ------------------------
+
+For tests with more advanced input and output requirements, the ConsoleIn() and
+ConsoleOut() functions provide a parallel character-level interface to C++
+streams.
 
  Analysis
  --------

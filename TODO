@@ -1,9 +1,6 @@
 CHDL Near-term Roadmap
 ======================
 
-_ Add gate transition matrices for power modeling.
-  - N inputs -> 2^N x 2^N transition matrix
-
 _ Some sort of context management.
   . As a start, add a global state reset function. chdl::reset(). This will
     enable unit tests.

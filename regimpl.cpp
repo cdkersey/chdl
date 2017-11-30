@@ -25,8 +25,14 @@ void regimpl::print(ostream &out) {
   }
 }
 
+bool regimpl::is_initial(print_lang l, print_phase p) {
+  if (p >= 1000000 || p == 100 || p == 10) return true;
+
+  return false;
+}
+
 void regimpl::print_vl(ostream &out) {
-  const bool reset_signal(false), level_trig_reset(false);
+  const bool reset_signal(true), level_trig_reset(true);
 
   if (!reset_signal) {
     out << "  initial" << endl
@@ -36,22 +42,44 @@ void regimpl::print_vl(ostream &out) {
   }
 
   if (cd == 0)
-    out << "  always @ (posedge phi)" << endl;
+    out << "  always @ (posedge phi";
   else
-    out << "  always @ (posedge phi" << cd << ')' << endl;
-
-  if (reset_signal && level_trig_reset) {
-    out << "  if (!reset)" << endl;
-  }
-  out << "    begin" << endl
-      << "      __x" << id << " <= " << "__x" << d << ';' << endl
-      << "    end" << endl;
+    out << "  always @ (posedge phi" << cd;
 
   if (reset_signal) {
-    out << "  always @ (posedge reset)" << endl
-        << "    begin" << endl
-        << "      __x" << id << " <= " << "0;" << endl
-        << "    end" << endl;
+    out << " or ";
+    if (!level_trig_reset) out << "posedge ";
+    out << "reset";
+  }
+  
+  out << ')' << endl << "    begin" << endl;
+  
+  if (reset_signal)
+    out << "    if (reset) __x" << id << " <= 0;" << endl
+        << "    else if (phi) ";
+  else
+    out << "    ";
+  
+  out << "__x" << id << " <= " << "__x" << d << ';' << endl
+      << "    end" << endl;
+}
+
+void regimpl::print(std::ostream &out, print_lang l, print_phase p) {
+  if (l == PRINT_LANG_NETLIST) {
+    if (p == 100) {
+      if (cd == 0)
+        out << "  reg " << d << ' ' << id << endl;
+      else
+	out << "  reg<" << cd << "> " << d << ' ' << id << endl;
+    }
+  } else if (l == PRINT_LANG_VERILOG) {
+    if (p == 10) {
+      out << "  reg __x" << id << ';' << endl;
+    } else if (p == 1000000 + cd) { // Rising edge for clock domain
+      out << "      __x" << id << " <= __x" << d << ';' << endl;
+    } else if (p == 2000000 + cd) { // Global reset signal
+      out << "          __x" << id << " <= 0;" << endl;
+    }
   }
 }
 
