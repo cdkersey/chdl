@@ -1,6 +1,12 @@
 CHDL Near-term Roadmap
 ======================
 
+_ Environment variables.
+  - CHDL_ENV(name, type, short-desc, long-desc) macro.
+  - Initially set environment variables based on environment, with prefix CHDL_
+  - chdl::env_get(dest, name), chdl::env_set(name, val), chdl::env_is_set(name)
+  - ADDER_TYPE options environment variable (rc, ks, cs4)
+
 _ Some sort of context management.
   . As a start, add a global state reset function. chdl::reset(). This will
     enable unit tests.
@@ -93,7 +99,6 @@ _ Make dead node elimination use the criterion that node objects exist for a
   - Specifically, we shouldn't have to use gtaps anymore if we do DNE this way.
 
 Possible future features:
-  _ PamDC style structured data instead of aggregates.
   _ Change nand-based IR to industry-standard AIG (and/inverter graph)
     - This is implementation technology neutral, whereas our nand/inverter graph
       will, once optimized, not tmap to nor gates easily.

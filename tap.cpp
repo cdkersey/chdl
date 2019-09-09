@@ -210,3 +210,10 @@ void chdl::get_tap_map(std::map<nodeid_t, std::string> &m) {
     for (auto n : t.second)
       m[n] = t.first;
 }
+
+void chdl::get_tap_map(std::map<std::string, std::vector<nodeid_t> > &m) {
+  m.clear();
+  for (auto t : taps)
+    for (auto n : t.second)
+      m[t.first].push_back(n);
+}
