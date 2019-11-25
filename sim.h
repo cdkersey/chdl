@@ -14,6 +14,8 @@ namespace chdl {
 
   extern std::vector<cycle_t> now;
 
+  void reset_sim();
+  
   cycle_t sim_time(cdomain_handle_t cd = 0);
   void print_time(std::ostream&);
   cycle_t advance(unsigned threads=1, cdomain_handle_t cd = 0);

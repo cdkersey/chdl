@@ -58,7 +58,7 @@ namespace chdl {
   }
 
   template <typename T> std::function<bool()> GetBitFunc(unsigned bit, const T &x) {
-    return std::function<bool()>([&x, bit](){ return bool((x() >> bit)&1); });
+    return std::function<bool()>([x, bit](){ return bool((x() >> bit)&1); });
   }
 
   template <unsigned N, typename T> void IngressInt(const bvec<N> &b, T &x) {

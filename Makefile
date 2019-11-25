@@ -1,11 +1,11 @@
 PREFIX ?= /usr/local
 CHDL_INCLUDE ?= $(PREFIX)/include
-CXXFLAGS += -fPIC -std=c++14 -O2 -I$(CHDL_INCLUDE) #-g
+CXXFLAGS += -fPIC -std=c++14 -I$(CHDL_INCLUDE) -O2 #-g
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o \
        submodule.o techmap.o tristate.o trisimpl.o reset.o assert.o \
-       cdomain.o chdl_present.o ttable.o printable.o console.o env.o # order.o
+       cdomain.o chdl_present.o ttable.o printable.o console.o env.o retime.o
 
 # These are not _all_ headers, just headers included in local .cpp files.
 HEADERS = adder.h analysis.h assert.h bus.h bvec-basic.h bvec-basic-op.h \

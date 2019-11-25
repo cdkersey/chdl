@@ -23,6 +23,8 @@ namespace chdl {
     virtual void tock(cdomain_handle_t) {}
     virtual void post_tock(cdomain_handle_t) {}
 
+    virtual void reset() {}
+
     cdomain_handle_t cd;
   };
 };

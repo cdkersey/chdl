@@ -10,7 +10,7 @@
 
 namespace chdl {
   template <unsigned N>
-    bvec<N> divider(bvec<N> a, bvec<N> b, bvec<N> mod = Lit<N>(0))
+    bvec<N> Div(bvec<N> a, bvec<N> b, bvec<N> mod = Lit<N>(0))
   {
     HIERARCHY_ENTER();
     bvec<N> q;
@@ -30,12 +30,12 @@ namespace chdl {
   }
 
   template <unsigned N> bvec<N> operator/(bvec<N> a, bvec<N> b) {
-    return divider(a, b);
+    return Div(a, b);
   }
 
   template <unsigned N> bvec<N> operator%(bvec<N> a, bvec<N> b) {
     bvec<N> r;
-    divider(a, b, r);
+    Div(a, b, r);
     return r;
   }
 };

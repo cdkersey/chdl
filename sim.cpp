@@ -28,6 +28,14 @@ cycle_t chdl::advance(unsigned /* threads */, cdomain_handle_t cd) {
   return now[cd];
 }
 
+void chdl::reset_sim() {
+  for (unsigned cd = 0; cd < clock_domains(); ++cd) {
+    for (auto &t : tickables()[cd])
+      t->reset();
+    now[cd] = 0;
+  }
+}
+
 void chdl::print_time(ostream &out) {
   out << '#' << now[0] << endl;  
 }

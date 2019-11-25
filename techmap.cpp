@@ -482,7 +482,7 @@ void chdl::techmap(ostream &out, const char* tlibFile) {
 
   for (auto &t : tlib) cout << t.second << ": " << t.first.dump() << endl;
 
-  addInverters(tlib);
+  //addInverters(tlib);
 
   vector<list<mapping>> bestmaps(nodes.size());
 

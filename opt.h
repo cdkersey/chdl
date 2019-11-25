@@ -20,7 +20,8 @@ namespace chdl {
   void opt_tristate_merge();
   void opt_assoc_balance();
   void opt_set_dontcare();
-
+  void opt_reg_retime(int iters = 100);
+  
   void optimize();
 
   // More situation-specic optimizations

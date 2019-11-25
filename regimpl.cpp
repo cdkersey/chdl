@@ -32,7 +32,7 @@ bool regimpl::is_initial(print_lang l, print_phase p) {
 }
 
 void regimpl::print_vl(ostream &out) {
-  const bool reset_signal(true), level_trig_reset(true);
+  const bool reset_signal(true), level_trig_reset(false);
 
   if (!reset_signal) {
     out << "  initial" << endl

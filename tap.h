@@ -18,6 +18,8 @@
 namespace chdl {
   void tap(std::string name, tristatenode t, bool output=false);
   void tap(std::string name, node node, bool output=false);
+  void change_tap(nodeid_t old_node, nodeid_t new_node);
+
   void gtap(node node);
   template <typename T, unsigned N>
     void tap(std::string name, const vec<N, T> &vec, bool output=false);

@@ -23,6 +23,13 @@ taps_t taps;
 set<string> output_taps, io_taps;
 vector<node> ghost_taps;
 
+void chdl::change_tap(nodeid_t old_node, nodeid_t new_node) {
+  for (auto &x : taps)
+    for (auto &n : x.second)
+      if (nodeid_t(n) == old_node)
+	n.change_net(new_node);
+}
+
 struct tap_t : public printable {
   tap_t() {}
 

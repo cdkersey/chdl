@@ -74,9 +74,7 @@ class inputimpl : public nodeimpl {
     inputimpl(string n, int i=-1): nodeimpl(), name(n), pos(i) {}
     
     bool eval(cdomain_handle_t) {
-      cerr << "Attempted to simulate a design with unassociated inputs."
-           << endl;
-      abort();
+      return 0;
     }
 
     bool is_initial(print_lang l, print_phase p) {
