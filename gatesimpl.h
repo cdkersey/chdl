@@ -10,6 +10,7 @@ namespace chdl {
     invimpl(node in): t_cval(~0ull) { src.push_back(in); }
 
     virtual bool eval(cdomain_handle_t cd);
+    virtual void reset() { t_cval = ~0ull; }
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
@@ -27,11 +28,12 @@ namespace chdl {
     }
 
     virtual bool eval(cdomain_handle_t cd);
+    virtual void reset() { t_cval = ~0ull; }
     virtual void print(std::ostream &out);
     virtual void print_vl(std::ostream &out);
 
     virtual void print(std::ostream &out, print_lang l, print_phase p);
-    
+
   private:
     bool cval;
     cycle_t t_cval;

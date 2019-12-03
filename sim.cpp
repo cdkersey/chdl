@@ -7,12 +7,13 @@
 #include "tap.h"
 #include "reset.h"
 #include "cdomain.h"
+#include "nodeimpl.h"
 
 using namespace chdl;
 using namespace std;
 
 vector<cycle_t> chdl::now{0};
-static void reset_now() { now = vector<cycle_t>(1); }
+static void reset_now() { now = vector<cycle_t>(0); }
 CHDL_REGISTER_RESET(reset_now);
 
 cycle_t chdl::sim_time(cdomain_handle_t cd) { return now[cd]; }
@@ -29,11 +30,10 @@ cycle_t chdl::advance(unsigned /* threads */, cdomain_handle_t cd) {
 }
 
 void chdl::reset_sim() {
-  for (unsigned cd = 0; cd < clock_domains(); ++cd) {
-    for (auto &t : tickables()[cd])
-      t->reset();
+  for (unsigned i = 0; i < nodes.size(); ++i)
+    nodes[i]->reset();
+  for (unsigned cd = 0; cd < clock_domains(); ++cd)
     now[cd] = 0;
-  }
 }
 
 void chdl::print_time(ostream &out) {

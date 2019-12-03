@@ -1,6 +1,6 @@
 PREFIX ?= /usr/local
 CHDL_INCLUDE ?= $(PREFIX)/include
-CXXFLAGS += -fPIC -std=c++14 -I$(CHDL_INCLUDE) -O2 #-g
+CXXFLAGS += -fPIC -std=c++14 -I$(CHDL_INCLUDE) -O3 #-g
 
 OBJS = gates.o nodeimpl.o tickable.o gatesimpl.o regimpl.o tap.o sim.o lit.o \
        memory.o opt.o netlist.o input.o analysis.o vis.o hierarchy.o \

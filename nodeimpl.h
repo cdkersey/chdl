@@ -28,6 +28,8 @@ namespace chdl {
     virtual ~nodeimpl() {}
 
     virtual bool eval(cdomain_handle_t) = 0;
+    virtual void reset() {}
+
     virtual void print(std::ostream &) = 0;
     virtual void print_vl(std::ostream &) = 0;
 

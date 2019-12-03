@@ -28,9 +28,10 @@
 using namespace chdl;
 using namespace std;
 
-const double RCOUNT_MULT = 1;
+const double RCOUNT_MULT = 0.25;
 
 struct node_edge {
+  node_edge() {}
   node_edge(int w, int s, int d, nodeid_t n = 0):
     weight(w), src(s), dest(d), output_id(n) {}
 
@@ -64,15 +65,15 @@ struct retimer_t {
   void update_pl();
   void compute_initvals();
   void compute_score();
-  
+
   void print_graph();
 
   double score;
   default_random_engine rng;
   uniform_real_distribution<double> dkeep;
-  map<int, set<int> > pl;
-  vector<node_meta> m;
-  vector<node_edge> e;
+  map<int, set<int> > pl, pl_min;
+  vector<node_meta> m, m_min;
+  vector<node_edge> e, e_min;
   unsigned iters, moves;
 };
 
@@ -126,6 +127,7 @@ retimer_t::retimer_t(int iters, int moves):
     int new_pl = m[nidx].path + 1;
     for (auto &eidx : m[nidx].out) {
       int d = e[eidx].dest;
+      if (d == -1) continue;
       if (!m[d].is_reg && new_pl > m[d].path) {
 	m[d].path = new_pl;
 	pl_q.push(d);
@@ -213,6 +215,15 @@ retimer_t::retimer_t(int iters, int moves):
 }
 
 retimer_t::~retimer_t() {
+  // TODO
+  for (unsigned i = 0; i < nodes.size(); ++i) {
+    regimpl *r = dynamic_cast<regimpl*>(nodes[i]);
+    if (r && (nodeid_t(r->d) == ~0ull)) {
+      cout << "Bad input on reg " << r->id << endl;
+      exit(1);
+    }
+  }
+
   // Compute the initial values of registers in the chains through simulation
   compute_initvals();
   
@@ -263,27 +274,28 @@ retimer_t::~retimer_t() {
       nodes.pop_back();
       nodes[i]->id = i;
       nodes[i]->path = p->path;
-      //delete p; // TODO : we probably shouldn't leak memory here
+      delete p; // TODO : we probably shouldn't leak memory here
     }
   }
+
   //opt_dead_node_elimination();
 }
 
 void retimer_t::compute_score() {
-  cout << "Before: " << score << endl;
+  //cout << "Before: " << score << endl;
 
   score = 0;
   for (unsigned i = 0; i < nodes.size(); ++i)
     score += m[i].rcount * RCOUNT_MULT;
-  cout << "Compute score:" << endl;
+  //cout << "Compute score:" << endl;
   for (auto &x : pl) {
-    cout << " {";
-    for (auto &i : x.second) cout << ' ' << i << '(' << m[i].path << ')';
-    cout << '}';
+    //cout << " {";
+    //for (auto &i : x.second) cout << ' ' << i << '(' << m[i].path << ')';
+    //cout << '}';
     score += x.second.size()*x.first;
   }
-  cout << endl;
-  cout << "After: " << score << endl;
+  //cout << endl;
+  //cout << "After: " << score << endl;
 }
 
 void retimer_t::update_pl() {
@@ -294,9 +306,22 @@ void retimer_t::update_pl() {
 }
 
 void retimer_t::retime_step(double temp) {
-  for (unsigned move = 0; move < moves; ++move) {
-    nodeid_t i = uniform_int_distribution<nodeid_t>(0, nodes.size()-1)(rng);
+  unsigned last_min = 0;
+  double min_score = score;
+  e_min = e;
+  m_min = m;
+  pl_min = pl;
 
+  for (unsigned move = 0; move < moves; ++move) {
+    // If the minimum happened more than 0.1% of total moves ago, end.
+    if (move - last_min > moves/1000) {
+      //cout << "Eliminating " << (moves - move)*100.0/double(moves) << "% of move attempts." << endl;
+      break;
+    }
+
+    //nodeid_t i = uniform_int_distribution<nodeid_t>(0, nodes.size()-1)(rng);
+    nodeid_t i = move%nodes.size();
+    
     // Find number of spaces fwd/rev node can be moved
     int fwd = -m[i].relpos, rev = 0x7fffffff;
     if (fwd < 0) fwd = 0;
@@ -323,10 +348,6 @@ void retimer_t::retime_step(double temp) {
     else
       move_forward = bernoulli_distribution(0.5)(rng);
 
-    //cout << "Trying move " << i << (move_forward ? " fwd" : " back") << endl;
-    //print_graph();
-    //cout << endl << endl;
-    
     // 2. Perform move
     double score_before = score;
 
@@ -351,7 +372,6 @@ void retimer_t::retime_step(double temp) {
 	--e[eidx].weight;
     }
 
-    //cout << "Update path, score = " << score << endl;
     update_path(i, move_forward);
     double delta_score = score - score_before;
 
@@ -359,6 +379,14 @@ void retimer_t::retime_step(double temp) {
     double pkeep = (delta_score < 0) ? 1.0 : exp(-delta_score/temp);
 
     if (dkeep(rng) < pkeep) {
+      if (score < min_score) {
+	last_min = move;
+	min_score = score;
+        //cout << move << '/' << moves << ":  min_score = " << score << endl;
+        e_min = e;
+	m_min = m;
+	pl_min = pl;
+      }
       continue;
     }
 
@@ -377,36 +405,48 @@ void retimer_t::retime_step(double temp) {
 	--e[eidx].weight;
     }
 
-    //cout << "Undoing move " << i << (move_forward ? " fwd" : " back") << "..." << endl;
     update_path(i, !move_forward);
     score = score_before;
   }
+
+  score = min_score;
+  e = e_min;
+  m = m_min;
+  pl = pl_min;
 }
 
 void retimer_t::retime() {
-  cout << "Before retiming:" << endl;
+  // cout << "Before retiming:" << endl;
   update_pl();  
-  for (auto &s : pl)
-    cout << ' ' << s.second.size();
-  cout << endl;
-  compute_score();
-  cout << "Score: " << score << endl;
-  
-  // 5. Perform simulated annealing optimization
-  for (unsigned iter = 0; iter < iters; ++iter) {
-    double temp((iters - iter - 1)/double(iters)*100.0);
-    retime_step(temp);
-    cout << iter << '(' << temp << "): " << score << endl;
-    compute_score();
-    cout << iter << '(' << temp << "): " << score << endl;
-  }
+  // for (auto &s : pl)
+  //   cout << ' ' << s.second.size();
+  // cout << endl;
 
-  cout << "After retiming:" << endl;
-  for (auto &s : pl)
-    if (s.second.size() > 0)
-      cout << ' ' << s.second.size();
-  cout << endl;
-  cout << "Score: " << score << endl;
+  int lead_in = 3;
+  score = 1e100;
+  double prev_score;
+
+  do {
+    prev_score = score;  
+    compute_score();
+    cout << "Score: " << score << endl;
+
+    // 5. Perform simulated annealing optimization
+    for (unsigned iter = 0; iter < iters; ++iter) {
+      double temp((iters - iter - 1)/double(iters)*100.0);
+      retime_step(temp);
+      compute_score();
+    }
+
+    if (lead_in) --lead_in;  
+  } while (lead_in > 0 || prev_score < score);
+  
+  //cout << "After retiming:" << endl;
+  //for (auto &s : pl)
+  //  if (s.second.size() > 0)
+  //    cout << ' ' << s.second.size();
+  //cout << endl;
+  //cout << "Score: " << score << endl;
 }
 
 void retimer_t::compute_initvals() {
@@ -429,6 +469,7 @@ void retimer_t::compute_initvals() {
       int n = -m[i].relpos;
 
       // TODO: other cdomains
+      //cout << "Node " << i << " cyc " << cyc << ": " << nodes[i]->eval(0) << endl;
       m[i].initvals.push_back(nodes[i]->eval(0));
     }
 
@@ -524,9 +565,28 @@ void retimer_t::print_graph() {
 }
 
 void chdl::opt_reg_retime(int iters) {
-  unsigned moves(nodes.size() * 1000);
+  unsigned moves(nodes.size() * 10000);
 
+  #if 1
   retimer_t r(iters, moves);
   r.retime();
+  #else
+  int countdown = 5;
+  double score = 1e100, prev_score;
+  do {
+    prev_score = score;
+    { 
+      retimer_t r(iters, moves);
+      r.retime();
+      score = r.score;
+    }
+    cout << "Retrying... " << score << endl;
+    if (countdown) --countdown;
+  } while (countdown > 0 || score < prev_score);
+  #endif
   //r.print_graph();
+
+  //int count = 0;
+  //for (unsigned i = 0; i < nodes.size(); ++i) if (nodes[i]->eval(0)) ++count;
+  //cout << "Trying to visit nodes... count=" << count << endl;
 }
