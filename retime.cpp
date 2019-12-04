@@ -231,7 +231,21 @@ retimer_t::~retimer_t() {
   for (unsigned i = 0; i < m.size(); ++i) {
     int n_regs = m[i].rcount;
 
-    if (n_regs == 0) continue;
+    // If there are no regs left, reconnect following logic directly.
+    if (n_regs == 0) {
+      for (unsigned j = 0; j < m[i].out.size(); ++j) {
+	int eidx = m[i].out[j], dest = e[eidx].dest;
+	if (dest == -1) {
+          change_tap(e[eidx].output_id, i);
+        } else {
+          for (unsigned k = 0; k < m[dest].in.size(); ++k)
+            if (m[dest].in[k] == eidx)
+              nodes[dest]->src[k].change_net(i);
+        }
+      }
+
+      continue;
+    }
 
     vector<node> regs;
     nodeid_t id = i;
@@ -278,7 +292,8 @@ retimer_t::~retimer_t() {
     }
   }
 
-  //opt_dead_node_elimination();
+  //print_graph();
+  opt_dead_node_elimination();
 }
 
 void retimer_t::compute_score() {
@@ -422,14 +437,12 @@ void retimer_t::retime() {
   //   cout << ' ' << s.second.size();
   // cout << endl;
 
-  int lead_in = 3;
-  score = 1e100;
+  int lead_in = 1;
   double prev_score;
 
   do {
-    prev_score = score;  
     compute_score();
-    cout << "Score: " << score << endl;
+    prev_score = score;
 
     // 5. Perform simulated annealing optimization
     for (unsigned iter = 0; iter < iters; ++iter) {
@@ -438,8 +451,10 @@ void retimer_t::retime() {
       compute_score();
     }
 
+    cout << "Score: " << score << endl;
+
     if (lead_in) --lead_in;  
-  } while (lead_in > 0 || prev_score < score);
+  } while (lead_in > 0 || prev_score > score);
   
   //cout << "After retiming:" << endl;
   //for (auto &s : pl)
@@ -553,6 +568,12 @@ void retimer_t::print_graph() {
     cout << "Node " << i << " <" << m[i].path << '>';
     if (m[i].is_reg) cout << " (flip-flop)";
     if (m[i].relpos) cout << " " << m[i].relpos;
+    if (m[i].initvals.size() > 0) {
+      cout << " [";
+      for (unsigned k = 0; k < m[i].initvals.size(); ++i)
+	cout << ' ' << m[i].initvals[k];
+      cout << ']';
+    }
     cout << endl;
     cout << "  out:" << endl;
     for (auto idx : m[i].out)
@@ -567,23 +588,8 @@ void retimer_t::print_graph() {
 void chdl::opt_reg_retime(int iters) {
   unsigned moves(nodes.size() * 10000);
 
-  #if 1
   retimer_t r(iters, moves);
   r.retime();
-  #else
-  int countdown = 5;
-  double score = 1e100, prev_score;
-  do {
-    prev_score = score;
-    { 
-      retimer_t r(iters, moves);
-      r.retime();
-      score = r.score;
-    }
-    cout << "Retrying... " << score << endl;
-    if (countdown) --countdown;
-  } while (countdown > 0 || score < prev_score);
-  #endif
   //r.print_graph();
 
   //int count = 0;
