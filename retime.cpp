@@ -28,7 +28,7 @@
 using namespace chdl;
 using namespace std;
 
-const double RCOUNT_MULT = 0.25;
+//const double RCOUNT_MULT = 0.25;
 
 struct node_edge {
   node_edge() {}
@@ -55,7 +55,7 @@ struct node_meta {
 };
 
 struct retimer_t {
-  retimer_t(int iters, int moves);
+  retimer_t(int iters, int moves, double rcount_mult = 0.5);
   ~retimer_t();
 
   void retime();
@@ -68,7 +68,7 @@ struct retimer_t {
 
   void print_graph();
 
-  double score;
+  double score, rcount_mult;
   default_random_engine rng;
   uniform_real_distribution<double> dkeep;
   map<int, set<int> > pl, pl_min;
@@ -77,8 +77,9 @@ struct retimer_t {
   unsigned iters, moves;
 };
 
-retimer_t::retimer_t(int iters, int moves):
-  iters(iters), moves(moves), m(nodes.size()), dkeep(0.0, 1.0)
+retimer_t::retimer_t(int iters, int moves, double rcount_mult):
+  iters(iters), moves(moves), m(nodes.size()), dkeep(0.0, 1.0),
+  rcount_mult(rcount_mult)
 {
   // 1. Construct the metadata structure.
   for (unsigned i = 0; i < nodes.size(); ++i) {
@@ -301,7 +302,7 @@ void retimer_t::compute_score() {
 
   score = 0;
   for (unsigned i = 0; i < nodes.size(); ++i)
-    score += m[i].rcount * RCOUNT_MULT;
+    score += m[i].rcount * rcount_mult;
   //cout << "Compute score:" << endl;
   for (auto &x : pl) {
     //cout << " {";
@@ -516,7 +517,7 @@ void retimer_t::update_path(nodeid_t i, bool fwd) {
     for (auto &eidx : m[idx].out)
       if (e[eidx].weight > n_regs)
         n_regs = e[eidx].weight;
-    score += (n_regs - m[idx].rcount)*RCOUNT_MULT;
+    score += (n_regs - m[idx].rcount)*rcount_mult;
     //cout << idx << "(reg): -" << m[idx].rcount << " / +" << n_regs << endl; 
     m[idx].rcount = n_regs;
     
@@ -585,10 +586,10 @@ void retimer_t::print_graph() {
   #endif
 }
 
-void chdl::opt_reg_retime(int iters) {
+void chdl::opt_reg_retime(int iters, double reg_mult) {
   unsigned moves(nodes.size() * 10000);
 
-  retimer_t r(iters, moves);
+  retimer_t r(iters, moves, reg_mult);
   r.retime();
   //r.print_graph();
 
