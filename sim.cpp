@@ -13,7 +13,7 @@ using namespace chdl;
 using namespace std;
 
 vector<cycle_t> chdl::now{0};
-static void reset_now() { now = vector<cycle_t>(0); }
+static void reset_now() { now = vector<cycle_t>{0}; }
 CHDL_REGISTER_RESET(reset_now);
 
 cycle_t chdl::sim_time(cdomain_handle_t cd) { return now[cd]; }
