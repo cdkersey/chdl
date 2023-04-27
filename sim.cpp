@@ -47,11 +47,13 @@ void chdl::run(ostream &vcdout, function<bool()> end_condition,
   using namespace chdl;
 
   vector<unsigned> &ti(tick_intervals());
+  vector<bool> cache(nodes.size());
 
   print_vcd_header(vcdout);
   print_time(vcdout);
+  print_taps(vcdout, 0, cache, true);
   do {
-    print_taps(vcdout);
+    print_taps(vcdout, 0, cache, false);
     for (unsigned j = 0; j < ti.size(); ++j)
       if (sim_time()%ti[j] == 0) advance(threads, j);
     print_time(vcdout);
