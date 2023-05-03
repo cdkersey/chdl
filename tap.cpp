@@ -196,6 +196,8 @@ void chdl::print_taps(ostream &out, cdomain_handle_t cd) {
 void chdl::print_taps(
   ostream &out, cdomain_handle_t cd, vector<bool> &cache, bool first_cycle
 ) {
+  vector<bool> c2(cache);
+
   for (auto t : taps) {
     bool updated = first_cycle;
     vector<bool> v(t.second.size());
@@ -203,10 +205,10 @@ void chdl::print_taps(
     for (int j = t.second.size()-1; j >= 0; --j) {
       nodeid_t id = t.second[j];
       bool x = nodes[id]->eval(cd);
-      v.push_back(x);
+      v[j] = x;
       if (x != cache[id]) {
         updated = true;
-        cache[id] = x;
+        c2[id] = x;
       }
     }
 
@@ -217,6 +219,8 @@ void chdl::print_taps(
       out << t.first << endl;
     }
   }
+
+  cache = c2;
 }
 
 void chdl::print_vcd_header(ostream &out) {
