@@ -214,7 +214,7 @@ void chdl::print_taps(
 
     if  (updated) {
       if (v.size() > 1) out << 'b';
-      for (auto x : v) out << (x ? '1' : '0');
+      for (int i = v.size() - 1; i >= 0; --i) out << (v[i] ? '1' : '0');
       if (v.size() > 1) out << ' ';
       out << t.first << endl;
     }
