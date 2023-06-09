@@ -18,6 +18,7 @@ namespace chdl {
   void opt_combine_literals();
   void opt_dedup();
   void opt_tristate_merge();
+  void opt_tristate_elim();
   void opt_assoc_balance();
   void opt_set_dontcare();
   void opt_reg_retime(int iters = 100, double reg_mult = 0.5);

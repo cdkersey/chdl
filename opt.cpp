@@ -282,6 +282,20 @@ void safeErase(vector<node> &v, unsigned begin, unsigned end) {
   v = w;
 }
 
+void chdl::opt_tristate_elim() {
+  for (nodeid_t i = 0; i < nodes.size(); ++i) {
+    if (tristateimpl *t = dynamic_cast<tristateimpl*>(nodes[i])) {
+      node q;
+      for (unsigned j = 0; j < t->src.size(); j += 2)
+        q.change_net(q || (t->src[j] && t->src[j + 1]));
+      node n(i);
+      n = q;
+    }
+  }
+
+  opt_dead_node_elimination();
+}
+
 void chdl::opt_tristate_merge() {
   map<nodeid_t, map<nodeid_t, vector<nodeid_t> > > tris;
 
