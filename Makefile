@@ -13,7 +13,7 @@ HEADERS = adder.h analysis.h assert.h bus.h bvec-basic.h bvec-basic-op.h \
           gatesimpl.h hierarchy.h input.h latch.h lit.h litimpl.h llmem.h \
           memory.h netlist.h node.h nodeimpl.h opt.h reg.h regimpl.h reset.h \
           shifter.h sim.h submodule.h tap.h techmap.h tickable.h trisimpl.h \
-          tristate.h vis.h printable.h console.h
+          tristate.h vis.h printable.h console.h inputimpl.h
 
 all : libchdl.so
 

@@ -19,6 +19,8 @@ namespace chdl {
   // Append input node IDs to the given set.
   void get_input_nodes(std::set<nodeid_t> &s);
 
+  void get_input_map(std::map<std::string, std::vector<nodeid_t> > &m);
+
   std::vector<node> input_internal(std::string name, unsigned n);
 };
 

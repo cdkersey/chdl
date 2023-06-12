@@ -6,6 +6,7 @@
 
 #include "printable.h"
 #include "input.h"
+#include "inputimpl.h"
 #include "nodeimpl.h"
 #include "reset.h"
 
@@ -68,26 +69,6 @@ map <string, input_printer > input_printers;
 
 static void clear_inputs() { inputs.clear(); }
 CHDL_REGISTER_RESET(clear_inputs);
-
-class inputimpl : public nodeimpl {
-  public:
-    inputimpl(string n, int i=-1): nodeimpl(), name(n), pos(i) {}
-    
-    bool eval(cdomain_handle_t) {
-      return 0;
-    }
-
-    bool is_initial(print_lang l, print_phase p) {
-      return (p == 100);
-    }
-  
-    void print(ostream &) {}
-    void print_vl(ostream &);
-
-  private:
-    string name;         // Name of input in input map
-    int pos;             // Position in vector in input map. -1 for no name
-};
 
 void inputimpl::print_vl(ostream &out) {
   out << "  assign __x" << id << " = " << name;
@@ -154,4 +135,12 @@ vector<node> chdl::input_internal(std::string name, unsigned n) {
   }
 
   return inputs[name];
+}
+
+void chdl::get_input_map(map<string, vector<nodeid_t> > &m) {
+  m.clear();
+
+  for (auto &x : inputs)
+    for (unsigned i = 0; i < x.second.size(); ++i)
+      m[x.first].push_back(x.second[i]);
 }
