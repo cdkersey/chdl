@@ -42,7 +42,9 @@ namespace chdl {
   void print_vcd_header(std::ostream &out);
 
   void get_tap_map(std::map<nodeid_t, std::string> &m);
-  void get_tap_map(std::map<std::string, std::vector<nodeid_t> > &m);
+  void get_tap_map(std::map<std::string, std::vector<nodeid_t> > &m,
+                   bool output_only = false);
+  void get_output_map(std::map<std::string, std::vector<nodeid_t> > &m);
 
   // Append the set of tap nodes to s. Do not clear s.
   void get_tap_nodes(std::set<nodeid_t> &s);

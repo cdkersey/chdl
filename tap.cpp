@@ -248,9 +248,15 @@ void chdl::get_tap_map(std::map<nodeid_t, std::string> &m) {
       m[n] = t.first;
 }
 
-void chdl::get_tap_map(std::map<std::string, std::vector<nodeid_t> > &m) {
+
+void chdl::get_tap_map(map<string, vector<nodeid_t> > &m, bool output_only) {
   m.clear();
   for (auto t : taps)
-    for (auto n : t.second)
-      m[t.first].push_back(n);
+    if (!output_only || output_taps.count(t.first))
+      for (auto n : t.second)
+        m[t.first].push_back(n);
+}
+
+void chdl::get_output_map(map<string, vector<nodeid_t> > &m) {
+  get_tap_map(m, true);
 }
