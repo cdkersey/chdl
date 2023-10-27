@@ -282,14 +282,20 @@ void safeErase(vector<node> &v, unsigned begin, unsigned end) {
   v = w;
 }
 
+node tri_to_combo(vector<node> &src, int idx = 0) {
+  if (idx >= src.size())
+    return Lit(0);
+  else
+    return Or(And(src[idx], src[idx + 1]), tri_to_combo(src, idx + 2));
+}
+
 void chdl::opt_tristate_elim() {
-  for (nodeid_t i = 0; i < nodes.size(); ++i) {
+  nodeid_t n = nodes.size();
+
+  for (nodeid_t i = 0; i < n; ++i) {
     if (tristateimpl *t = dynamic_cast<tristateimpl*>(nodes[i])) {
-      node q;
-      for (unsigned j = 0; j < t->src.size(); j += 2)
-        q.change_net(q || (t->src[j] && t->src[j + 1]));
       node n(i);
-      n = q;
+      n = tri_to_combo(t->src);
     }
   }
 
