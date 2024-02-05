@@ -68,7 +68,7 @@ struct console_t : public tickable {
   queue<char> q;
   mutex m;
   thread *t;
-  
+
   std::istream &in;
 
   static vector<console_t*> console_ts;
